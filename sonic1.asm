@@ -37502,8 +37502,6 @@ Nem_Crabmeat:	incbin	artnem\crabmeat.bin	; crabmeat
 		even
 Nem_Buzz:	incbin	artnem\buzzbomb.bin	; buzz bomber
 		even
-Nem_UnkExplode:	incbin	artnem\xxxexplo.bin	; unused explosion
-		even
 Nem_Burrobot:	incbin	artnem\burrobot.bin	; burrobot
 		even
 Nem_Chopper:	incbin	artnem\chopper.bin	; chopper
@@ -37646,8 +37644,6 @@ Nem_EndEm:	incbin	artnem\endemera.bin	; ending sequence chaos emeralds
 Nem_EndSonic:	incbin	artnem\endsonic.bin	; ending sequence Sonic
 		even
 Nem_TryAgain:	incbin	artnem\tryagain.bin	; ending "try again" screen
-		even
-Nem_EndEggman:	incbin	artnem\xxxend.bin	; unused boss sequence on ending
 		even
 Kos_EndFlowers:	incbin	artkos\flowers.bin	; ending sequence animated flowers
 		even

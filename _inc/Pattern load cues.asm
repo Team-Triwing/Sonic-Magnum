@@ -442,7 +442,7 @@ PLC_SpeStResult:dc.w 1
 ; ---------------------------------------------------------------------------
 ; Pattern load cues - ending sequence
 ; ---------------------------------------------------------------------------
-PLC_Ending:	dc.w $E
+PLC_Ending:	dc.w $D
 		dc.l Nem_GHZ_1st	; GHZ main patterns
 		dc.w 0
 		dc.l Nem_GHZ_2nd	; GHZ secondary	patterns
@@ -455,8 +455,6 @@ PLC_Ending:	dc.w $E
 		dc.w $78A0
 		dc.l Nem_EndSonic	; Sonic
 		dc.w $7C20
-		dc.l Nem_EndEggman	; Eggman's death (unused)
-		dc.w $A480
 		dc.l Nem_Rabbit		; rabbit
 		dc.w $AA60
 		dc.l Nem_Chicken	; chicken

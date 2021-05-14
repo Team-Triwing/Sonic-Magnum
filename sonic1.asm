@@ -1,19 +1,39 @@
 Main		SECTION org(0)
 		opt l.			; local label symbol is .
 
-Z80_Space =	$80A			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
+Z80_Space =	$808			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
-
 ConsoleRegion	equ $FFFFFFF8
 Drvmem		equ $FFFFF000
+
+ChecksumAddr	equ $FFFFFFEC		; the checksum address we're checking (4 bytes)
+ChecksumValue	equ $FFFFFFF0		; the accumulated value of checksum check (2 bytes)
+ChecksumStart	equ $FFFFFFF4		; set if start button was pressed during checksum check
 
 		include "AMPS/lang.asm"
 		include "AMPS/code/macro.asm"
 		include "error/debugger.asm"
-		include "constsandvars.asm"
-		include "macros.asm"
+
+align		macro
+	cnop 0,\1
+    endm
+
+; Macro for playing a command
+command		macro id
+	move.b #id,mQueue.w
+    endm
+
+; Macro for playing music
+music		macro id
+	move.b #id,mQueue+1.w
+    endm
+
+; Macro for playing sound effect
+sfx		macro id
+	move.b #id,mQueue+2.w
+    endm
 
 		opt w-		; disable warnings
 ; ===========================================================================
@@ -132,8 +152,8 @@ SetupValues:	dc.w $8000		; XREF: PortA_Ok
 		dc.l $A00000		; start	of Z80 RAM
 		dc.l $A11100		; Z80 bus request
 		dc.l $A11200		; Z80 reset
-		dc.l VDP_DATA
-		dc.l VDP_CTRL		; address for VDP registers
+		dc.l $C00000
+		dc.l $C00004		; address for VDP registers
 
 		dc.b 4,	$14, $30, $3C	; values for VDP registers
 		dc.b 7,	$6C, 0,	0
@@ -174,11 +194,11 @@ endinit
 ; ===========================================================================
 
 GameProgram:
-		tst.w	(VDP_CTRL).l
-		btst	#6,(IO_C_CTRL).l
+		tst.w	($C00004).l
+		btst	#6,($A1000D).l
 		beq.s	.skip
 		cmpi.l	#'init',($FFFFFFFC).w ; has checksum routine already run?
-		beq.s	GameInit	; if yes, branch
+		beq.w	GameInit	; if yes, branch
 
 .skip
 		lea	($FFFFFE00).w,a6
@@ -188,9 +208,9 @@ GameProgram:
 loc_348:
 		move.l	d7,(a6)+
 		dbf	d6,loc_348
-		move.b	(HW_VERSION).l,d0
+		move.b	($A10001).l,d0
 		andi.b	#$C0,d0
-		move.b	d0,(ConsoleRegion).w
+		move.b	d0,($FFFFFFF8).w
 		move.l	#EndOfHeader,ChecksumAddr.w	; load end of header to checksum check
 		clr.w	ChecksumValue.w			; initial value of 0
 		move.l	#'init',($FFFFFFFC).w		; set flag so checksum won't be run again
@@ -203,17 +223,15 @@ GameInit:
 GameClrRAM:
 		move.l	d7,(a6)+
 		dbf	d6,GameClrRAM	; fill RAM ($0000-$FDFF) with $0
-		jsr		(InitDMA).l
 		bsr.w	VDPSetupGame
 		jsr	LoadDualPCM
 		bsr.w	JoypadInit
-		clr.b	($FFFFF600).w ; set Game Mode to Sega Screen
+		move.b	#0,($FFFFF600).w ; set Game Mode to Sega Screen
 
 MainGameLoop:
 		move.b	($FFFFF600).w,d0 ; load	Game Mode
-		andi.w	#$7C,d0
-		move.l	GameModeArray(pc,d0.w),a0	; same system of the Sonic 3 GameMode
-		jsr	(a0)							; jump to apt location in ROM
+		andi.w	#$1C,d0
+		jsr	GameModeArray(pc,d0.w) ; jump to apt location in ROM
 		bra.s	MainGameLoop
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
@@ -221,32 +239,32 @@ MainGameLoop:
 ; ---------------------------------------------------------------------------
 
 GameModeArray:
-		dc.l	SegaScreen	; Sega Screen ($00)
+		bra.w	SegaScreen	; Sega Screen ($00)
 ; ===========================================================================
-		dc.l	TitleScreen	; Title	Screen ($04)
+		bra.w	TitleScreen	; Title	Screen ($04)
 ; ===========================================================================
-		dc.l	Level		; Demo Mode ($08)
+		bra.w	Level		; Demo Mode ($08)
 ; ===========================================================================
-		dc.l	Level		; Normal Level ($0C)
+		bra.w	Level		; Normal Level ($0C)
 ; ===========================================================================
-		dc.l	SpecialStage	; Special Stage	($10)
+		bra.w	SpecialStage	; Special Stage	($10)
 ; ===========================================================================
-		dc.l	ContinueScreen	; Continue Screen ($14)
+		bra.w	ContinueScreen	; Continue Screen ($14)
 ; ===========================================================================
-		dc.l	EndingSequence	; End of game sequence ($18)
+		bra.w	EndingSequence	; End of game sequence ($18)
 ; ===========================================================================
-		dc.l	Credits		; Credits ($1C)
+		bra.w	Credits		; Credits ($1C)
 ; ===========================================================================
 		rts
 ; ===========================================================================
 
 CheckSumError:
 		bsr.w	VDPSetupGame
-		move.l	#$C0000000,(VDP_CTRL).l ; set VDP to CRAM write
+		move.l	#$C0000000,($C00004).l ; set VDP to CRAM write
 		moveq	#$3F,d7
 
 CheckSum_Red:
-		move.w	#$E,(VDP_DATA).l	; fill screen with colour red
+		move.w	#$E,($C00000).l	; fill screen with colour red
 		dbf	d7,CheckSum_Red	; repeat $3F more times
 
 CheckSum_Loop:
@@ -262,10 +280,10 @@ loc_B10:				; XREF: Vectors
 		movem.l	d0-a6,-(sp)
 		tst.b	($FFFFF62A).w
 		beq.s	loc_B88
-		move.w	(VDP_CTRL).l,d0
-		move.l	#$40000010,(VDP_CTRL).l
-		move.l	($FFFFF616).w,(VDP_DATA).l
-		btst	#6,(ConsoleRegion).w
+		move.w	($C00004).l,d0
+		move.l	#$40000010,($C00004).l
+		move.l	($FFFFF616).w,($C00000).l
+		btst	#6,($FFFFFFF8).w
 		beq.s	loc_B42
 		move.w	#$700,d0
 
@@ -310,8 +328,8 @@ loc_B88:				; XREF: loc_B10; off_B6E
 loc_B9A:
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ ?
 		bne.s	loc_B5E		; if not, branch
-		move.w	(VDP_CTRL).l,d0
-		btst	#6,(ConsoleRegion).w
+		move.w	($C00004).l,d0
+		btst	#6,($FFFFFFF8).w
 		beq.s	loc_BBA
 		move.w	#$700,d0
 		dbf	d0,*
@@ -320,7 +338,7 @@ loc_BBA:
 		move.b	#1,($FFFFF644).w
 		tst.b	($FFFFF64E).w
 		bne.s	loc_BFE
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9580,(a5)
 		move.w	#$977F,(a5)
@@ -331,7 +349,7 @@ loc_BBA:
 ; ===========================================================================
 
 loc_BFE:				; XREF: loc_BC8
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9540,(a5)
 		move.w	#$977F,(a5)
@@ -381,7 +399,7 @@ loc_C6E:				; XREF: off_B6E
 		bsr.w	ReadJoypads
 		tst.b	($FFFFF64E).w
 		bne.s	loc_CB0
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9580,(a5)
 		move.w	#$977F,(a5)
@@ -392,7 +410,7 @@ loc_C6E:				; XREF: off_B6E
 ; ===========================================================================
 
 loc_CB0:				; XREF: loc_C76
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9540,(a5)
 		move.w	#$977F,(a5)
@@ -402,21 +420,30 @@ loc_CB0:				; XREF: loc_C76
 
 loc_CD4:				; XREF: loc_C76
 		move.w	($FFFFF624).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7C00,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94019340,(a5)
 		move.l	#$96FC9500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7800,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		jsr	(ProcessDMAQueue).l
+		tst.b	($FFFFF767).w
+		beq.s	loc_D50
+		lea	($C00004).l,a5
+		move.l	#$94019370,(a5)
+		move.l	#$96E49500,(a5)
+		move.w	#$977F,(a5)
+		move.w	#$7000,(a5)
+		move.w	#$83,($FFFFF640).w
+		move.w	($FFFFF640).w,(a5)
+		move.b	#0,($FFFFF767).w
 
 loc_D50:
 		movem.l	($FFFFF700).w,d0-d7
@@ -448,21 +475,21 @@ Demo_TimeEnd:
 
 loc_DA6:				; XREF: off_B6E
 		bsr.w	ReadJoypads
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9580,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$C000,(a5)
 		move.w	#$80,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94019340,(a5)
 		move.l	#$96FC9500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7800,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
 		move.w	#$977F,(a5)
@@ -470,7 +497,16 @@ loc_DA6:				; XREF: off_B6E
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
 		bsr.w	PalCycle_SS
-		jsr	(ProcessDMAQueue).l
+		tst.b	($FFFFF767).w
+		beq.s	loc_E64
+		lea	($C00004).l,a5
+		move.l	#$94019370,(a5)
+		move.l	#$96E49500,(a5)
+		move.w	#$977F,(a5)
+		move.w	#$7000,(a5)
+		move.w	#$83,($FFFFF640).w
+		move.w	($FFFFF640).w,(a5)
+		move.b	#0,($FFFFF767).w
 
 loc_E64:
 		tst.w	($FFFFF614).w
@@ -485,7 +521,7 @@ loc_E72:				; XREF: off_B6E
 		bsr.w	ReadJoypads
 		tst.b	($FFFFF64E).w
 		bne.s	loc_EB4
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9580,(a5)
 		move.w	#$977F,(a5)
@@ -496,7 +532,7 @@ loc_E72:				; XREF: off_B6E
 ; ===========================================================================
 
 loc_EB4:				; XREF: loc_E7A
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9540,(a5)
 		move.w	#$977F,(a5)
@@ -506,21 +542,30 @@ loc_EB4:				; XREF: loc_E7A
 
 loc_ED8:				; XREF: loc_E7A
 		move.w	($FFFFF624).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7C00,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94019340,(a5)
 		move.l	#$96FC9500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7800,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		jsr	(ProcessDMAQueue).l
+		tst.b	($FFFFF767).w
+		beq.s	loc_F54
+		lea	($C00004).l,a5
+		move.l	#$94019370,(a5)
+		move.l	#$96E49500,(a5)
+		move.w	#$977F,(a5)
+		move.w	#$7000,(a5)
+		move.w	#$83,($FFFFF640).w
+		move.w	($FFFFF640).w,(a5)
+		move.b	#0,($FFFFF767).w
 
 loc_F54:
 		movem.l	($FFFFF700).w,d0-d7
@@ -549,28 +594,37 @@ loc_F9A:				; XREF: off_B6E
 
 loc_FA6:				; XREF: off_B6E
 		bsr.w	ReadJoypads
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9580,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$C000,(a5)
 		move.w	#$80,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94019340,(a5)
 		move.l	#$96FC9500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7800,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7C00,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		jsr	(ProcessDMAQueue).l
+		tst.b	($FFFFF767).w
+		beq.s	loc_1060
+		lea	($C00004).l,a5
+		move.l	#$94019370,(a5)
+		move.l	#$96E49500,(a5)
+		move.w	#$977F,(a5)
+		move.w	#$7000,(a5)
+		move.w	#$83,($FFFFF640).w
+		move.w	($FFFFF640).w,(a5)
+		move.b	#0,($FFFFF767).w
 
 loc_1060:
 		tst.w	($FFFFF614).w
@@ -587,7 +641,7 @@ sub_106E:				; XREF: loc_C32; et al
 		bsr.w	ReadJoypads
 		tst.b	($FFFFF64E).w
 		bne.s	loc_10B0
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9580,(a5)
 		move.w	#$977F,(a5)
@@ -598,7 +652,7 @@ sub_106E:				; XREF: loc_C32; et al
 ; ===========================================================================
 
 loc_10B0:				; XREF: sub_106E
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94009340,(a5)
 		move.l	#$96FD9540,(a5)
 		move.w	#$977F,(a5)
@@ -607,14 +661,14 @@ loc_10B0:				; XREF: sub_106E
 		move.w	($FFFFF640).w,(a5)
 
 loc_10D4:				; XREF: sub_106E
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$94019340,(a5)
 		move.l	#$96FC9500,(a5)
 		move.w	#$977F,(a5)
 		move.w	#$7800,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
 		move.w	#$977F,(a5)
@@ -637,7 +691,7 @@ PalToCRAM:
 		beq.s	locret_119C
 		clr.w	($FFFFF644).w
 		movem.l	a0-a1,-(sp)
-		lea	(VDP_DATA).l,a1
+		lea	($C00000).l,a1
 		lea	($FFFFFA80).w,a0 ; load	pallet from RAM
 		move.l	#$C0000000,4(a1) ; set VDP to CRAM write
 		rept 32
@@ -659,9 +713,9 @@ locret_119C:
 
 JoypadInit:				; XREF: GameClrRAM
 		moveq	#$40,d0
-		move.b	d0,(IO_A_CTRL).l	; init port 1 (joypad 1)
-		move.b	d0,(IO_B_CTRL).l	; init port 2 (joypad 2)
-		move.b	d0,(IO_C_CTRL).l	; init port 3 (extra)
+		move.b	d0,($A10009).l	; init port 1 (joypad 1)
+		move.b	d0,($A1000B).l	; init port 2 (joypad 2)
+		move.b	d0,($A1000D).l	; init port 3 (extra)
 		rts
 ; End of function JoypadInit
 
@@ -674,7 +728,7 @@ JoypadInit:				; XREF: GameClrRAM
 
 ReadJoypads:
 		lea	($FFFFF604).w,a0 ; address where joypad	states are written
-		lea	(IO_A_DATA).l,a1	; first	joypad port
+		lea	($A10003).l,a1	; first	joypad port
 		bsr.s	Joypad_Read	; do the first joypad
 		addq.w	#2,a1		; do the second	joypad
 
@@ -705,8 +759,8 @@ Joypad_Read:
 
 
 VDPSetupGame:				; XREF: GameClrRAM; ChecksumError
-		lea	(VDP_CTRL).l,a0
-		lea	(VDP_DATA).l,a1
+		lea	($C00004).l,a0
+		lea	($C00000).l,a1
 		lea	(VDPSetupArray).l,a2
 		moveq	#$12,d7
 
@@ -718,7 +772,7 @@ VDP_Loop:
 		move.w	d0,($FFFFF60C).w
 		move.w	#$8ADF,($FFFFF624).w
 		moveq	#0,d0
-		move.l	#$C0000000,(VDP_CTRL).l ; set VDP to CRAM write
+		move.l	#$C0000000,($C00004).l ; set VDP to CRAM write
 		move.w	#$3F,d7
 
 VDP_ClrCRAM:
@@ -728,12 +782,12 @@ VDP_ClrCRAM:
 		clr.l	($FFFFF616).w
 		clr.l	($FFFFF61A).w
 		move.l	d1,-(sp)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.w	#$8F01,(a5)
 		move.l	#$94FF93FF,(a5)
 		move.w	#$9780,(a5)
 		move.l	#$40000080,(a5)
-		move.w	#0,(VDP_DATA).l	; clear	the screen
+		move.w	#0,($C00000).l	; clear	the screen
 
 loc_128E:
 		move.w	(a5),d1
@@ -760,12 +814,12 @@ VDPSetupArray:	dc.w $8004, $8134, $8230, $8328	; XREF: VDPSetupGame
 
 
 ClearScreen:
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.w	#$8F01,(a5)
 		move.l	#$940F93FF,(a5)
 		move.w	#$9780,(a5)
 		move.l	#$40000083,(a5)
-		move.w	#0,(VDP_DATA).l
+		move.w	#0,($C00000).l
 
 loc_12E6:
 		move.w	(a5),d1
@@ -773,12 +827,12 @@ loc_12E6:
 		bne.s	loc_12E6
 
 		move.w	#$8F02,(a5)
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.w	#$8F01,(a5)
 		move.l	#$940F93FF,(a5)
 		move.w	#$9780,(a5)
 		move.l	#$60000083,(a5)
-		move.w	#0,(VDP_DATA).l
+		move.w	#0,($C00000).l
 
 loc_1314:
 		move.w	(a5),d1
@@ -833,6 +887,7 @@ loc_13CA:
 		btst	#6,($FFFFF605).w ; is button A pressed?
 		beq.s	Pause_ChkBC	; if not, branch
 		move.b	#4,($FFFFF600).w ; set game mode to 4 (title screen)
+		nop
 		bra.s	loc_1404
 ; ===========================================================================
 
@@ -870,7 +925,7 @@ Pause_SlowMo:				; XREF: PauseGame
 
 
 ShowVDPGraphics:			; XREF: SegaScreen; TitleScreen; SS_BGLoad
-		lea	(VDP_DATA).l,a6
+		lea	($C00000).l,a6
 		move.l	#$800000,d4
 
 loc_142C:
@@ -885,287 +940,6 @@ loc_1432:
 		rts
 ; End of function ShowVDPGraphics
 
-; -------------------------------------------------------------------------
-; Add a DMA transfer command to the DMA queue
-; -------------------------------------------------------------------------
-; PARAMETERS:
-;	d1.l	- Source in 68000 memory
-;	d2.w	- Destination in VRAM
-;	d3.w	- Transfer length in words
-; -------------------------------------------------------------------------
-
-; This option makes the function work as a drop-in replacement of the original
-; functions. If you modify all callers to supply a position in words instead of
-; bytes (i.e., divide source address by 2) you can set this to 0 to gain 10(1/0)
-AssumeSourceAddressInBytes	EQU	0
-
-; This option (which is disabled by default) makes the DMA queue assume that the
-; source address is given to the function in a way that makes them safe to use
-; with RAM sources. You need to edit all callers to ensure this.
-; Enabling this option turns off UseRAMSourceSafeDMA, and saves 14(2/0).
-AssumeSourceAddressIsRAMSafe	EQU	1
-
-; This option (which is enabled by default) makes source addresses in RAM safe
-; at the cost of 14(2/0). If you modify all callers so as to clear the top byte
-; of source addresses (i.e., by ANDing them with $FFFFFF).
-UseRAMSourceSafeDMA		EQU	0&(AssumeSourceAddressIsRAMSafe=0)
-
-; This option breaks DMA transfers that crosses a 128kB block into two. It is disabled by default because you can simply align the art in ROM
-; and avoid the issue altogether. It is here so that you have a high-performance routine to do the job in situations where you can't align it in ROM.
-Use128kbSafeDMA			EQU	0
-
-; Option to mask interrupts while updating the DMA queue. This fixes many race conditions in the DMA funcion, but it costs 46(6/1) cycles. The
-; better way to handle these race conditions would be to make unsafe callers (such as S3&K's KosM decoder) prevent these by masking off interrupts
-; before calling and then restore interrupts after.
-UseVIntSafeDMA			EQU	0
-
-; Like vdpComm, but starting from an address contained in a register
-
-vdpCommReg macro &
-	reg, type, rwd, clr
-
-	lsl.l	#2,\reg				; Move high bits into (word-swapped) position, accidentally moving everything else
-    if ((v\type\&v\rwd\)&3)<>0
-	addq.w	#(v\type\&v\rwd\)&3,\reg	; Add upper access type bits
-    endif
-	ror.w	#2,\reg				; Put upper access type bits into place, also moving all other bits into their correct (word-swapped) places
-	swap	\reg				; Put all bits in proper places
-    if \clr<>0
-	andi.w	#3,\reg				; Strip whatever junk was in upper word of reg
-    endif
-    if ((v\type\&v\rwd\)&$FC)=$20
-	tas.b	\reg				; Add in the DMA flag -- tas fails on memory, but works on registers
-    elseif ((v\type\&v\rwd\)&$FC)<>0
-	ori.w	#((v\type\&v\rwd\)&$FC)<<2,\reg	; Add in missing access type bits
-    endif
-
-	endm
-
-; -------------------------------------------------------------------------
-
-	rsreset
-DMAEntry.Reg94		rs.b	1
-DMAEntry.Size		rs.b	0
-DMAEntry.SizeH		rs.b	1
-DMAEntry.Reg93		rs.b	1
-DMAEntry.Source		rs.b	0
-DMAEntry.SizeL		rs.b	1
-DMAEntry.Reg97		rs.b	1
-DMAEntry.SrcH		rs.b	1
-DMAEntry.Reg96		rs.b	1
-DMAEntry.SrcM		rs.b	1
-DMAEntry.Reg95		rs.b	1
-DMAEntry.SrcL		rs.b	1
-DMAEntry.Command	rs.l	1
-DMAEntry.len		rs.b	0
-
-; -------------------------------------------------------------------------
-
-QueueSlotCount	EQU	(r_DMA_Slot-r_DMA_Queue)/DMAEntry.len
-
-; -------------------------------------------------------------------------
-
-loadDMA macro &
-	src, length, dest
-
-	if ((\src)&1)<>0
-		inform 2,"DMA queued from odd source $\$src\!"
-	endif
-	if ((\length)&1)<>0
-		inform 2,"DMA an odd number of bytes $\length\!"
-	endif
-	if (\length)=0
-		inform 2,"DMA transferring 0 bytes (becomes a 128kB transfer). If you really mean it, pass 128kB instead."
-	endif
-	if (((\src)+(\length)-1)>>17)<>((\src)>>17)
-		inform 2,"DMA crosses a 128kB boundary. You should either split the DMA manually or align the source adequately."
-	endif
-	if UseVIntSafeDMA=1
-		move.w	sr,-(sp)		; Save current interrupt mask
-		di				; Mask off interrupts
-	endif
-	movea.w	r_DMA_Slot.w,a1
-	cmpa.w	#r_DMA_Slot,a1
-	beq.s	.Done\@				; Return if there's no more room in the queue
-
-						; Write top byte of size/2
-	move.b	#((((\length)>>1)&$7FFF)>>8)&$FF,DMAEntry.SizeH(a1)
-						; Set d0 to bottom byte of size/2 and the low 3 bytes of source/2
-	move.l	#(((((\length)>>1)&$7FFF)&$FF)<<24)|(((\src)>>1)&$7FFFFF),d0
-	movep.l	d0,DMAEntry.SizeL(a1)		; Write it all to the queue
-	lea	DMAEntry.Command(a1),a1		; Seek to correct RAM address to store VDP DMA command
-	vdpCmd	move.l,\dest,VRAM,DMA,(a1)+	; Write VDP DMA command for destination address
-	move.w	a1,r_DMA_Slot.w			; Write next queue slot
-
-.Done\@:
-	if UseVIntSafeDMA=1
-		move.w	(sp)+,sr		; Restore interrupts to previous state
-	endif
-
-	endm
-
-; -------------------------------------------------------------------------
-
-resetDMA macros
-
-	move.w	#r_DMA_Queue,r_DMA_Slot.w
-
-; -------------------------------------------------------------------------
-
-QueueDMA:
-QueueDMATransfer:
-	if UseVIntSafeDMA=1
-		move.w	sr,-(sp)		; Save current interrupt mask
-		di				; Mask off interrupts
-	endif
-	movea.w	r_DMA_Slot.w,a1
-	cmpa.w	#r_DMA_Slot,a1
-	beq.s	.Done				; Return if there's no more room in the queue
-
-	if AssumeSourceAddressInBytes<>0
-		lsr.l	#1,d1			; Source address is in words for the VDP registers
-	endif
-	if UseRAMSourceSafeDMA<>0
-		bclr.l	#23,d1			; Make sure bit 23 is clear (68k->VDP DMA flag)
-	endif
-	movep.l	d1,DMAEntry.Source(a1)		; Write source address; the useless top byte will be overwritten later
-	moveq	#0,d0				; We need a zero on d0
-
-	if Use128kbSafeDMA<>0
-		; Detect if transfer crosses 128KB boundary
-		; Using sub+sub instead of move+add handles the following edge cases:
-		; (1) d3.w == 0 => 128kB transfer
-		;   (a) d1.w == 0 => no carry, don't split the DMA
-		;   (b) d1.w != 0 => carry, need to split the DMA
-		; (2) d3.w != 0
-		;   (a) if there is carry on d1.w + d3.w
-		;     (* ) if d1.w + d3.w == 0 => transfer comes entirely from current 128kB block, don't split the DMA
-		;     (**) if d1.w + d3.w != 0 => need to split the DMA
-		;   (b) if there is no carry on d1.w + d3.w => don't split the DMA
-		; The reason this works is that carry on d1.w + d3.w means that
-		; d1.w + d3.w >= $10000, whereas carry on (-d3.w) - (d1.w) means that
-		; d1.w + d3.w > $10000.
-		sub.w	d3,d0			; Using sub instead of move and add allows checking edge cases
-		sub.w	d1,d0			; Does the transfer cross over to the next 128kB block?
-		bcs.s	.doubletransfer		; Branch if yes
-	endif
-	; It does not cross a 128kB boundary. So just finish writing it.
-	movep.w	d3,DMAEntry.Size(a1)		; Write DMA length, overwriting useless top byte of source address
-
-.finishxfer:
-	; Command to specify destination address and begin DMA
-	move.w	d2,d0				; Use the fact that top word of d0 is zero to avoid clearing on vdpCommReg
-	vdpCommReg d0,VRAM,DMA,0		; Convert destination address to VDP DMA command
-	lea	DMAEntry.Command(a1),a1		; Seek to correct RAM address to store VDP DMA command
-	move.l	d0,(a1)+			; Write VDP DMA command for destination address
-	move.w	a1,r_DMA_Slot.w			; Write next queue slot
-
-.Done:
-	if UseVIntSafeDMA=1
-		move.w	(sp)+,sr		; Restore interrupts to previous state
-	endif
-	rts
-
-	if Use128kbSafeDMA=1
-.doubletransfer:
-	; We need to split the DMA into two parts, since it crosses a 128kB block
-	add.w	d3,d0				; Set d0 to the number of words until end of current 128kB block
-	movep.w	d0,DMAEntry.Size(a1)		; Write DMA length of first part, overwriting useless top byte of source addres
-
-	cmpa.w	#r_DMA_Slot-DMAEntry.len,a1	; Does the queue have enough space for both parts?
-	beq.s	.finishxfer			; Branch if not
-
-	; Get second transfer's source, destination, and length
-	sub.w	d0,d3				; Set d3 to the number of words remaining
-	add.l	d0,d1				; Offset the source address of the second part by the length of the first part
-	add.w	d0,d0				; Convert to number of bytes
-	add.w	d2,d0				; Set d0 to the VRAM destination of the second part
-
-	; If we know top word of d2 is clear, the following vdpCommReg can be set to not
-	; clear it. There is, unfortunately, no faster way to clear it than this.
-	vdpCommReg d2,VRAM,DMA,1		; Convert destination address of first part to VDP DMA command
-	move.l	d2,DMAEntry.Command(a1)		; Write VDP DMA command for destination address of first part
-
-	; Do second transfer
-						; Write source address of second part; useless top byte will be overwritten later
-	movep.l	d1,DMAEntry.len+DMAEntry.Source(a1)
-						; Write DMA length of second part, overwriting useless top byte of source address
-	movep.w	d3,DMAEntry.len+DMAEntry.Size(a1)
-
-	; Command to specify destination address and begin DMA
-	vdpCommReg d0,VRAM,DMA,0		; Convert destination address to VDP DMA command; we know top half of d0 is zero
-						; Seek to correct RAM address to store VDP DMA command of second part
-	lea	DMAEntry.len+DMAEntry.Command(a1),a1
-	move.l	d0,(a1)+			; Write VDP DMA command for destination address of second part
-
-	move.w	a1,r_DMA_Slot.w			; Write next queue slot
-	if UseVIntSafeDMA=1
-		move.w	(sp)+,sr		; Restore interrupts to previous state
-	endif
-	rts
-	endif
-
-; -------------------------------------------------------------------------
-; Process all the DMA commands queued
-; -------------------------------------------------------------------------
-
-ProcessDMA:
-ProcessDMAQueue:
-	lea	VDP_CTRL,a5
-	movea.w	r_DMA_Slot.w,a1
-	jmp	.jump_table-r_DMA_Queue(a1)
-
-; -------------------------------------------------------------------------
-
-.jump_table:
-	rts
-	rept 6
-		rts											; Just in case
-	endr
-
-; -------------------------------------------------------------------------
-
-c = 1
-	rept QueueSlotCount
-		lea	VDP_CTRL,a5
-		lea	r_DMA_Queue.w,a1
-		if c<>QueueSlotCount
-			bra.w	.jump0-(c*8)
-		endif
-c = c+1
-	endr
-
-; -------------------------------------------------------------------------
-
-	rept QueueSlotCount
-		move.l	(a1)+,(a5)									; Transfer length
-		move.l	(a1)+,(a5)									; Source address high
-		move.l	(a1)+,(a5)									; Source address low + destination high
-		move.w	(a1)+,(a5)									; Destination low, trigger DMA
-	endr
-
-.jump0:
-	resetDMA
-	rts
-
-; -------------------------------------------------------------------------
-; Initialize the DMA queue
-; -------------------------------------------------------------------------
-
-InitDMA:
-	lea	r_DMA_Queue.w,a0
-	move.b	#$94,d0
-	move.l	#$93979695,d1
-c = 0
-	rept QueueSlotCount
-		move.b	d0,c+DMAEntry.Reg94(a0)
-		movep.l	d1,c+DMAEntry.Reg93(a0)
-c = c+DMAEntry.len
-	endr
-
-	resetDMA
-	rts
-
 ; ---------------------------------------------------------------------------
 ; Nemesis decompression	algorithm
 ; ---------------------------------------------------------------------------
@@ -1176,7 +950,7 @@ c = c+DMAEntry.len
 NemDec:
 		movem.l	d0-a1/a3-a5,-(sp)
 		lea	(loc_1502).l,a3
-		lea	(VDP_DATA).l,a4
+		lea	($C00000).l,a4
 		bra.s	loc_145C
 ; ===========================================================================
 		movem.l	d0-a1/a3-a5,-(sp)
@@ -1507,7 +1281,7 @@ sub_165E:				; XREF: Demo_Time
 		addi.w	#$60,($FFFFF684).w
 
 loc_1676:				; XREF: sub_1642
-		lea	(VDP_CTRL).l,a4
+		lea	($C00004).l,a4
 		lsl.l	#2,d0
 		lsr.w	#2,d0
 		ori.w	#$4000,d0
@@ -1574,7 +1348,7 @@ RunPLC_Loop:
 		lsr.w	#2,d0
 		ori.w	#$4000,d0
 		swap	d0
-		move.l	d0,(VDP_CTRL).l	; put the VRAM address into VDP
+		move.l	d0,($C00004).l	; put the VRAM address into VDP
 		bsr.w	NemDec		; decompress
 		dbf	d1,RunPLC_Loop	; loop for number of entries
 		rts
@@ -1917,495 +1691,6 @@ KosDec_ByteMap:
 	dc.b	$0F,$8F,$4F,$CF,$2F,$AF,$6F,$EF,$1F,$9F,$5F,$DF,$3F,$BF,$7F,$FF
 	endif
 ; ===========================================================================
-
-; ---------------------------------------------------------------------------
-; New format based on Kosinski. It changes several design decisions to allow
-; a faster decompressor without loss of compression ratio.
-; Created originally by Flamewing and vladikcomper (by discussions on IRC),
-; further improvements by Clownacy.
-; ---------------------------------------------------------------------------
-; Permission to use, copy, modify, and/or distribute this software for any
-; purpose with or without fee is hereby granted.
-;
-; THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-; WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-; MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-; ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-; OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-; ---------------------------------------------------------------------------
-; FUNCTION:
-; 	KosPlusDec
-;
-; DESCRIPTION
-; 	Kosinski+ Decompressor
-;
-; INPUT:
-; 	a0	Source address
-; 	a1	Destination address
-; ---------------------------------------------------------------------------
-_KosPlus_LoopUnroll = 3
-
-_KosPlus_ReadBit macro
-	dbra	d2,.skip\@
-	moveq	#7,d2						; We have 8 new bits, but will use one up below.
-	move.b	(a0)+,d0					; Get desc field low-byte.
-.skip\@:
-	add.b	d0,d0						; Get a bit from the bitstream.
-	endm
-; ===========================================================================
-
-; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
-; ---------------------------------------------------------------------------
-KosPlusDec:
-	moveq	#(1<<_KosPlus_LoopUnroll)-1,d7
-	moveq	#0,d2						; Flag as having no bits left.
-	bra.s	.FetchNewCode
-; ---------------------------------------------------------------------------
-.FetchCodeLoop:
-	; Code 1 (Uncompressed byte).
-	move.b	(a0)+,(a1)+
-
-.FetchNewCode:
-	_KosPlus_ReadBit
-	bcs.s	.FetchCodeLoop				; If code = 1, branch.
-
-	; Codes 00 and 01.
-	moveq	#-1,d5
-	_KosPlus_ReadBit
-	bcs.s	.Code_01
-
-	; Code 00 (Dictionary ref. short).
-	move.b	(a0)+,d5					; d5 = displacement.
-	lea	(a1,d5),a5
-	; Always copy at least two bytes.
-	move.b	(a5)+,(a1)+
-	move.b	(a5)+,(a1)+
-	_KosPlus_ReadBit
-	bcc.s	.Copy_01
-	move.b	(a5)+,(a1)+
-	move.b	(a5)+,(a1)+
-
-.Copy_01:
-	_KosPlus_ReadBit
-	bcc.s	.FetchNewCode
-	move.b	(a5)+,(a1)+
-	bra.s	.FetchNewCode
-; ---------------------------------------------------------------------------
-.Code_01:
-	moveq	#0,d4						; d4 will contain copy count.
-	; Code 01 (Dictionary ref. long / special).
-	move.b	(a0)+,d4					; d4 = %HHHHHCCC.
-	move.b	d4,d5						; d5 = %11111111 HHHHHCCC.
-	lsl.w	#5,d5						; d5 = %111HHHHH CCC00000.
-	move.b	(a0)+,d5					; d5 = %111HHHHH LLLLLLLL.
-	if _KosPlus_LoopUnroll=3
-		and.w	d7,d4						; d4 = %00000CCC.
-	else
-		andi.w	#7,d4
-	endif
-	bne.s	.StreamCopy					; if CCC=0, branch.
-
-	; special mode (extended counter)
-	move.b	(a0)+,d4					; Read cnt
-	beq.s	.Quit						; If cnt=0, quit decompression.
-
-	lea	(a1,d5),a5
-	move.w	d4,d6
-	not.w	d6
-	and.w	d7,d6
-	add.w	d6,d6
-	lsr.w	#_KosPlus_LoopUnroll,d4
-	jmp	.largecopy(pc,d6.w)
-; ---------------------------------------------------------------------------
-.StreamCopy:
-	lea	(a1,d5),a5
-	move.b	(a5)+,(a1)+					; Do 1 extra copy (to compensate +1 to copy counter).
-	add.w	d4,d4
-	jmp	.mediumcopy-2(pc,d4.w)
-; ---------------------------------------------------------------------------
-.largecopy:
-	rept (1<<_KosPlus_LoopUnroll)
-		move.b	(a5)+,(a1)+
-	endr
-	dbra	d4,.largecopy
-
-.mediumcopy:
-	rept 8
-		move.b	(a5)+,(a1)+
-	endr
-	bra.w	.FetchNewCode
-; ---------------------------------------------------------------------------
-.Quit:
-	rts
-; ===========================================================================
-
-SaxmanDec:
-                move.w  (a0)+,d6
-                rol.w   #8,d6
-SaxDec2:
-                moveq   #0,d2
-                lea     (a1),a4
-                moveq   #0,d0
-                lea     byte_1AD4(pc),a2
-                move.w  #$F000,d3
-                moveq   #$F,d7
-
-loc_1A38:                               ; CODE XREF: ROM:00001A56?j
-                                        ; ROM:00001A7C?j ...
-                dbf     d2,loc_1A4A
-                moveq   #7,d2
-                subq.w  #1,d6
-                bne.s   loc_1A44
-                rts
-; ---------------------------------------------------------------------------
-
-loc_1A44:                               ; CODE XREF: ROM:00001A40?j
-                move.b  (a0)+,d0
-                move.b  (a2,d0.w),d0
-
-loc_1A4A:                               ; CODE XREF: ROM:loc_1A38?j
-                add.b   d0,d0
-                bcc.s   loc_1AA4
-                subq.w  #1,d6
-                bne.s   loc_1A54
-                rts
-; ---------------------------------------------------------------------------
-
-loc_1A54:                               ; CODE XREF: ROM:00001A50?j
-                move.b  (a0)+,(a1)+
-                bra.s   loc_1A38
-; ---------------------------------------------------------------------------
-
-loc_1A58:
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                bra.s   loc_1A38
-; ---------------------------------------------------------------------------
-
-loc_1A7E:
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                bra.s   loc_1A38
-; ---------------------------------------------------------------------------
-
-loc_1AA4:                               ; CODE XREF: ROM:00001A4C?j
-                subq.w  #2,d6
-                bhi.s   loc_1AAA
-                rts
-; ---------------------------------------------------------------------------
-
-loc_1AAA:                               ; CODE XREF: ROM:00001AA6?j
-                move.b  (a0)+,d1
-                move.b  (a0)+,d5
-                move.b  d5,d4
-                not.w   d4
-                and.w   d7,d4
-                add.w   d4,d4
-                lsl.w   #4,d5
-                move.b  d1,d5
-                addi.w  #$12,d5
-                sub.w   a1,d5
-                add.w   a4,d5
-                or.w    d3,d5
-                lea     (a1,d5.w),a5
-                cmpa.l  a4,a5
-                bcs.s   loc_1AD0
-                jmp     loc_1A58(pc,d4.w)
-; ---------------------------------------------------------------------------
-
-loc_1AD0:                               ; CODE XREF: ROM:00001ACA?j
-                jmp     loc_1A7E(pc,d4.w)
-; ---------------------------------------------------------------------------
-byte_1AD4:      dc.b 0                  ; DATA XREF: ROM:00001A2E?o
-                dc.b $80
-                dc.b $40 ; @
-                dc.b $C0
-                dc.b $20
-                dc.b $A0
-                dc.b $60 ; `
-                dc.b $E0
-                dc.b $10
-                dc.b $90
-                dc.b $50 ; P
-                dc.b $D0
-                dc.b $30 ; 0
-                dc.b $B0
-                dc.b $70 ; p
-                dc.b $F0
-                dc.b   8
-                dc.b $88
-                dc.b $48 ; H
-                dc.b $C8
-                dc.b $28 ; (
-                dc.b $A8
-                dc.b $68 ; h
-                dc.b $E8
-                dc.b $18
-                dc.b $98
-                dc.b $58 ; X
-                dc.b $D8
-                dc.b $38 ; 8
-                dc.b $B8
-                dc.b $78 ; x
-                dc.b $F8
-                dc.b   4
-                dc.b $84
-                dc.b $44 ; D
-                dc.b $C4
-                dc.b $24 ; $
-                dc.b $A4
-                dc.b $64 ; d
-                dc.b $E4
-                dc.b $14
-                dc.b $94
-                dc.b $54 ; T
-                dc.b $D4
-                dc.b $34 ; 4
-                dc.b $B4
-                dc.b $74 ; t
-                dc.b $F4
-                dc.b  $C
-                dc.b $8C
-                dc.b $4C ; L
-                dc.b $CC
-                dc.b $2C ; ,
-                dc.b $AC
-                dc.b $6C ; l
-                dc.b $EC
-                dc.b $1C
-                dc.b $9C
-                dc.b $5C ; \
-                dc.b $DC
-                dc.b $3C ; <
-                dc.b $BC
-                dc.b $7C ; |
-                dc.b $FC
-                dc.b   2
-                dc.b $82
-                dc.b $42 ; B
-                dc.b $C2
-                dc.b $22 ; "
-                dc.b $A2
-                dc.b $62 ; b
-                dc.b $E2
-                dc.b $12
-                dc.b $92
-                dc.b $52 ; R
-                dc.b $D2
-                dc.b $32 ; 2
-                dc.b $B2
-                dc.b $72 ; r
-                dc.b $F2
-                dc.b  $A
-                dc.b $8A
-                dc.b $4A ; J
-                dc.b $CA
-                dc.b $2A ; *
-                dc.b $AA
-                dc.b $6A ; j
-                dc.b $EA
-                dc.b $1A
-                dc.b $9A
-                dc.b $5A ; Z
-                dc.b $DA
-                dc.b $3A ; :
-                dc.b $BA
-                dc.b $7A ; z
-                dc.b $FA
-                dc.b   6
-                dc.b $86
-                dc.b $46 ; F
-                dc.b $C6
-                dc.b $26 ; &
-                dc.b $A6
-                dc.b $66 ; f
-                dc.b $E6
-                dc.b $16
-                dc.b $96
-                dc.b $56 ; V
-                dc.b $D6
-                dc.b $36 ; 6
-                dc.b $B6
-                dc.b $76 ; v
-                dc.b $F6
-                dc.b  $E
-                dc.b $8E
-                dc.b $4E ; N
-                dc.b $CE
-                dc.b $2E ; .
-                dc.b $AE
-                dc.b $6E ; n
-                dc.b $EE
-                dc.b $1E
-                dc.b $9E
-                dc.b $5E ; ^
-                dc.b $DE
-                dc.b $3E ; >
-                dc.b $BE
-                dc.b $7E ; ~
-                dc.b $FE
-                dc.b   1
-                dc.b $81
-                dc.b $41 ; A
-                dc.b $C1
-                dc.b $21 ; !
-                dc.b $A1
-                dc.b $61 ; a
-                dc.b $E1
-                dc.b $11
-                dc.b $91
-                dc.b $51 ; Q
-                dc.b $D1
-                dc.b $31 ; 1
-                dc.b $B1
-                dc.b $71 ; q
-                dc.b $F1
-                dc.b   9
-                dc.b $89
-                dc.b $49 ; I
-                dc.b $C9
-                dc.b $29 ; )
-                dc.b $A9
-                dc.b $69 ; i
-                dc.b $E9
-                dc.b $19
-                dc.b $99
-                dc.b $59 ; Y
-                dc.b $D9
-                dc.b $39 ; 9
-                dc.b $B9
-                dc.b $79 ; y
-                dc.b $F9
-                dc.b   5
-                dc.b $85
-                dc.b $45 ; E
-                dc.b $C5
-                dc.b $25 ; %
-                dc.b $A5
-                dc.b $65 ; e
-                dc.b $E5
-                dc.b $15
-                dc.b $95
-                dc.b $55 ; U
-                dc.b $D5
-                dc.b $35 ; 5
-                dc.b $B5
-                dc.b $75 ; u
-                dc.b $F5
-                dc.b  $D
-                dc.b $8D
-                dc.b $4D ; M
-                dc.b $CD
-                dc.b $2D ; -
-                dc.b $AD
-                dc.b $6D ; m
-                dc.b $ED
-                dc.b $1D
-                dc.b $9D
-                dc.b $5D ; ]
-                dc.b $DD
-                dc.b $3D ; =
-                dc.b $BD
-                dc.b $7D ; }
-                dc.b $FD
-                dc.b   3
-                dc.b $83
-                dc.b $43 ; C
-                dc.b $C3
-                dc.b $23 ; #
-                dc.b $A3
-                dc.b $63 ; c
-                dc.b $E3
-                dc.b $13
-                dc.b $93
-                dc.b $53 ; S
-                dc.b $D3
-                dc.b $33 ; 3
-                dc.b $B3
-                dc.b $73 ; s
-                dc.b $F3
-                dc.b  $B
-                dc.b $8B
-                dc.b $4B ; K
-                dc.b $CB
-                dc.b $2B ; +
-                dc.b $AB
-                dc.b $6B ; k
-                dc.b $EB
-                dc.b $1B
-                dc.b $9B
-                dc.b $5B ; [
-                dc.b $DB
-                dc.b $3B ; ;
-                dc.b $BB
-                dc.b $7B ; {
-                dc.b $FB
-                dc.b   7
-                dc.b $87
-                dc.b $47 ; G
-                dc.b $C7
-                dc.b $27 ; '
-                dc.b $A7
-                dc.b $67 ; g
-                dc.b $E7
-                dc.b $17
-                dc.b $97
-                dc.b $57 ; W
-                dc.b $D7
-                dc.b $37 ; 7
-                dc.b $B7
-                dc.b $77 ; w
-                dc.b $F7
-                dc.b  $F
-                dc.b $8F
-                dc.b $4F ; O
-                dc.b $CF
-                dc.b $2F ; /
-                dc.b $AF
-                dc.b $6F ; o
-                dc.b $EF
-                dc.b $1F
-                dc.b $9F
-                dc.b $5F ; _
-                dc.b $DF
-                dc.b $3F ; ?
-                dc.b $BF
-                dc.b $7F ; 
-                dc.b $FF
 
 ; ---------------------------------------------------------------------------
 ; Pallet cycling routine loading subroutine
@@ -3448,7 +2733,7 @@ SegaScreen:				; XREF: GameModeArray
 		command	mus_Stop	; stop music
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
@@ -3458,9 +2743,9 @@ SegaScreen:				; XREF: GameModeArray
 		move	#$2700,sr
 		move.w	($FFFFF60C).w,d0
 		andi.b	#$BF,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		bsr.w	ClearScreen
-		move.l	#$40000000,(VDP_CTRL).l
+		move.l	#$40000000,($C00004).l
 		lea	(Nem_SegaLogo).l,a0 ; load Sega	logo patterns
 		bsr.w	NemDec
 		lea	($FF0000).l,a1
@@ -3487,7 +2772,7 @@ SegaScreen:				; XREF: GameModeArray
 		clr.b	mComm.w				; make sure playback wont be marked as ended
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 
 Sega_WaitPallet:
 		move.b	#2,($FFFFF62A).w
@@ -3619,7 +2904,7 @@ TitleScreen:				; XREF: GameModeArray
 		command	mus_Reset	 ; fade reset music
 
 		move	#$2700,sr
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
@@ -3637,10 +2922,10 @@ Title_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Title_ClrObjRam ; fill object RAM ($D000-$EFFF) with	$0
 
-		move.l	#$40000000,(VDP_CTRL).l
+		move.l	#$40000000,($C00004).l
 		lea	(Nem_JapNames).l,a0 ; load Japanese credits
 		bsr.w	NemDec
-		move.l	#$54C00000,(VDP_CTRL).l
+		move.l	#$54C00000,($C00004).l
 		lea	(Nem_CreditText).l,a0	; load alphabet
 		bsr.w	NemDec
 		lea	($FF0000).l,a1
@@ -3667,16 +2952,16 @@ Title_ClrPallet:
 		jsr	BuildSprites
 		bsr.w	Pal_FadeTo
 		move	#$2700,sr
-		move.l	#$40000001,(VDP_CTRL).l
+		move.l	#$40000001,($C00004).l
 		lea	(Nem_TitleFg).l,a0 ; load title	screen patterns
 		bsr.w	NemDec
-		move.l	#$60000001,(VDP_CTRL).l
+		move.l	#$60000001,($C00004).l
 		lea	(Nem_TitleSonic).l,a0	; load Sonic title screen	patterns
 		bsr.w	NemDec
-		move.l	#$62000002,(VDP_CTRL).l
+		move.l	#$62000002,($C00004).l
 		lea	(Nem_TitleTM).l,a0 ; load "TM" patterns
 		bsr.w	NemDec
-		lea	(VDP_DATA).l,a6
+		lea	($C00000).l,a6
 		move.l	#$50000003,4(a6)
 		lea	(Art_Text).l,a5
 		move.w	#$28F,d1
@@ -3704,8 +2989,8 @@ Title_LoadText:
 		bsr.w	Pal_FadeFrom
 		move	#$2700,sr
 		bsr.w	ClearScreen
-		lea	(VDP_CTRL).l,a5
-		lea	(VDP_DATA).l,a6
+		lea	($C00004).l,a5
+		lea	($C00000).l,a6
 		lea	($FFFFF708).w,a3
 		lea	($FFFFA440).w,a4
 		move.w	#$6000,d2
@@ -3719,7 +3004,7 @@ Title_LoadText:
 		moveq	#$21,d1
 		moveq	#$15,d2
 		bsr.w	ShowVDPGraphics
-		move.l	#$40000000,(VDP_CTRL).l
+		move.l	#$40000000,($C00004).l
 		lea	(Nem_GHZ_1st).l,a0 ; load GHZ patterns
 		bsr.w	NemDec
 		moveq	#1,d0		; load title screen pallet
@@ -3753,7 +3038,7 @@ Title_ClrObjRam2:
 		move.w	#0,($FFFFFFE6).w
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		bsr.w	Pal_FadeTo
 
 loc_317C:
@@ -3774,7 +3059,7 @@ loc_317C:
 ; ===========================================================================
 
 Title_ChkRegion:
-		tst.b	(ConsoleRegion).w	; check	if the machine is US or	Japanese
+		tst.b	($FFFFFFF8).w	; check	if the machine is US or	Japanese
 		bpl.s	Title_RegionJ	; if Japanese, branch
 		lea	(LevelSelectCode_US).l,a0 ; load US code
 		bra.s	Title_EnterCheat
@@ -3798,7 +3083,7 @@ Title_EnterCheat:			; XREF: Title_ChkRegion
 		lsr.w	#1,d1
 		andi.w	#3,d1
 		beq.s	Title_PlayRing
-		tst.b	(ConsoleRegion).w
+		tst.b	($FFFFFFF8).w
 		bpl.s	Title_PlayRing
 		moveq	#1,d1
 		move.b	d1,1(a0,d1.w)
@@ -3845,8 +3130,8 @@ Title_ClrScroll:
 
 		move.l	d0,($FFFFF616).w
 		move	#$2700,sr
-		lea	(VDP_DATA).l,a6
-		move.l	#$60000003,(VDP_CTRL).l
+		lea	($C00000).l,a6
+		move.l	#$60000003,($C00004).l
 		move.w	#$3FF,d1
 
 Title_ClrVram:
@@ -4093,7 +3378,7 @@ LevSel_NoMove:
 
 LevSelTextLoad:				; XREF: TitleScreen
 		lea	(LevelMenuText).l,a1
-		lea	(VDP_DATA).l,a6
+		lea	($C00000).l,a6
 		move.l	#$62100003,d4	; screen position (text)
 		move.w	#$E680,d3	; VRAM setting
 		moveq	#$14,d1		; number of lines of text
@@ -4125,7 +3410,7 @@ loc_34FE:				; XREF: LevSelTextLoad+26j
 		move.w	#$C680,d3
 
 loc_3550:
-		move.l	#$6C300003,(VDP_CTRL).l ; screen	position (sound	test)
+		move.l	#$6C300003,($C00004).l ; screen	position (sound	test)
 		move.w	($FFFFFF84).w,d0
 		move.b	d0,d2
 		lsr.b	#4,d0
@@ -4202,9 +3487,11 @@ loc_37B6:
 		bsr.w	Pal_FadeFrom
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
-		move.l	#$70000002,(VDP_CTRL).l
+		move	#$2700,sr
+		move.l	#$70000002,($C00004).l
 		lea	(Nem_TitleCard).l,a0 ; load title card patterns
 		bsr.w	NemDec
+		move	#$2300,sr
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#4,d0
@@ -4252,8 +3539,9 @@ Level_ClrVars3:
 		move.l	d0,(a1)+
 		dbf	d1,Level_ClrVars3 ; clear object variables
 
+		move	#$2700,sr
 		bsr.w	ClearScreen
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8B03,(a6)
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
@@ -4263,7 +3551,6 @@ Level_ClrVars3:
 		move.w	#$8720,(a6)
 		move.w	#$8ADF,($FFFFF624).w
 		move.w	($FFFFF624).w,(a6)
-		resetDMA
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
 		bne.s	Level_LoadPal	; if not, branch
 		move.w	#$8014,(a6)
@@ -4281,6 +3568,7 @@ Level_ClrVars3:
 
 Level_LoadPal:
 		move.w	#$1E,($FFFFFE14).w
+		move	#$2300,sr
 		moveq	#3,d0
 		bsr.w	PalLoad2	; load Sonic's pallet line
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
@@ -4338,6 +3626,7 @@ loc_3946:
 		bset	#2,($FFFFF754).w
 		bsr.w	MainLoadBlockLoad ; load block mappings	and pallets
 		bsr.w	LoadTilesFromStart
+		jsr	FloorLog_Unk
 		bsr.w	ColIndexLoad
 		bsr.w	LZWaterEffects
 		move.b	#1,($FFFFD000).w ; load	Sonic object
@@ -5264,22 +4553,22 @@ SpecialStage:				; XREF: GameModeArray
 
 		bsr.w	Pal_MakeFlash
 		move	#$2700,sr
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8B03,(a6)
 		move.w	#$8004,(a6)
 		move.w	#$8AAF,($FFFFF624).w
 		move.w	#$9011,(a6)
 		move.w	($FFFFF60C).w,d0
 		andi.b	#$BF,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		bsr.w	ClearScreen
 		move	#$2300,sr
-		lea	(VDP_CTRL).l,a5
+		lea	($C00004).l,a5
 		move.w	#$8F01,(a5)
 		move.l	#$946F93FF,(a5)
 		move.w	#$9780,(a5)
 		move.l	#$50000081,(a5)
-		move.w	#0,(VDP_DATA).l
+		move.w	#0,($C00000).l
 
 loc_463C:
 		move.w	(a5),d1
@@ -5353,7 +4642,7 @@ SS_ClrNemRam:
 SS_NoDebug:
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		bsr.w	Pal_MakeWhite
 
 ; ---------------------------------------------------------------------------
@@ -5410,16 +4699,15 @@ loc_47D4:
 		bne.s	SS_EndLoop
 
 		move	#$2700,sr
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
 		move.w	#$9001,(a6)
 		bsr.w	ClearScreen
-		move.l	#$70000002,(VDP_CTRL).l
+		move.l	#$70000002,($C00004).l
 		lea	(Nem_TitleCard).l,a0 ; load title card patterns
 		bsr.w	NemDec
 		jsr	Hud_Base
-		resetDMA
 		move	#$2300,sr
 		moveq	#$11,d0
 		bsr.w	PalLoad2	; load results screen pallet
@@ -5549,7 +4837,7 @@ PalCycle_SS:				; XREF: loc_DA6; SpecialStage
 		bne.s	locret_49E6
 		subq.w	#1,($FFFFF79C).w
 		bpl.s	locret_49E6
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	($FFFFF79A).w,d0
 		addq.w	#1,($FFFFF79A).w
 		andi.w	#$1F,d0
@@ -5574,8 +4862,8 @@ loc_4992:
 		move.w	#-$7C00,d0
 		move.b	(a0)+,d0
 		move.w	d0,(a6)
-		move.l	#$40000010,(VDP_CTRL).l
-		move.l	($FFFFF616).w,(VDP_DATA).l
+		move.l	#$40000010,($C00004).l
+		move.l	($FFFFF616).w,($C00000).l
 		moveq	#0,d0
 		move.b	(a0)+,d0
 		bmi.s	loc_49E8
@@ -5760,8 +5048,8 @@ ContinueScreen:				; XREF: GameModeArray
 		move	#$2700,sr
 		move.w	($FFFFF60C).w,d0
 		andi.b	#$BF,d0
-		move.w	d0,(VDP_CTRL).l
-		lea	(VDP_CTRL).l,a6
+		move.w	d0,($C00004).l
+		lea	($C00004).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8700,(a6)
 		bsr.w	ClearScreen
@@ -5773,13 +5061,13 @@ Cont_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cont_ClrObjRam ; clear object RAM
 
-		move.l	#$70000002,(VDP_CTRL).l
+		move.l	#$70000002,($C00004).l
 		lea	(Nem_TitleCard).l,a0 ; load title card patterns
 		bsr.w	NemDec
-		move.l	#$60000002,(VDP_CTRL).l
+		move.l	#$60000002,($C00004).l
 		lea	(Nem_ContSonic).l,a0 ; load Sonic patterns
 		bsr.w	NemDec
-		move.l	#$6A200002,(VDP_CTRL).l
+		move.l	#$6A200002,($C00004).l
 		lea	(Nem_MiniSonic).l,a0 ; load continue screen patterns
 		bsr.w	NemDec
 		moveq	#10,d1
@@ -5805,7 +5093,7 @@ Cont_ClrObjRam:
 		jsr	BuildSprites
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		bsr.w	Pal_FadeTo
 
 ; ---------------------------------------------------------------------------
@@ -6078,9 +5366,9 @@ End_ClrRam3:
 		move	#$2700,sr
 		move.w	($FFFFF60C).w,d0
 		andi.b	#$BF,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		bsr.w	ClearScreen
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8B03,(a6)
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
@@ -6147,7 +5435,7 @@ End_LoadSonic:
 		bsr.w	DelayProgram
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
-		move.w	d0,(VDP_CTRL).l
+		move.w	d0,($C00004).l
 		move.w	#$3F,($FFFFF626).w
 		bsr.w	Pal_FadeTo
 
@@ -6206,8 +5494,8 @@ loc_5334:
 		beq.w	End_AllEmlds
 		clr.w	($FFFFFE02).w
 		move.w	#$2E2F,($FFFFA480).w ; modify level layout
-		lea	(VDP_CTRL).l,a5
-		lea	(VDP_DATA).l,a6
+		lea	($C00004).l,a5
+		lea	($C00000).l,a6
 		lea	($FFFFF700).w,a3
 		lea	($FFFFA400).w,a4
 		move.w	#$4000,d2
@@ -6528,7 +5816,7 @@ Map_obj89:
 Credits:				; XREF: GameModeArray
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
@@ -6546,7 +5834,7 @@ Cred_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cred_ClrObjRam ; clear object RAM
 
-		move.l	#$74000002,(VDP_CTRL).l
+		move.l	#$74000002,($C00004).l
 		lea	(Nem_CreditText).l,a0	; load credits alphabet patterns
 		bsr.w	NemDec
 		lea	($FFFFFB80).w,a1
@@ -6653,7 +5941,7 @@ EndDemo_LampVar:
 TryAgainEnd:				; XREF: Credits
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
-		lea	(VDP_CTRL).l,a6
+		lea	($C00004).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
 		move.w	#$8407,(a6)
@@ -7895,8 +7183,8 @@ locret_6884:
 
 
 sub_6886:				; XREF: loc_C44
-		lea	(VDP_CTRL).l,a5
-		lea	(VDP_DATA).l,a6
+		lea	($C00004).l,a5
+		lea	($C00000).l,a6
 		lea	($FFFFF756).w,a2
 		lea	($FFFFF708).w,a3
 		lea	($FFFFA440).w,a4
@@ -7915,8 +7203,8 @@ sub_6886:				; XREF: loc_C44
 
 
 LoadTilesAsYouMove:			; XREF: Demo_Time
-		lea	(VDP_CTRL).l,a5
-		lea	(VDP_DATA).l,a6
+		lea	($C00004).l,a5
+		lea	($C00000).l,a6
 		lea	($FFFFFF32).w,a2
 		lea	($FFFFFF18).w,a3
 		lea	($FFFFA440).w,a4
@@ -8364,8 +7652,8 @@ sub_6C3C:
 
 
 LoadTilesFromStart:			; XREF: Level; EndingSequence
-		lea	(VDP_CTRL).l,a5
-		lea	(VDP_DATA).l,a6
+		lea	($C00004).l,a5
+		lea	($C00000).l,a6
 		lea	($FFFFF700).w,a3
 		lea	($FFFFA400).w,a4
 		move.w	#$4000,d2
@@ -25645,34 +24933,34 @@ LoadSonicDynPLC:			; XREF: Obj01_Control; et al
 		lea	(SonicDynPLC).l,a2
 		add.w	d0,d0
 		adda.w	(a2,d0.w),a2
-		moveq	#0,d5
-		move.b	(a2)+,d5
-		subq.w	#1,d5
+		moveq	#0,d1
+		move.b	(a2)+,d1	; read "number of entries" value
+		subq.b	#1,d1
 		bmi.s	locret_13C96
-		move.w	#$F000,d4
-		move.l	#Art_Sonic,d6
+		lea	($FFFFC800).w,a3
+		move.b	#1,($FFFFF767).w
 
 SPLC_ReadEntry:
-		moveq	#0,d1
-		move.b	(a2)+,d1
-		lsl.w	#8,d1
-		move.b	(a2)+,d1
-		move.w	d1,d3
-		lsr.w	#8,d3
-		andi.w	#$F0,d3
-		addi.w	#$10,d3
-		andi.w	#$FFF,d1
-		lsl.l	#5,d1
-		add.l	d6,d1
-		lsr.l	#1,d1
-		move.w	d4,d2
-		add.w	d3,d4
-		add.w	d3,d4
-		jsr	(QueueDMATransfer).l
-		dbf	d5,SPLC_ReadEntry	; repeat for number of entries
+		moveq	#0,d2
+		move.b	(a2)+,d2
+		move.w	d2,d0
+		lsr.b	#4,d0
+		lsl.w	#8,d2
+		move.b	(a2)+,d2
+		lsl.w	#5,d2
+		lea	(Art_Sonic).l,a1
+		adda.l	d2,a1
+
+SPLC_LoadTile:
+		movem.l	(a1)+,d2-d6/a4-a6
+		movem.l	d2-d6/a4-a6,(a3)
+		lea	$20(a3),a3	; next tile
+		dbf	d0,SPLC_LoadTile ; repeat for number of	tiles
+
+		dbf	d1,SPLC_ReadEntry ; repeat for number of entries
 
 locret_13C96:
-		rts	
+		rts
 ; End of function LoadSonicDynPLC
 
 ; ===========================================================================
@@ -26993,6 +26281,103 @@ loc_14C3C:
 		not.w	d1
 		rts
 ; End of function FindWall2
+
+; ---------------------------------------------------------------------------
+; Unused floor/wall subroutine - logs something	to do with collision
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
+
+
+FloorLog_Unk:				; XREF: Level
+		rts
+
+		lea	(CollArray1).l,a1
+		lea	(CollArray1).l,a2
+		move.w	#$FF,d3
+
+loc_14C5E:
+		moveq	#$10,d5
+		move.w	#$F,d2
+
+loc_14C64:
+		moveq	#0,d4
+		move.w	#$F,d1
+
+loc_14C6A:
+		move.w	(a1)+,d0
+		lsr.l	d5,d0
+		addx.w	d4,d4
+		dbf	d1,loc_14C6A
+
+		move.w	d4,(a2)+
+		suba.w	#$20,a1
+		subq.w	#1,d5
+		dbf	d2,loc_14C64
+
+		adda.w	#$20,a1
+		dbf	d3,loc_14C5E
+
+		lea	(CollArray1).l,a1
+		lea	(CollArray2).l,a2
+		bsr.s	FloorLog_Unk2
+		lea	(CollArray1).l,a1
+		lea	(CollArray1).l,a2
+
+; End of function FloorLog_Unk
+
+; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
+
+
+FloorLog_Unk2:				; XREF: FloorLog_Unk
+		move.w	#$FFF,d3
+
+loc_14CA6:
+		moveq	#0,d2
+		move.w	#$F,d1
+		move.w	(a1)+,d0
+		beq.s	loc_14CD4
+		bmi.s	loc_14CBE
+
+loc_14CB2:
+		lsr.w	#1,d0
+		bcc.s	loc_14CB8
+		addq.b	#1,d2
+
+loc_14CB8:
+		dbf	d1,loc_14CB2
+
+		bra.s	loc_14CD6
+; ===========================================================================
+
+loc_14CBE:
+		cmpi.w	#-1,d0
+		beq.s	loc_14CD0
+
+loc_14CC4:
+		lsl.w	#1,d0
+		bcc.s	loc_14CCA
+		subq.b	#1,d2
+
+loc_14CCA:
+		dbf	d1,loc_14CC4
+
+		bra.s	loc_14CD6
+; ===========================================================================
+
+loc_14CD0:
+		move.w	#$10,d0
+
+loc_14CD4:
+		move.w	d0,d2
+
+loc_14CD6:
+		move.b	d2,(a2)+
+		dbf	d3,loc_14CA6
+
+		rts
+
+; End of function FloorLog_Unk2
 
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
@@ -36423,7 +35808,7 @@ Obj10:					; XREF: Obj_Index
 AniArt_Load:				; XREF: Demo_Time; loc_F54
 		tst.b	($FFFFF63A).w	; is the game paused?
 		bne.s	AniArt_Pause	; if yes, branch
-		lea	(VDP_DATA).l,a6
+		lea	($C00000).l,a6
 		bsr.w	AniArt_GiantRing
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
@@ -36458,7 +35843,7 @@ AniArt_GHZ:				; XREF: AniArt_Index
 		lea	$100(a1),a1	; load next frame
 
 loc_1C078:
-		move.l	#$6F000001,(VDP_CTRL).l ; VRAM address
+		move.l	#$6F000001,($C00004).l ; VRAM address
 		move.w	#7,d1		; number of 8x8	tiles
 		bra.w	LoadTiles
 ; ===========================================================================
@@ -36475,7 +35860,7 @@ loc_1C08A:
 		lea	$200(a1),a1
 
 loc_1C0AE:
-		move.l	#$6B800001,(VDP_CTRL).l
+		move.l	#$6B800001,($C00004).l
 		move.w	#$F,d1
 		bra.w	LoadTiles
 ; ===========================================================================
@@ -36497,7 +35882,7 @@ loc_1C0E8:
 		move.w	d0,d1
 		add.w	d0,d0
 		add.w	d1,d0
-		move.l	#$6D800001,(VDP_CTRL).l
+		move.l	#$6D800001,($C00004).l
 		lea	(Art_GhzFlower2).l,a1	; load small flower patterns
 		lea	(a1,d0.w),a1
 		move.w	#$B,d1
@@ -36528,7 +35913,7 @@ loc_1C134:
 		move.b	d0,($FFFFF7B0).w
 		mulu.w	#$100,d0
 		adda.w	d0,a1
-		move.l	#$5C400001,(VDP_CTRL).l
+		move.l	#$5C400001,($C00004).l
 		move.w	#7,d1
 		bsr.w	LoadTiles
 
@@ -36541,7 +35926,7 @@ loc_1C150:
 		lea	(Art_MzLava2).l,a4 ; load lava patterns
 		ror.w	#7,d0
 		adda.w	d0,a4
-		move.l	#$5A400001,(VDP_CTRL).l
+		move.l	#$5A400001,($C00004).l
 		moveq	#0,d3
 		move.b	($FFFFF7B2).w,d3
 		addq.b	#1,($FFFFF7B2).w
@@ -36574,7 +35959,7 @@ loc_1C1AE:
 		andi.b	#3,($FFFFF7B6).w
 		mulu.w	#$C0,d0
 		adda.w	d0,a1
-		move.l	#$5E400001,(VDP_CTRL).l
+		move.l	#$5E400001,($C00004).l
 		move.w	#5,d1
 		bra.w	LoadTiles
 ; ===========================================================================
@@ -36598,7 +35983,7 @@ loc_1C1F8:
 		bpl.s	loc_1C250
 		move.b	#7,($FFFFF7B1).w
 		lea	(Art_SbzSmoke).l,a1 ; load smoke patterns
-		move.l	#$49000002,(VDP_CTRL).l
+		move.l	#$49000002,($C00004).l
 		move.b	($FFFFF7B0).w,d0
 		addq.b	#1,($FFFFF7B0).w
 		andi.w	#7,d0
@@ -36633,7 +36018,7 @@ loc_1C25C:
 		bpl.s	locret_1C2A0
 		move.b	#7,($FFFFF7B3).w
 		lea	(Art_SbzSmoke).l,a1
-		move.l	#$4A800002,(VDP_CTRL).l
+		move.l	#$4A800002,($C00004).l
 		move.b	($FFFFF7B2).w,d0
 		addq.b	#1,($FFFFF7B2).w
 		andi.w	#7,d0
@@ -36671,11 +36056,11 @@ AniArt_Ending:				; XREF: AniArt_Index
 		lea	$200(a2),a2
 
 loc_1C2CE:
-		move.l	#$6B800001,(VDP_CTRL).l
+		move.l	#$6B800001,($C00004).l
 		move.w	#$F,d1
 		bsr.w	LoadTiles
 		movea.l	a2,a1
-		move.l	#$72000001,(VDP_CTRL).l
+		move.l	#$72000001,($C00004).l
 		move.w	#$F,d1
 		bra.w	LoadTiles
 ; ===========================================================================
@@ -36692,7 +36077,7 @@ loc_1C2F4:
 		move.w	d0,d1
 		add.w	d0,d0
 		add.w	d1,d0
-		move.l	#$6D800001,(VDP_CTRL).l
+		move.l	#$6D800001,($C00004).l
 		lea	(Art_GhzFlower2).l,a1	; load small flower patterns
 		lea	(a1,d0.w),a1
 		move.w	#$B,d1
@@ -36711,7 +36096,7 @@ loc_1C33C:
 		move.b	byte_1C376(pc,d0.w),d0
 		lsl.w	#8,d0
 		add.w	d0,d0
-		move.l	#$70000001,(VDP_CTRL).l
+		move.l	#$70000001,($C00004).l
 		lea	($FFFF9800).w,a1 ; load	special	flower patterns	(from RAM)
 		lea	(a1,d0.w),a1
 		move.w	#$F,d1
@@ -36730,7 +36115,7 @@ loc_1C37A:
 		move.b	byte_1C376(pc,d0.w),d0
 		lsl.w	#8,d0
 		add.w	d0,d0
-		move.l	#$68000001,(VDP_CTRL).l
+		move.l	#$68000001,($C00004).l
 		lea	($FFFF9E00).w,a1 ; load	special	flower patterns	(from RAM)
 		lea	(a1,d0.w),a1
 		move.w	#$F,d1
@@ -37092,7 +36477,7 @@ Hud_ChkBonus:
 		tst.b	($FFFFF7D6).w	; do time/ring bonus counters need updating?
 		beq.s	Hud_End		; if not, branch
 		clr.b	($FFFFF7D6).w
-		move.l	#$6E000002,(VDP_CTRL).l
+		move.l	#$6E000002,($C00004).l
 		moveq	#0,d1
 		move.w	($FFFFF7D2).w,d1 ; load	time bonus
 		bsr.w	Hud_TimeRingBonus
@@ -37141,7 +36526,7 @@ HudDb_ChkBonus:
 		tst.b	($FFFFF7D6).w	; does the ring/time bonus counter need	updating?
 		beq.s	HudDb_End	; if not, branch
 		clr.b	($FFFFF7D6).w
-		move.l	#$6E000002,(VDP_CTRL).l ; set VRAM address
+		move.l	#$6E000002,($C00004).l ; set VRAM address
 		moveq	#0,d1
 		move.w	($FFFFF7D2).w,d1 ; load	time bonus
 		bsr.w	Hud_TimeRingBonus
@@ -37161,7 +36546,7 @@ HudDb_End:
 
 
 Hud_LoadZero:				; XREF: HudUpdate
-		move.l	#$5F400003,(VDP_CTRL).l
+		move.l	#$5F400003,($C00004).l
 		lea	Hud_TilesZero(pc),a2
 		move.w	#2,d2
 		bra.s	loc_1C83E
@@ -37175,9 +36560,9 @@ Hud_LoadZero:				; XREF: HudUpdate
 
 
 Hud_Base:				; XREF: Level; SS_EndLoop; EndingSequence
-		lea	(VDP_DATA).l,a6
+		lea	($C00000).l,a6
 		bsr.w	Hud_Lives
-		move.l	#$5C400003,(VDP_CTRL).l
+		move.l	#$5C400003,($C00004).l
 		lea	Hud_TilesBase(pc),a2
 		move.w	#$E,d2
 
@@ -37220,7 +36605,7 @@ Hud_TilesZero:	dc.b $FF, $FF, 0, 0
 
 
 HudDb_XY:				; XREF: HudDebug
-		move.l	#$5C400003,(VDP_CTRL).l ; set VRAM address
+		move.l	#$5C400003,($C00004).l ; set VRAM address
 		move.w	($FFFFF700).w,d1 ; load	camera x-position
 		swap	d1
 		move.w	($FFFFD008).w,d1 ; load	Sonic's x-position
@@ -37346,8 +36731,8 @@ loc_1C92C:
 
 
 ContScrCounter:				; XREF: ContinueScreen
-		move.l	#$5F800003,(VDP_CTRL).l ; set VRAM address
-		lea	(VDP_DATA).l,a6
+		move.l	#$5F800003,($C00004).l ; set VRAM address
+		lea	($C00000).l,a6
 		lea	(Hud_10).l,a2
 		moveq	#1,d6
 		moveq	#0,d4

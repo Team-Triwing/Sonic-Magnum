@@ -55,7 +55,7 @@ Vectors:	dc.l $FFFFFE00, EntryPoint, BusError, AddressError
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 MEGADRIVE:	dc.b 'SEGA MEGA DRIVE ' ; Hardware system ID
-Date:		dc.b '(C)SEGA 1991.APR' ; Release date
+Date:		dc.b 'RM/VV   XXXX.XXX' ; Release date
 Title_Local:	dc.b 'SONIC THE               HEDGEHOG                ' ; Domestic name
 Title_Int:	dc.b 'SONIC THE               HEDGEHOG                ' ; International name
 Serial:		dc.b 'GM 00001009-00'   ; Serial/version number
@@ -71,12 +71,6 @@ SRAMSupport:	dc.l $20202020		; change to $5241E020 to create	SRAM
 Notes:		dc.b '                                                    '
 		dc.b 'JUE             ' ; Region
 EndOfHeader:
-; ===========================================================================
-
-;ErrorTrap:
-;		nop
-;		nop
-;		bra.s	ErrorTrap
 ; ===========================================================================
 
 EntryPoint:

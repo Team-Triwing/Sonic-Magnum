@@ -37305,21 +37305,9 @@ Art_Sonic:	incbin	artunc\sonic.bin	; Sonic
 ; ---------------------------------------------------------------------------
 ; Compressed graphics - various
 ; ---------------------------------------------------------------------------
-Nem_Smoke:	incbin	artnem\xxxsmoke.bin	; unused smoke
-		even
-Nem_SyzSparkle:	incbin	artnem\xxxstars.bin	; unused stars
-		even
 Nem_Shield:	incbin	artnem\shield.bin	; shield
 		even
 Nem_Stars:	incbin	artnem\invstars.bin	; invincibility stars
-		even
-Nem_LzSonic:	incbin	artnem\xxxlzson.bin	; unused LZ Sonic holding his breath
-		even
-Nem_UnkFire:	incbin	artnem\xxxfire.bin	; unused fireball
-		even
-Nem_Warp:	incbin	artnem\xxxflash.bin	; unused entry to special stage flash
-		even
-Nem_Goggle:	incbin	artnem\xxxgoggl.bin	; unused goggles
 		even
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - walls of the special stage
@@ -37382,13 +37370,9 @@ Nem_Swing:	incbin	artnem\ghzswing.bin	; GHZ swinging platform
 		even
 Nem_Bridge:	incbin	artnem\ghzbridg.bin	; GHZ bridge
 		even
-Nem_GhzUnkBlock:incbin	artnem\xxxghzbl.bin	; unused GHZ block
-		even
 Nem_Ball:	incbin	artnem\ghzball.bin	; GHZ giant ball
 		even
 Nem_Spikes:	incbin	artnem\spikes.bin	; spikes
-		even
-Nem_GhzLog:	incbin	artnem\xxxghzlo.bin	; unused GHZ log
 		even
 Nem_SpikePole:	incbin	artnem\ghzlog.bin	; GHZ spiked log
 		even
@@ -37442,15 +37426,11 @@ Nem_MzSwitch:	incbin	artnem\mzswitch.bin	; MZ switch
 		even
 Nem_MzGlass:	incbin	artnem\mzglassy.bin	; MZ green glassy block
 		even
-Nem_GhzGrass:	incbin	artnem\xxxgrass.bin	; unused grass (GHZ or MZ?)
-		even
 Nem_MzFire:	incbin	artnem\mzfire.bin	; MZ fireballs
 		even
 Nem_Lava:	incbin	artnem\mzlava.bin	; MZ lava
 		even
 Nem_MzBlock:	incbin	artnem\mzblock.bin	; MZ green pushable block
-		even
-Nem_MzUnkBlock:	incbin	artnem\xxxmzblo.bin	; MZ unused background block
 		even
 ; ---------------------------------------------------------------------------
 ; Compressed graphics - SLZ stuff

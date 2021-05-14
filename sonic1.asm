@@ -293,13 +293,17 @@ loc_B3E:
 loc_B42:
 		move.b	($FFFFF62A).w,d0
 		move.b	#0,($FFFFF62A).w
-		move.w	#1,($FFFFF644).w
+		move.b	#1,($FFFFF644).w
 		andi.w	#$3E,d0
 		move.w	off_B6E(pc,d0.w),d0
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: loc_B88
-		jsr	UpdateAMPS
+        move    #$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
+        bset    #0,($FFFFF64F).w    ; set "SMPS running flag"
+        bne.s   loc_B64             ; if it was set already, don't call another instance of SMPS
+        jsr UpdateAMPS              ; run AMPS
+        clr.b   ($FFFFF64F).w       ; reset "SMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		addq.l	#1,($FFFFFE0C).w
@@ -319,21 +323,19 @@ loc_B88:				; XREF: loc_B10; off_B6E
 		cmpi.b	#$8C,($FFFFF600).w
 		beq.s	loc_B9A
 		cmpi.b	#$C,($FFFFF600).w
-		bne.w	loc_B5E
+		bne.s	loc_B5E
 
 loc_B9A:
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ ?
-		bne.w	loc_B5E		; if not, branch
+		bne.s	loc_B5E		; if not, branch
 		move.w	($C00004).l,d0
 		btst	#6,($FFFFFFF8).w
 		beq.s	loc_BBA
 		move.w	#$700,d0
-
-loc_BB6:
-		dbf	d0,loc_BB6
+		dbf	d0,*
 
 loc_BBA:
-		move.w	#1,($FFFFF644).w
+		move.b	#1,($FFFFF644).w
 		tst.b	($FFFFF64E).w
 		bne.s	loc_BFE
 		lea	($C00004).l,a5
@@ -365,7 +367,7 @@ loc_C32:				; XREF: off_B6E
 
 loc_C36:				; XREF: off_B6E
 		tst.w	($FFFFF614).w
-		beq.w	locret_C42
+		beq.s	locret_C42
 		subq.w	#1,($FFFFF614).w
 
 locret_C42:
@@ -377,7 +379,7 @@ loc_C44:				; XREF: off_B6E
 		bsr.w	sub_6886
 		bsr.w	sub_1642
 		tst.w	($FFFFF614).w
-		beq.w	locret_C5C
+		beq.s	locret_C5C
 		subq.w	#1,($FFFFF614).w
 
 locret_C5C:
@@ -448,11 +450,6 @@ loc_D50:
 		movem.l	d0-d7,($FFFFFF10).w
 		movem.l	($FFFFF754).w,d0-d1
 		movem.l	d0-d1,($FFFFFF30).w
-		cmpi.b	#$60,($FFFFF625).w
-		bcc.s	Demo_Time
-		move.b	#1,($FFFFF64F).w
-		addq.l	#4,sp
-		bra.w	loc_B64
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	run a demo for an amount of time
@@ -467,7 +464,7 @@ Demo_Time:				; XREF: loc_D50; PalToCRAM
 		jsr	HudUpdate
 		bsr.w	sub_165E
 		tst.w	($FFFFF614).w	; is there time	left on	the demo?
-		beq.w	Demo_TimeEnd	; if not, branch
+		beq.s	Demo_TimeEnd	; if not, branch
 		subq.w	#1,($FFFFF614).w ; subtract 1 from time	left
 
 Demo_TimeEnd:
@@ -513,7 +510,7 @@ loc_DA6:				; XREF: off_B6E
 
 loc_E64:
 		tst.w	($FFFFF614).w
-		beq.w	locret_E70
+		beq.s	locret_E70
 		subq.w	#1,($FFFFF614).w
 
 locret_E70:
@@ -548,8 +545,6 @@ loc_ED8:				; XREF: loc_E7A
 		lea	($C00004).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
-
-loc_EEE:
 		move.w	#$977F,(a5)
 		move.w	#$7C00,(a5)
 		move.w	#$83,($FFFFF640).w
@@ -633,7 +628,7 @@ loc_FA6:				; XREF: off_B6E
 
 loc_1060:
 		tst.w	($FFFFF614).w
-		beq.w	locret_106C
+		beq.s	locret_106C
 		subq.w	#1,($FFFFF614).w
 
 locret_106C:
@@ -692,60 +687,20 @@ loc_10D4:				; XREF: sub_106E
 
 PalToCRAM:
 		move	#$2700,sr
-		tst.w	($FFFFF644).w
+		tst.b	($FFFFF644).w
 		beq.s	locret_119C
-		move.w	#0,($FFFFF644).w
+		clr.w	($FFFFF644).w
 		movem.l	a0-a1,-(sp)
 		lea	($C00000).l,a1
 		lea	($FFFFFA80).w,a0 ; load	pallet from RAM
 		move.l	#$C0000000,4(a1) ; set VDP to CRAM write
+		rept 32
 		move.l	(a0)+,(a1)	; move pallet to CRAM
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
-		move.l	(a0)+,(a1)
+		endr
 		move.w	#$8ADF,4(a1)
 		movem.l	(sp)+,a0-a1
-		tst.b	($FFFFF64F).w
-		bne.s	loc_119E
 
 locret_119C:
-		rte
-; ===========================================================================
-
-loc_119E:				; XREF: PalToCRAM
-		clr.b	($FFFFF64F).w
-		movem.l	d0-a6,-(sp)
-		bsr.w	Demo_Time
-		jsr	UpdateAMPS
-		movem.l	(sp)+,d0-a6
 		rte
 ; End of function PalToCRAM
 
@@ -913,16 +868,15 @@ loc_134A:
 
 
 PauseGame:				; XREF: Level_MainLoop; et al
-		nop
 		tst.b	($FFFFFE12).w	; do you have any lives	left?
 		beq.s	Unpause		; if not, branch
-		tst.w	($FFFFF63A).w	; is game already paused?
+		tst.b	($FFFFF63A).w	; is game already paused?
 		bne.s	loc_13BE	; if yes, branch
 		btst	#7,($FFFFF605).w ; is Start button pressed?
 		beq.s	Pause_DoNothing	; if not, branch
 
 loc_13BE:
-		move.w	#1,($FFFFF63A).w ; freeze time
+		move.b	#1,($FFFFF63A).w ; freeze time
 	AMPS_MUSPAUSE			; pause music
 
 loc_13CA:
@@ -951,14 +905,14 @@ loc_1404:				; XREF: PauseGame
 	AMPS_MUSUNPAUSE			; unpause music
 
 Unpause:				; XREF: PauseGame
-		move.w	#0,($FFFFF63A).w ; unpause the game
+		clr.b	($FFFFF63A).w ; unpause the game
 
 Pause_DoNothing:			; XREF: PauseGame
 		rts
 ; ===========================================================================
 
 Pause_SlowMo:				; XREF: PauseGame
-		move.w	#1,($FFFFF63A).w
+		move.b	#1,($FFFFF63A).w
 	AMPS_MUSUNPAUSE			; unpause music
 		rts
 ; End of function PauseGame
@@ -1401,346 +1355,342 @@ RunPLC_Loop:
 ; End of function RunPLC_ROM
 
 ; ---------------------------------------------------------------------------
-; Enigma decompression algorithm
+; For format explanation see https://segaretro.org/Enigma_compression
+; ---------------------------------------------------------------------------
+; Permission to use, copy, modify, and/or distribute this software for any
+; purpose with or without fee is hereby granted.
+;
+; THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+; WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+; MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+; ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+; OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+; ---------------------------------------------------------------------------
+; FUNCTION:
+; 	EniDec
+;
+; DESCRIPTION
+; 	Enigma Decompressor
+;
+; INPUT:
+; 	d0	Starting pattern name (added to each 8x8 before writing to destination)
+; 	a0	Source address
+; 	a1	Destination address
 ; ---------------------------------------------------------------------------
 
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
+flip_x              =      (1<<11)
+flip_y              =      (1<<12)
+palette_line_1      =      (1<<13)
+palette_line_2      =      (2<<13)
+high_priority       =      (1<<15)
 
-
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+; ---------------------------------------------------------------------------
 EniDec:
-		movem.l	d0-d7/a1-a5,-(sp)
-		movea.w	d0,a3
-		move.b	(a0)+,d0
-		ext.w	d0
-		movea.w	d0,a5
-		move.b	(a0)+,d4
-		lsl.b	#3,d4
-		movea.w	(a0)+,a2
-		adda.w	a3,a2
-		movea.w	(a0)+,a4
-		adda.w	a3,a4
-		move.b	(a0)+,d5
-		asl.w	#8,d5
-		move.b	(a0)+,d5
-		moveq	#$10,d6
+	movem.l	d0-d7/a1-a5,-(sp)
+	movea.w	d0,a3			; store starting art tile
+	move.b	(a0)+,d0
+	ext.w	d0
+	movea.w	d0,a5			; store first byte, extended to word
+	move.b	(a0)+,d4		; store second byte
+	lsl.b	#3,d4			; multiply by 8
+	movea.w	(a0)+,a2		; store third and fourth byte
+	adda.w	a3,a2			; add starting art tile
+	movea.w	(a0)+,a4		; store fifth and sixth byte
+	adda.w	a3,a4			; add starting art tile
+	move.b	(a0)+,d5		; store seventh byte
+	asl.w	#8,d5			; shift up by a byte
+	move.b	(a0)+,d5		; store eighth byte in lower register byte
+	moveq	#16,d6			; 16 bits = 2 bytes
 
-loc_173E:				; XREF: loc_1768
-		moveq	#7,d0
-		move.w	d6,d7
-		sub.w	d0,d7
-		move.w	d5,d1
-		lsr.w	d7,d1
-		andi.w	#$7F,d1
-		move.w	d1,d2
-		cmpi.w	#$40,d1
-		bcc.s	loc_1758
-		moveq	#6,d0
-		lsr.w	#1,d2
+EniDec_Loop:
+	moveq	#7,d0			; process 7 bits at a time
+	move.w	d6,d7
+	sub.w	d0,d7
+	move.w	d5,d1
+	lsr.w	d7,d1
+	andi.w	#$7F,d1			; keep only lower 7 bits
+	move.w	d1,d2
+	cmpi.w	#$40,d1			; is bit 6 set?
+	bhs.s	.got_field		; if it is, branch
+	moveq	#6,d0			; if not, process 6 bits instead of 7
+	lsr.w	#1,d2			; bitfield now becomes TTSSSS instead of TTTSSSS
 
-loc_1758:
-		bsr.w	sub_188C
-		andi.w	#$F,d2
-		lsr.w	#4,d1
-		add.w	d1,d1
-		jmp	loc_17B4(pc,d1.w)
+.got_field:
+	bsr.w	EniDec_ChkGetNextByte
+	andi.w	#$F,d2			; keep only lower nybble
+	lsr.w	#4,d1			; store upper nybble (max value = 7)
+	add.w	d1,d1
+	jmp	EniDec_JmpTable(pc,d1.w)
+; ---------------------------------------------------------------------------
+EniDec_Sub0:
+	move.w	a2,(a1)+		; write to destination
+	addq.w	#1,a2			; increment
+	dbra	d2,EniDec_Sub0		; repeat
+	bra.s	EniDec_Loop
+; ---------------------------------------------------------------------------
+EniDec_Sub4:
+	move.w	a4,(a1)+		; write to destination
+	dbra	d2,EniDec_Sub4		; repeat
+	bra.s	EniDec_Loop
+; ---------------------------------------------------------------------------
+EniDec_Sub8:
+	bsr.w	EniDec_GetInlineCopyVal
+
+.loop:
+	move.w	d1,(a1)+
+	dbra	d2,.loop
+
+	bra.s	EniDec_Loop
+; ---------------------------------------------------------------------------
+EniDec_SubA:
+	bsr.w	EniDec_GetInlineCopyVal
+
+.loop:
+	move.w	d1,(a1)+
+	addq.w	#1,d1
+	dbra	d2,.loop
+
+	bra.s	EniDec_Loop
+; ---------------------------------------------------------------------------
+EniDec_SubC:
+	bsr.w	EniDec_GetInlineCopyVal
+
+.loop:
+	move.w	d1,(a1)+
+	subq.w	#1,d1
+	dbra	d2,.loop
+
+	bra.s	EniDec_Loop
+; ---------------------------------------------------------------------------
+EniDec_SubE:
+	cmpi.w	#$F,d2
+	beq.s	EniDec_End
+
+.loop:
+	bsr.w	EniDec_GetInlineCopyVal
+	move.w	d1,(a1)+
+	dbra	d2,.loop
+
+	bra.s	EniDec_Loop
+; ---------------------------------------------------------------------------
+; Enigma_JmpTable:
+EniDec_JmpTable:
+	bra.s	EniDec_Sub0
+	bra.s	EniDec_Sub0
+	bra.s	EniDec_Sub4
+	bra.s	EniDec_Sub4
+	bra.s	EniDec_Sub8
+	bra.s	EniDec_SubA
+	bra.s	EniDec_SubC
+	bra.s	EniDec_SubE
+; ---------------------------------------------------------------------------
+EniDec_End:
+	subq.w	#1,a0
+	cmpi.w	#16,d6		; were we going to start on a completely new byte?
+	bne.s	.got_byte	; if not, branch
+	subq.w	#1,a0
+
+.got_byte:
+	move.w	a0,d0
+	lsr.w	#1,d0		; are we on an odd byte?
+	bhs.s	.even_loc	; if not, branch
+	addq.w	#1,a0		; ensure we're on an even byte
+
+.even_loc:
+	movem.l	(sp)+,d0-d7/a1-a5
+	rts
 ; End of function EniDec
-
 ; ===========================================================================
 
-loc_1768:				; XREF: loc_17B4
-		move.w	a2,(a1)+
-		addq.w	#1,a2
-		dbf	d2,loc_1768
-		bra.s	loc_173E
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+; ---------------------------------------------------------------------------
+EniDec_GetInlineCopyVal:
+	move.w	a3,d3		; store starting art tile
+	move.b	d4,d1
+	add.b	d1,d1
+	bhs.s	.skip_pri	; if d4 was < $80
+	subq.w	#1,d6		; get next bit number
+	btst	d6,d5		; is the bit set?
+	beq.s	.skip_pri	; if not, branch
+	ori.w	#high_priority,d3	; set high priority bit
+
+.skip_pri:
+	add.b	d1,d1
+	bhs.s	.skip_pal2	; if d4 was < $40
+	subq.w	#1,d6		; get next bit number
+	btst	d6,d5
+	beq.s	.skip_pal2
+	addi.w	#palette_line_2,d3	; set second palette line bit
+
+.skip_pal2:
+	add.b	d1,d1
+	bhs.s	.skip_pal1	; if d4 was < $20
+	subq.w	#1,d6		; get next bit number
+	btst	d6,d5
+	beq.s	.skip_pal1
+	addi.w	#palette_line_1,d3	; set first palette line bit
+
+.skip_pal1:
+	add.b	d1,d1
+	bhs.s	.skip_flipy	; if d4 was < $10
+	subq.w	#1,d6		; get next bit number
+	btst	d6,d5
+	beq.s	.skip_flipy
+	ori.w	#flip_y,d3	; set Y-flip bit
+
+.skip_flipy:
+	add.b	d1,d1
+	bhs.s	.skip_flipx	; if d4 was < 8
+	subq.w	#1,d6
+	btst	d6,d5
+	beq.s	.skip_flipx
+	ori.w	#flip_x,d3	; set X-flip bit
+
+.skip_flipx:
+	move.w	d5,d1
+	move.w	d6,d7		; get remaining bits
+	sub.w	a5,d7		; subtract minimum bit number
+	bhs.s	.got_enough	; if we're beyond that, branch
+	move.w	d7,d6
+	addi.w	#16,d6		; 16 bits = 2 bytes
+	neg.w	d7			; calculate bit deficit
+	lsl.w	d7,d1		; make space for this many bits
+	move.b	(a0),d5		; get next byte
+	rol.b	d7,d5		; make the upper X bits the lower X bits
+	add.w	d7,d7
+	and.w	EniDec_AndVals-2(pc,d7.w),d5	; only keep X lower bits
+	add.w	d5,d1		; compensate for the bit deficit
+
+.got_field:
+	move.w	a5,d0
+	add.w	d0,d0
+	and.w	EniDec_AndVals-2(pc,d0.w),d1	; only keep as many bits as required
+	add.w	d3,d1		; add starting art tile
+	move.b	(a0)+,d5	; get current byte, move onto next byte
+	lsl.w	#8,d5		; shift up by a byte
+	move.b	(a0)+,d5	; store next byte in lower register byte
+	rts
+; ---------------------------------------------------------------------------
+.got_enough:
+	beq.s	.got_exact	; if the exact number of bits are leftover, branch
+	lsr.w	d7,d1		; remove unneeded bits
+	move.w	a5,d0
+	add.w	d0,d0
+	and.w	EniDec_AndVals-2(pc,d0.w),d1	; only keep as many bits as required
+	add.w	d3,d1		; add starting art tile
+	move.w	a5,d0		; store number of bits used up by inline copy
+	bra.s	EniDec_ChkGetNextByte	; move onto next byte
+; ---------------------------------------------------------------------------
+.got_exact:
+	moveq	#16,d6		; 16 bits = 2 bytes
+	bra.s	.got_field
+; ---------------------------------------------------------------------------
+EniDec_AndVals:
+	dc.w	 1,    3,    7,   $F
+	dc.w   $1F,  $3F,  $7F,  $FF
+	dc.w  $1FF, $3FF, $7FF, $FFF
+	dc.w $1FFF,$3FFF,$7FFF,$FFFF
+; End of function EniDec_GetInlineCopyVal
 ; ===========================================================================
 
-loc_1772:				; XREF: loc_17B4
-		move.w	a4,(a1)+
-		dbf	d2,loc_1772
-		bra.s	loc_173E
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+; ---------------------------------------------------------------------------
+EniDec_ChkGetNextByte:
+	sub.w	d0,d6
+	cmpi.w	#9,d6
+	bhs.s	.done
+	addq.w	#8,d6		; 8 bits = 1 byte
+	asl.w	#8,d5		; shift up by a byte
+	move.b	(a0)+,d5	; store next byte in lower register byte
+
+.done:
+	rts
+; End of function EniDec_ChkGetNextByte
 ; ===========================================================================
-
-loc_177A:				; XREF: loc_17B4
-		bsr.w	loc_17DC
-
-loc_177E:
-		move.w	d1,(a1)+
-		dbf	d2,loc_177E
-		bra.s	loc_173E
-; ===========================================================================
-
-loc_1786:				; XREF: loc_17B4
-		bsr.w	loc_17DC
-
-loc_178A:
-		move.w	d1,(a1)+
-		addq.w	#1,d1
-		dbf	d2,loc_178A
-		bra.s	loc_173E
-; ===========================================================================
-
-loc_1794:				; XREF: loc_17B4
-		bsr.w	loc_17DC
-
-loc_1798:
-		move.w	d1,(a1)+
-		subq.w	#1,d1
-		dbf	d2,loc_1798
-		bra.s	loc_173E
-; ===========================================================================
-
-loc_17A2:				; XREF: loc_17B4
-		cmpi.w	#$F,d2
-		beq.s	loc_17C4
-
-loc_17A8:
-		bsr.w	loc_17DC
-		move.w	d1,(a1)+
-		dbf	d2,loc_17A8
-		bra.s	loc_173E
-; ===========================================================================
-
-loc_17B4:				; XREF: EniDec
-		bra.s	loc_1768
-; ===========================================================================
-		bra.s	loc_1768
-; ===========================================================================
-		bra.s	loc_1772
-; ===========================================================================
-		bra.s	loc_1772
-; ===========================================================================
-		bra.s	loc_177A
-; ===========================================================================
-		bra.s	loc_1786
-; ===========================================================================
-		bra.s	loc_1794
-; ===========================================================================
-		bra.s	loc_17A2
-; ===========================================================================
-
-loc_17C4:				; XREF: loc_17A2
-		subq.w	#1,a0
-		cmpi.w	#$10,d6
-		bne.s	loc_17CE
-		subq.w	#1,a0
-
-loc_17CE:
-		move.w	a0,d0
-		lsr.w	#1,d0
-		bcc.s	loc_17D6
-		addq.w	#1,a0
-
-loc_17D6:
-		movem.l	(sp)+,d0-d7/a1-a5
-		rts
-; ===========================================================================
-
-loc_17DC:				; XREF: loc_17A2
-		move.w	a3,d3
-		move.b	d4,d1
-		add.b	d1,d1
-		bcc.s	loc_17EE
-		subq.w	#1,d6
-		btst	d6,d5
-		beq.s	loc_17EE
-		ori.w	#-$8000,d3
-
-loc_17EE:
-		add.b	d1,d1
-		bcc.s	loc_17FC
-		subq.w	#1,d6
-		btst	d6,d5
-		beq.s	loc_17FC
-		addi.w	#$4000,d3
-
-loc_17FC:
-		add.b	d1,d1
-		bcc.s	loc_180A
-		subq.w	#1,d6
-		btst	d6,d5
-		beq.s	loc_180A
-		addi.w	#$2000,d3
-
-loc_180A:
-		add.b	d1,d1
-		bcc.s	loc_1818
-		subq.w	#1,d6
-		btst	d6,d5
-		beq.s	loc_1818
-		ori.w	#$1000,d3
-
-loc_1818:
-		add.b	d1,d1
-		bcc.s	loc_1826
-		subq.w	#1,d6
-		btst	d6,d5
-		beq.s	loc_1826
-		ori.w	#$800,d3
-
-loc_1826:
-		move.w	d5,d1
-		move.w	d6,d7
-		sub.w	a5,d7
-		bcc.s	loc_1856
-		move.w	d7,d6
-		addi.w	#$10,d6
-		neg.w	d7
-		lsl.w	d7,d1
-		move.b	(a0),d5
-		rol.b	d7,d5
-		add.w	d7,d7
-		and.w	word_186C-2(pc,d7.w),d5
-		add.w	d5,d1
-
-loc_1844:				; XREF: loc_1868
-		move.w	a5,d0
-		add.w	d0,d0
-		and.w	word_186C-2(pc,d0.w),d1
-		add.w	d3,d1
-		move.b	(a0)+,d5
-		lsl.w	#8,d5
-		move.b	(a0)+,d5
-		rts
-; ===========================================================================
-
-loc_1856:				; XREF: loc_1826
-		beq.s	loc_1868
-		lsr.w	d7,d1
-		move.w	a5,d0
-		add.w	d0,d0
-		and.w	word_186C-2(pc,d0.w),d1
-		add.w	d3,d1
-		move.w	a5,d0
-		bra.s	sub_188C
-; ===========================================================================
-
-loc_1868:				; XREF: loc_1856
-		moveq	#$10,d6
-
-loc_186A:
-		bra.s	loc_1844
-; ===========================================================================
-word_186C:	dc.w 1,	3, 7, $F, $1F, $3F, $7F, $FF, $1FF, $3FF, $7FF
-		dc.w $FFF, $1FFF, $3FFF, $7FFF,	$FFFF	; XREF: loc_1856
-
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
-
-
-sub_188C:				; XREF: EniDec
-		sub.w	d0,d6
-		cmpi.w	#9,d6
-		bcc.s	locret_189A
-		addq.w	#8,d6
-		asl.w	#8,d5
-		move.b	(a0)+,d5
-
-locret_189A:
-		rts
-; End of function sub_188C
 
 ; ---------------------------------------------------------------------------
-; Kosinski decompression algorithm
+; For format explanation see https://segaretro.org/Kosinski_compression
+; New faster version written by vladikcomper, with additional improvements
+; by MarkeyJester and Flamewing
 ; ---------------------------------------------------------------------------
+; Permission to use, copy, modify, and/or distribute this software for any
+; purpose with or without fee is hereby granted.
+;
+; THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+; WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+; MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+; ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+; OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+; ---------------------------------------------------------------------------
+; FUNCTION:
+; 	KosDec
+;
+; DESCRIPTION
+; 	Kosinski Decompressor
+;
+; INPUT:
+; 	a0	source address
+; 	a1	destination address
+; ---------------------------------------------------------------------------
+_Kos_UseLUT = 1
+_Kos_LoopUnroll = 3
+_Kos_ExtremeUnrolling = 1
 
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
+_Kos_RunBitStream macro
+	dbra	d2,.skip\@
+	moveq	#7,d2					; We have 8 new bits, but will use one up below.
+	move.b	d1,d0					; Use the remaining 8 bits.
+	not.w	d3						; Have all 16 bits been used up?
+	bne.s	.skip\@					; Branch if not.
+	move.b	(a0)+,d0				; Get desc field low-byte.
+	move.b	(a0)+,d1				; Get desc field hi-byte.
+	if _Kos_UseLUT=1
+		move.b	(a4,d0.w),d0		; Invert bit order...
+		move.b	(a4,d1.w),d1		; ... for both bytes.
+	endif
+.skip\@
+	endm
 
+_Kos_ReadBit macro
+	if _Kos_UseLUT=1
+		add.b	d0,d0				; Get a bit from the bitstream.
+	else
+		lsr.b	#1,d0				; Get a bit from the bitstream.
+	endif
+	endm
+; ===========================================================================
 
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+; ---------------------------------------------------------------------------
 KosDec:
-
-var_2		= -2
-var_1		= -1
-
-		subq.l	#2,sp
-		move.b	(a0)+,2+var_1(sp)
-		move.b	(a0)+,(sp)
-		move.w	(sp),d5
-		moveq	#$F,d4
-
-loc_18A8:
-		lsr.w	#1,d5
-		move	sr,d6
-		dbf	d4,loc_18BA
-		move.b	(a0)+,2+var_1(sp)
-		move.b	(a0)+,(sp)
-		move.w	(sp),d5
-		moveq	#$F,d4
-
-loc_18BA:
-		move	d6,ccr
-		bcc.s	loc_18C2
-		move.b	(a0)+,(a1)+
-		bra.s	loc_18A8
+	include "_inc/Kosinski_internal.asm"
+	rts								; End of function KosDec.
 ; ===========================================================================
-
-loc_18C2:				; XREF: KosDec
-		moveq	#0,d3
-		lsr.w	#1,d5
-		move	sr,d6
-		dbf	d4,loc_18D6
-		move.b	(a0)+,2+var_1(sp)
-		move.b	(a0)+,(sp)
-		move.w	(sp),d5
-		moveq	#$F,d4
-
-loc_18D6:
-		move	d6,ccr
-		bcs.s	loc_1906
-		lsr.w	#1,d5
-		dbf	d4,loc_18EA
-		move.b	(a0)+,2+var_1(sp)
-		move.b	(a0)+,(sp)
-		move.w	(sp),d5
-		moveq	#$F,d4
-
-loc_18EA:
-		roxl.w	#1,d3
-		lsr.w	#1,d5
-		dbf	d4,loc_18FC
-		move.b	(a0)+,2+var_1(sp)
-		move.b	(a0)+,(sp)
-		move.w	(sp),d5
-		moveq	#$F,d4
-
-loc_18FC:
-		roxl.w	#1,d3
-		addq.w	#1,d3
-		moveq	#-1,d2
-		move.b	(a0)+,d2
-		bra.s	loc_191C
+	if _Kos_UseLUT=1
+KosDec_ByteMap:
+	dc.b	$00,$80,$40,$C0,$20,$A0,$60,$E0,$10,$90,$50,$D0,$30,$B0,$70,$F0
+	dc.b	$08,$88,$48,$C8,$28,$A8,$68,$E8,$18,$98,$58,$D8,$38,$B8,$78,$F8
+	dc.b	$04,$84,$44,$C4,$24,$A4,$64,$E4,$14,$94,$54,$D4,$34,$B4,$74,$F4
+	dc.b	$0C,$8C,$4C,$CC,$2C,$AC,$6C,$EC,$1C,$9C,$5C,$DC,$3C,$BC,$7C,$FC
+	dc.b	$02,$82,$42,$C2,$22,$A2,$62,$E2,$12,$92,$52,$D2,$32,$B2,$72,$F2
+	dc.b	$0A,$8A,$4A,$CA,$2A,$AA,$6A,$EA,$1A,$9A,$5A,$DA,$3A,$BA,$7A,$FA
+	dc.b	$06,$86,$46,$C6,$26,$A6,$66,$E6,$16,$96,$56,$D6,$36,$B6,$76,$F6
+	dc.b	$0E,$8E,$4E,$CE,$2E,$AE,$6E,$EE,$1E,$9E,$5E,$DE,$3E,$BE,$7E,$FE
+	dc.b	$01,$81,$41,$C1,$21,$A1,$61,$E1,$11,$91,$51,$D1,$31,$B1,$71,$F1
+	dc.b	$09,$89,$49,$C9,$29,$A9,$69,$E9,$19,$99,$59,$D9,$39,$B9,$79,$F9
+	dc.b	$05,$85,$45,$C5,$25,$A5,$65,$E5,$15,$95,$55,$D5,$35,$B5,$75,$F5
+	dc.b	$0D,$8D,$4D,$CD,$2D,$AD,$6D,$ED,$1D,$9D,$5D,$DD,$3D,$BD,$7D,$FD
+	dc.b	$03,$83,$43,$C3,$23,$A3,$63,$E3,$13,$93,$53,$D3,$33,$B3,$73,$F3
+	dc.b	$0B,$8B,$4B,$CB,$2B,$AB,$6B,$EB,$1B,$9B,$5B,$DB,$3B,$BB,$7B,$FB
+	dc.b	$07,$87,$47,$C7,$27,$A7,$67,$E7,$17,$97,$57,$D7,$37,$B7,$77,$F7
+	dc.b	$0F,$8F,$4F,$CF,$2F,$AF,$6F,$EF,$1F,$9F,$5F,$DF,$3F,$BF,$7F,$FF
+	endif
 ; ===========================================================================
-
-loc_1906:				; XREF: loc_18C2
-		move.b	(a0)+,d0
-		move.b	(a0)+,d1
-		moveq	#-1,d2
-		move.b	d1,d2
-		lsl.w	#5,d2
-		move.b	d0,d2
-		andi.w	#7,d1
-		beq.s	loc_1928
-		move.b	d1,d3
-		addq.w	#1,d3
-
-loc_191C:
-		move.b	(a1,d2.w),d0
-		move.b	d0,(a1)+
-		dbf	d3,loc_191C
-		bra.s	loc_18A8
-; ===========================================================================
-
-loc_1928:				; XREF: loc_1906
-		move.b	(a0)+,d1
-		beq.s	loc_1938
-		cmpi.b	#1,d1
-		beq.w	loc_18A8
-		move.b	d1,d3
-		bra.s	loc_191C
-; ===========================================================================
-
-loc_1938:				; XREF: loc_1928
-		addq.l	#2,sp
-		rts
-; End of function KosDec
 
 ; ---------------------------------------------------------------------------
 ; Pallet cycling routine loading subroutine
@@ -4883,7 +4833,7 @@ loc_491C:
 
 
 PalCycle_SS:				; XREF: loc_DA6; SpecialStage
-		tst.w	($FFFFF63A).w
+		tst.b	($FFFFF63A).w
 		bne.s	locret_49E6
 		subq.w	#1,($FFFFF79C).w
 		bpl.s	locret_49E6
@@ -21174,7 +21124,7 @@ loc_11114:
 ; ===========================================================================
 
 Obj1B_Animate:				; XREF: loc_11114
-		tst.w	($FFFFF63A).w	; is the game paused?
+		tst.b	($FFFFF63A).w	; is the game paused?
 		bne.s	Obj1B_Display	; if yes, branch
 		move.b	#0,$32(a0)	; resume animation
 		subq.b	#3,$1A(a0)	; use normal frames
@@ -35856,7 +35806,7 @@ Obj10:					; XREF: Obj_Index
 
 
 AniArt_Load:				; XREF: Demo_Time; loc_F54
-		tst.w	($FFFFF63A).w	; is the game paused?
+		tst.b	($FFFFF63A).w	; is the game paused?
 		bne.s	AniArt_Pause	; if yes, branch
 		lea	($C00000).l,a6
 		bsr.w	AniArt_GiantRing
@@ -36489,7 +36439,7 @@ loc_1C6E4:
 Hud_ChkTime:
 		tst.b	($FFFFFE1E).w	; does the time	need updating?
 		beq.s	Hud_ChkLives	; if not, branch
-		tst.w	($FFFFF63A).w	; is the game paused?
+		tst.b	($FFFFF63A).w	; is the game paused?
 		bne.s	Hud_ChkLives	; if yes, branch
 		lea	($FFFFFE22).w,a1
 		cmpi.l	#$93B3B,(a1)+	; is the time 9.59?
@@ -37319,8 +37269,6 @@ MainLoadBlocks:
 ArtLoadCues:
 	include "_inc\Pattern load cues.asm"
 
-		incbin	misc\padding.bin
-		even
 Nem_SegaLogo:	incbin	artnem\segalogo.bin	; large Sega logo
 		even
 Eni_SegaLogo:	incbin	mapeni\segalogo.bin	; large Sega logo (mappings)
@@ -37728,8 +37676,6 @@ Nem_EndFlower:	incbin	artnem\endflowe.bin	; ending sequence flowers
 Nem_CreditText:	incbin	artnem\credits.bin	; credits alphabet
 		even
 Nem_EndStH:	incbin	artnem\endtext.bin	; ending sequence "Sonic the Hedgehog" text
-		even
-		incbin	misc\padding2.bin
 		even
 ; ---------------------------------------------------------------------------
 ; Collision data

@@ -1,7 +1,7 @@
 Main		SECTION org(0)
 		opt l.			; local label symbol is .
 
-Z80_Space =	$8C8			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
+Z80_Space =	$8C9			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
@@ -11742,7 +11742,7 @@ Obj29_Index:	dc.w Obj29_Main-Obj29_Index
 Obj29_Main:				; XREF: Obj29_Index
 		addq.b	#2,$24(a0)
 		move.l	#Map_obj29,4(a0)
-		move.w	#$2797,2(a0)
+		move.w	#($D800/$20)|palette_line_1,2(a0)
 		move.b	#4,1(a0)
 		move.b	#1,$18(a0)
 		move.b	#8,$19(a0)
@@ -11795,7 +11795,7 @@ Obj1F_Main:				; XREF: Obj1F_Index
 		move.b	#$10,$16(a0)
 		move.b	#8,$17(a0)
 		move.l	#Map_obj1F,4(a0)
-		move.w	#$400,2(a0)
+		move.w	#($8000/$20),2(a0)
 		move.b	#4,1(a0)
 		move.b	#3,$18(a0)
 		move.b	#6,$20(a0)
@@ -25315,177 +25315,278 @@ locret_139C2:
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-Sonic_Animate:				; XREF: Obj01_Control; et al
-		lea	(SonicAniData).l,a1
-		moveq	#0,d0
-		move.b	$1C(a0),d0
-		cmp.b	$1D(a0),d0	; is animation set to restart?
-		beq.s	SAnim_Do	; if not, branch
-		move.b	d0,$1D(a0)	; set to "no restart"
-		move.b	#0,$1B(a0)	; reset	animation
-		move.b	#0,$1E(a0)	; reset	frame duration
-
-SAnim_Do:
-		add.w	d0,d0
-		adda.w	(a1,d0.w),a1	; jump to appropriate animation	script
-		move.b	(a1),d0
-		bmi.s	SAnim_WalkRun	; if animation is walk/run/roll/jump, branch
-		move.b	$22(a0),d1
-		andi.b	#1,d1
-		andi.b	#$FC,1(a0)
-		or.b	d1,1(a0)
-		subq.b	#1,$1E(a0)	; subtract 1 from frame	duration
-		bpl.s	SAnim_Delay	; if time remains, branch
-		move.b	d0,$1E(a0)	; load frame duration
-
-SAnim_Do2:
-		moveq	#0,d1
-		move.b	$1B(a0),d1	; load current frame number
-		move.b	1(a1,d1.w),d0	; read sprite number from script
-		bmi.s	SAnim_End_FF	; if animation is complete, branch
-
-SAnim_Next:
-		move.b	d0,$1A(a0)	; load sprite number
-		addq.b	#1,$1B(a0)	; next frame number
-
-SAnim_Delay:
-		rts
-; ===========================================================================
-
-SAnim_End_FF:
-		addq.b	#1,d0		; is the end flag = $FF	?
-		bne.s	SAnim_End_FE	; if not, branch
-		move.b	#0,$1B(a0)	; restart the animation
-		move.b	1(a1),d0	; read sprite number
-		bra.s	SAnim_Next
-; ===========================================================================
-
-SAnim_End_FE:
-		addq.b	#1,d0		; is the end flag = $FE	?
-		bne.s	SAnim_End_FD	; if not, branch
-		move.b	2(a1,d1.w),d0	; read the next	byte in	the script
-		sub.b	d0,$1B(a0)	; jump back d0 bytes in	the script
-		sub.b	d0,d1
-		move.b	1(a1,d1.w),d0	; read sprite number
-		bra.s	SAnim_Next
-; ===========================================================================
-
-SAnim_End_FD:
-		addq.b	#1,d0		; is the end flag = $FD	?
-		bne.s	SAnim_End	; if not, branch
-		move.b	2(a1,d1.w),$1C(a0) ; read next byte, run that animation
-
-SAnim_End:
-		rts
-; ===========================================================================
-
-SAnim_WalkRun:				; XREF: SAnim_Do
-		subq.b	#1,$1E(a0)	; subtract 1 from frame	duration
-		bpl.s	SAnim_Delay	; if time remains, branch
-		addq.b	#1,d0		; is animation walking/running?
-		bne.w	SAnim_RollJump	; if not, branch
-		moveq	#0,d1
-		move.b	$26(a0),d0	; get Sonic's angle
-		move.b	$22(a0),d2
-		andi.b	#1,d2		; is Sonic mirrored horizontally?
-		bne.s	loc_13A70	; if yes, branch
-		not.b	d0		; reverse angle
-
-loc_13A70:
-		addi.b	#$10,d0		; add $10 to angle
-		bpl.s	loc_13A78	; if angle is $0-$7F, branch
-		moveq	#3,d1
-
-loc_13A78:
-		andi.b	#$FC,1(a0)
-		eor.b	d1,d2
-		or.b	d2,1(a0)
-		btst	#5,$22(a0)
-		bne.w	SAnim_Push
-		lsr.b	#4,d0		; divide angle by $10
-		andi.b	#6,d0		; angle	must be	0, 2, 4	or 6
-		move.w	$14(a0),d2	; get Sonic's speed
-		bpl.s	loc_13A9C
-		neg.w	d2
-
-loc_13A9C:
-		lea	(SonAni_Run).l,a1 ; use	running	animation
-		cmpi.w	#$600,d2	; is Sonic at running speed?
-		bcc.s	loc_13AB4	; if yes, branch
-		lea	(SonAni_Walk).l,a1 ; use walking animation
-		move.b	d0,d1
-		lsr.b	#1,d1
-		add.b	d1,d0
-
-loc_13AB4:
-		add.b	d0,d0
-		move.b	d0,d3
-		neg.w	d2
-		addi.w	#$800,d2
-		bpl.s	loc_13AC2
-		moveq	#0,d2
-
-loc_13AC2:
-		lsr.w	#8,d2
-		move.b	d2,$1E(a0)	; modify frame duration
-		bsr.w	SAnim_Do2
-		add.b	d3,$1A(a0)	; modify frame number
-		rts
-; ===========================================================================
-
-SAnim_RollJump:				; XREF: SAnim_WalkRun
-		addq.b	#1,d0		; is animation rolling/jumping?
-		bne.s	SAnim_Push	; if not, branch
-		move.w	$14(a0),d2	; get Sonic's speed
-		bpl.s	loc_13ADE
-		neg.w	d2
-
-loc_13ADE:
-		lea	(SonAni_Roll2).l,a1 ; use fast animation
-		cmpi.w	#$600,d2	; is Sonic moving fast?
-		bcc.s	loc_13AF0	; if yes, branch
-		lea	(SonAni_Roll).l,a1 ; use slower	animation
-
-loc_13AF0:
-		neg.w	d2
-		addi.w	#$400,d2
-		bpl.s	loc_13AFA
-		moveq	#0,d2
-
-loc_13AFA:
-		lsr.w	#8,d2
-		move.b	d2,$1E(a0)	; modify frame duration
-		move.b	$22(a0),d1
-		andi.b	#1,d1
-		andi.b	#$FC,1(a0)
-		or.b	d1,1(a0)
-		bra.w	SAnim_Do2
-; ===========================================================================
-
-SAnim_Push:				; XREF: SAnim_RollJump
-		move.w	$14(a0),d2	; get Sonic's speed
-		bmi.s	loc_13B1E
-		neg.w	d2
-
-loc_13B1E:
-		addi.w	#$800,d2
-		bpl.s	loc_13B26
-		moveq	#0,d2
-
-loc_13B26:
-		lsr.w	#6,d2
-		move.b	d2,$1E(a0)	; modify frame duration
-		lea	(SonAni_Push).l,a1
-		move.b	$22(a0),d1
-		andi.b	#1,d1
-		andi.b	#$FC,1(a0)
-		or.b	d1,1(a0)
-		bra.w	SAnim_Do2
-; End of function Sonic_Animate
-
-; ===========================================================================
-SonicAniData:
-	include "_anim\Sonic.asm"
+Sonic_Animate: ; loc_10AB2:
+        lea     (Sonic_AnimateData), a1 ; loc_10CB4
+        moveq	#0,d0
+        move.b  $1C(a0), d0
+        cmp.b   $1D(a0), d0
+        beq.s   loc_10ADA
+        move.b  d0, $1D(a0)
+        move.b  #$00, $1B(a0)
+        move.b  #$00, $1E(a0)
+        bclr    #$5, $22(a0)
+loc_10ADA:
+        add.w   d0,d0
+        adda.w  $00(a1,d0), a1
+        move.b  (a1), d0
+        bmi.s   loc_10B4A
+        move.b  $22(a0),d1
+        andi.b  #$1,d1
+        andi.b  #$FC, $1(a0)
+        or.b    d1, $1(a0)
+        subq.b  #$1, $1E(a0) 
+        bpl.s   loc_10B18
+        move.b  d0, $1E(a0)             
+loc_10B00:        
+        moveq	#0,d1
+        move.b  $1B(a0),d1
+        move.b  $1(a1,d1), d0
+        cmpi.b  #$F0,d0
+        bcc.s   loc_10B1A
+loc_10B10:        
+        move.b  d0, $1A(a0)
+        addq.b  #$1, $1B(a0)
+loc_10B18:        
+        rts
+loc_10B1A:
+        addq.b  #$1,d0
+        bne.s   loc_10B2A
+        move.b  #$00, $1B(a0)
+        move.b  $1(a1), d0
+        bra.s   loc_10B10
+loc_10B2A:
+        addq.b  #$1,d0
+        bne.s   loc_10B3E
+        move.b  $2(a1,d1), d0
+        sub.b   d0, $1B(a0)
+        sub.b   d0,d1
+        move.b  $1(a1,d1), d0
+        bra.s   loc_10B10
+loc_10B3E:
+        addq.b  #$1,d0
+        bne.s   loc_10B48
+        move.b  $2(a1,d1), $1C(a0)
+loc_10B48: 
+        rts            
+loc_10B4A: 
+        subq.b  #$1, $1E(a0)
+        bpl.s   loc_10B18
+        addq.b  #$1,d0
+        bne     loc_10C3E
+        moveq	#0,d0
+        move.b  $27(a0), d0
+        bne     loc_10BD8
+        moveq	#0,d1
+        move.b  $26(a0), d0
+        move.b  $22(a0),d2
+        andi.b  #$1,d2
+        bne.s   loc_10B72
+        not.b  d0
+loc_10B72:
+        addi.b  #$10,d0
+        bpl.s   loc_10B7A
+        moveq   #$3,d1
+loc_10B7A:
+        andi.b  #$FC, $1(a0)
+        eor.b   d1,d2
+        or.b    d2, $1(a0)
+        btst    #$5, $22(a0)
+        bne     loc_10C82
+        lsr.b   #$4,d0
+        andi.b  #$6,d0
+        move.w  $14(a0),d2
+        bpl.s   loc_10B9E
+        neg.w   d2
+loc_10B9E:
+        lea     (Sonic_Animate_Run), a1 ; loc_10D00
+        cmpi.w  #$600,d2
+        bcc.s   loc_10BB0
+        lea     (Sonic_Animate_Walk), a1 ; loc_10CF2
+loc_10BB0:
+        move.b  d0,d1
+        lsr.b   #$1,d1
+        add.b   d1,d0
+        add.b   d0,d0
+        add.b   d0,d0
+        move.b  d0,d3
+        neg.w   d2
+        addi.w  #$800,d2
+        bpl.s   loc_10BC6
+        moveq	#0,d2
+loc_10BC6:
+        lsr.w   #$8,d2
+        lsr.w   #$1,d2
+        move.b  d2, $1E(a0)
+        bsr     loc_10B00
+        add.b   d3, $1A(a0)
+        rts    
+loc_10BD8:
+        move.b  $27(a0), d0
+        moveq	#0,d1
+        move.b  $22(a0),d2
+        andi.b  #$1,d2
+        bne.s   loc_10C06
+        andi.b  #$FC, $1(a0)
+        addi.b  #$B,d0
+        divu.w  #$16,d0
+        addi.b  #$9B,d0
+        move.b  d0, $1A(a0)
+        move.b  #$00, $1E(a0)
+        rts
+loc_10C06:
+        andi.b  #$FC, $1(a0)
+        tst.b   $29(a0)
+        beq.s   loc_10C1E
+        ori.b   #$1, $1(a0)
+        addi.b  #$B,d0
+        bra.s   loc_10C2A
+loc_10C1E:
+        ori.b   #$3, $1(a0)
+        neg.b   d0
+        addi.b  #$8F,d0
+loc_10C2A:
+        divu.w  #$16,d0
+        addi.b  #$9B,d0
+        move.b  d0, $1A(a0)
+        move.b  #$00, $1E(a0)
+        rts 
+loc_10C3E:
+        addq.b  #$1,d0
+        bne.s   loc_10C82
+        move.w  $14(a0),d2
+        bpl.s   loc_10C4A
+        neg.w   d2
+loc_10C4A:
+        lea     (Sonic_Animate_Roll2), a1 ; loc_10D18
+        cmpi.w  #$600,d2
+        bcc.s   loc_10C5C
+        lea     (Sonic_Animate_Roll), a1 ; loc_10D0E
+loc_10C5C:
+        neg.w   d2
+        addi.w  #$400,d2
+        bpl.s   loc_10C66
+        moveq	#0,d2
+loc_10C66:
+        lsr.w   #$8,d2
+        move.b  d2, $1E(a0)
+        move.b  $22(a0),d1
+        andi.b  #$1,d1
+        andi.b  #$FC, $1(a0)
+        or.b    d1, $1(a0)
+        bra     loc_10B00
+loc_10C82:        
+        move.w  $14(a0),d2
+        bmi.s   loc_10C8A
+        neg.w   d2
+loc_10C8A:
+        addi.w  #$800,d2
+        bpl.s   loc_10C92
+        moveq	#0,d2
+loc_10C92:
+        lsr.w   #$6,d2
+        move.b  d2, $1E(a0)
+        lea     (Sonic_Animate_Push), a1 ; loc_10D22
+        move.b  $22(a0),d1
+        andi.b  #$1,d1
+        andi.b  #$FC, $1(a0)
+        or.b    d1, $1(a0)
+        bra     loc_10B00                 
+Sonic_AnimateData: ; loc_10CB4:
+        dc.w    Sonic_Animate_Walk-Sonic_AnimateData        ; loc_10CF2
+        dc.w    Sonic_Animate_Run-Sonic_AnimateData         ; loc_10D00
+        dc.w    Sonic_Animate_Roll-Sonic_AnimateData        ; loc_10D0E
+        dc.w    Sonic_Animate_Roll2-Sonic_AnimateData       ; loc_10D18 
+        dc.w    Sonic_Animate_Push-Sonic_AnimateData        ; loc_10D22
+        dc.w    Sonic_Animate_Wait-Sonic_AnimateData        ; loc_10D30
+        dc.w    Sonic_Animate_Balance-Sonic_AnimateData     ; loc_10D59
+        dc.w    Sonic_Animate_LookUp-Sonic_AnimateData      ; loc_10D5D
+        dc.w    Sonic_Animate_Duck-Sonic_AnimateData        ; loc_10D62
+        dc.w    Sonic_Animate_Spindash-Sonic_AnimateData    ; loc_10D67
+        dc.w    Sonic_Animate_WallRecoil1-Sonic_AnimateData ; loc_10D74
+        dc.w    Sonic_Animate_WallRecoil2-Sonic_AnimateData ; loc_10D77
+        dc.w    Sonic_Animate_0x0C-Sonic_AnimateData        ; loc_10D7D
+        dc.w    Sonic_Animate_Stop-Sonic_AnimateData        ; loc_10D81
+        dc.w    Sonic_Animate_Float1-Sonic_AnimateData      ; loc_10D8C
+        dc.w    Sonic_Animate_Float2-Sonic_AnimateData      ; loc_10D90
+        dc.w    Sonic_Animate_0x10-Sonic_AnimateData        ; loc_10D97
+        dc.w    Sonic_Animate_S1LzHang-Sonic_AnimateData    ; loc_10D9B
+        dc.w    Sonic_Animate_Unused_0x12-Sonic_AnimateData ; loc_10D9F
+        dc.w    Sonic_Animate_Unused_0x13-Sonic_AnimateData ; loc_10DA5
+        dc.w    Sonic_Animate_Unused_0x14-Sonic_AnimateData ; loc_10DAA
+        dc.w    Sonic_Animate_Bubble-Sonic_AnimateData      ; loc_10DAD
+        dc.w    Sonic_Animate_Death1-Sonic_AnimateData      ; loc_10DB4
+        dc.w    Sonic_Animate_Drown-Sonic_AnimateData       ; loc_10DB7
+        dc.w    Sonic_Animate_Death2-Sonic_AnimateData      ; loc_10DBA
+        dc.w    Sonic_Animate_Unused_0x19-Sonic_AnimateData ; loc_10DBD
+        dc.w    Sonic_Animate_Hurt-Sonic_AnimateData        ; loc_10DC6
+        dc.w    Sonic_Animate_S1LzSlide-Sonic_AnimateData   ; loc_10DC9
+        dc.w    Sonic_Animate_0x1C-Sonic_AnimateData        ; loc_10DCD
+        dc.w    Sonic_Animate_Float3-Sonic_AnimateData      ; loc_10DD1
+        dc.w    Sonic_Animate_0x1E-Sonic_AnimateData        ; loc_10DD8
+Sonic_Animate_Walk: ; loc_10CF2:
+        dc.b    $FF, $10, $11, $12, $13, $14, $15, $16, $17, $C, $D, $E, $F, $FF
+Sonic_Animate_Run: ; loc_10D00:
+        dc.b    $FF, $3C, $3D, $3E, $3F, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+Sonic_Animate_Roll: ; loc_10D0E:
+        dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
+Sonic_Animate_Roll2: ; loc_10D18:
+        dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
+Sonic_Animate_Push: ; loc_10D22:
+        dc.b    $FD, $77, $78, $79, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+Sonic_Animate_Wait: ; loc_10D30:        
+        dc.b    $7, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1
+        dc.b    $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $2
+        dc.b    $3, $3, $3, $4, $4, $5, $5, $FE, $4
+Sonic_Animate_Balance: ; loc_10D59:         
+        dc.b    $7, $89, $8A, $FF
+Sonic_Animate_LookUp: ; loc_10D5D:        
+        dc.b    $5, $6, $7, $FE, $1
+Sonic_Animate_Duck: ; loc_10D62:          
+        dc.b    $5, $7F, $80, $FE, $1
+Sonic_Animate_Spindash: ; loc_10D67:        
+        dc.b    $00, $71, $72, $71, $73, $71, $74, $71, $75, $71, $76, $71, $FF 
+Sonic_Animate_WallRecoil1: ; loc_10D74:        
+        dc.b    $3F, $82, $FF
+Sonic_Animate_WallRecoil2: ; loc_10D77:
+        dc.b    $7, $8, $8, $9, $FD, $5
+Sonic_Animate_0x0C: ; loc_10D7D:        
+        dc.b    $7, $9, $FD, $5
+Sonic_Animate_Stop: ; loc_10D81:         
+        dc.b    $3, $81, $82, $83, $84, $85, $86, $87, $88, $FE, $2
+Sonic_Animate_Float1: ; loc_10D8C:         
+        dc.b    $7, $94, $96, $FF
+Sonic_Animate_Float2: ; loc_10D90:        
+        dc.b    $7, $91, $92, $93, $94, $95, $FF
+Sonic_Animate_0x10: ; loc_10D97:        
+        dc.b    $2F, $7E, $FD, $00
+Sonic_Animate_S1LzHang: ; loc_10D9B:        
+        dc.b    $5, $8F, $90, $FF
+Sonic_Animate_Unused_0x12: ; loc_10D9F:        
+        dc.b    $F, $43, $43, $43, $FE, $1
+Sonic_Animate_Unused_0x13: ; loc_10DA5:        
+        dc.b    $F, $43, $44, $FE, $1
+Sonic_Animate_Unused_0x14: ; loc_10DAA:        
+        dc.b    $3F, $49, $FF
+Sonic_Animate_Bubble: ; loc_10DAD:         
+        dc.b    $B, $97, $97, $12, $13, $FD, $00
+Sonic_Animate_Death1: ; loc_10DB4:         
+        dc.b    $20, $9A, $FF
+Sonic_Animate_Drown: ; loc_10DB7:        
+        dc.b    $20, $99, $FF
+Sonic_Animate_Death2: ; loc_10DBA:         
+        dc.b    $20, $98, $FF
+Sonic_Animate_Unused_0x19: ; loc_10DBD: 
+        dc.b    $3, $4E, $4F, $50, $51, $52, $00, $FE, $1
+Sonic_Animate_Hurt: ; loc_10DC6:        
+        dc.b    $40, $8D, $FF
+Sonic_Animate_S1LzSlide: ; loc_10DC9:          
+        dc.b    $9, $8D, $8E, $FF
+Sonic_Animate_0x1C: ; loc_10DCD:        
+        dc.b    $77, $00, $FD, $00
+Sonic_Animate_Float3: ; loc_10DD1:        
+        dc.b    $3, $91, $92, $93, $94, $95, $FF
+Sonic_Animate_0x1E: ; loc_10DD8:        
+        dc.b    $3, $3C, $FD, $00
 
 ; ---------------------------------------------------------------------------
 ; Sonic	pattern	loading	subroutine

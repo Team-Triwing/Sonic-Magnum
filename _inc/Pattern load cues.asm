@@ -30,7 +30,7 @@ PLC_Main:	dc.w 4
 		dc.l Nem_Ring		; rings
 		dc.w $F640
 		dc.l Nem_Points		; points from enemy
-		dc.w $F2E0
+		dc.w $D800
 ; ---------------------------------------------------------------------------
 ; Pattern load cues - standard block 2
 ; ---------------------------------------------------------------------------

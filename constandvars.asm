@@ -7,6 +7,23 @@ ChecksumStart	equ $FFFFFFF4		; set if start button was pressed during checksum c
 r_DMA_Queue		equ	$FFFFC800
 r_DMA_Slot		equ	r_DMA_Queue+$FC
 
+; ---------------------------------------------------------------------------
+; Art tile stuff (taken from sonic 2 github disasm)
+flip_x              =      (1<<11)
+flip_y              =      (1<<12)
+palette_bit_0       =      5
+palette_bit_1       =      6
+palette_line_0      =      (0<<13)
+palette_line_1      =      (1<<13)
+palette_line_2      =      (2<<13)
+palette_line_3      =      (3<<13)
+high_priority_bit   =      7
+high_priority       =      (1<<15)
+palette_mask        =      $6000
+tile_mask           =      $07FF
+nontile_mask        =      $F800
+drawing_mask        =      $7FFF
+
 ; Ralakimus constants, needed for DMA functions
 
 ; -------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 Main		SECTION org(0)
-		opt l.			; local label symbol is .
 
-Z80_Space =	$8C9			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
+Z80_Space =	$8D0			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
@@ -15,8 +14,6 @@ Drvmem		equ $FFFFF000
 		; some constant/variable craps
 		include "macros.asm"
 		include "constandvars.asm"
-
-		opt w-		; disable warnings
 ; ===========================================================================
 StartOfRom:
 Vectors:	dc.l $FFFFFE00, EntryPoint, BusError, AddressError
@@ -685,7 +682,7 @@ Joypad_Read:
 		move.b	(a1),d0
 		lsl.b	#2,d0
 		andi.b	#$C0,d0
-		move.b	#$40,(a1)
+		move.b	#IO_TH,(a1)
 		nop
 		nop
 		move.b	(a1),d1
@@ -786,8 +783,8 @@ loc_1314:
 		bne.s	loc_1314
 
 		move.w	#$8F02,(a5)
-		move.l	#0,($FFFFF616).w
-		move.l	#0,($FFFFF61A).w
+		clr.l	($FFFFF616).w
+		clr.l	($FFFFF61A).w
 		lea	($FFFFF800).w,a1
 		moveq	#0,d0
 		move.w	#$A0,d1
@@ -12410,6 +12407,7 @@ Obj37_Index:	dc.w Obj37_CountRings-Obj37_Index
 Obj37_CountRings:			; XREF: Obj37_Index
 		movea.l	a0,a1
 		moveq	#0,d5
+		lea     SpillRingData,a3        ; load the address of the array in a3
 		move.w	($FFFFFE20).w,d5 ; check number	of rings you have
 		moveq	#32,d0
 		cmp.w	d0,d5		; do you have 32 or more?
@@ -12418,7 +12416,6 @@ Obj37_CountRings:			; XREF: Obj37_Index
 
 loc_9CDE:
 		subq.w	#1,d5
-		move.w	#$288,d4
 		bra.s	Obj37_MakeRings
 ; ===========================================================================
 
@@ -12439,34 +12436,16 @@ Obj37_MakeRings:			; XREF: Obj37_CountRings
 		move.b	#3,$18(a1)
 		move.b	#$47,$20(a1)
 		move.b	#8,$19(a1)
-		move.b	#-1,($FFFFFEC6).w
-		tst.w	d4
-		bmi.s	loc_9D62
-		move.w	d4,d0
-		bsr.w	CalcSine
-		move.w	d4,d2
-		lsr.w	#8,d2
-		asl.w	d2,d0
-		asl.w	d2,d1
-		move.w	d0,d2
-		move.w	d1,d3
-		addi.b	#$10,d4
-		bcc.s	loc_9D62
-		subi.w	#$80,d4
-		bcc.s	loc_9D62
-		move.w	#$288,d4
-
-loc_9D62:
-		move.w	d2,$10(a1)
-		move.w	d3,$12(a1)
-		neg.w	d2
-		neg.w	d4
+		move.l  (a3)+,$10(a1)         ; move the data contained in the array to the x/y velocity and increment the address in a3
 		dbf	d5,Obj37_Loop	; repeat for number of rings (max 31)
 
 Obj37_ResetCounter:			; XREF: Obj37_Loop
-		move.w	#0,($FFFFFE20).w ; reset number	of rings to zero
+		clr.w	($FFFFFE20).w ; reset number	of rings to zero
 		move.b	#$80,($FFFFFE1D).w ; update ring counter
-		move.b	#0,($FFFFFE1B).w
+		clr.b	($FFFFFE1B).w
+		moveq	#-1,d0				; Move #-1 to d0
+		move.b	d0,$1F(a0)			; Move d0 to new timer
+		move.b	d0,($FFFFFEC6).w	; Move d0 to old timer (for animated purposes)
 		sfx	sfx_RingLoss	; play ring loss sound
 
 Obj37_Bounce:				; XREF: Obj37_Index
@@ -12488,13 +12467,17 @@ Obj37_Bounce:				; XREF: Obj37_Index
 		neg.w	$12(a0)
 
 Obj37_ChkDel:				; XREF: Obj37_Bounce
-		tst.b	($FFFFFEC6).w
-		beq.s	Obj37_Delete
+		subq.b	#1,$1F(a0)		; Subtract 1
+		beq.s	Obj37_Delete	; If 0, delete
 		move.w	($FFFFF72E).w,d0
 		addi.w	#$E0,d0
-		cmp.w	$C(a0),d0	; has object moved below level boundary?
+		cmp.w	$C(a0),d0		; has object moved below level boundary?
 		bcs.s	Obj37_Delete	; if yes, branch
-		bra.w	DisplaySprite
+		btst	#0,$1F(a0) 		; Test the first bit of the timer, so rings flash every other frame.
+		beq.w	DisplaySprite   ; If the bit is 0, the ring will appear.
+		cmpi.b	#80,$1F(a0) 	; Rings will flash during last 80 steps of their life.
+		bhi.w	DisplaySprite   ; If the timer is higher than 80, obviously the rings will STAY visible.
+		rts
 ; ===========================================================================
 
 Obj37_Collect:				; XREF: Obj37_Index
@@ -12511,6 +12494,17 @@ Obj37_Sparkle:				; XREF: Obj37_Index
 
 Obj37_Delete:				; XREF: Obj37_Index
 		bra.w	DeleteObject
+; ===========================================================================	
+; ---------------------------------------------------------------------------
+; Ring Spawn Array
+; ---------------------------------------------------------------------------
+
+SpillRingData:  dc.w    $00C4,$FC14, $FF3C,$FC14, $0238,$FCB0, $FDC8,$FCB0 ; 4
+                dc.w    $0350,$FDC8, $FCB0,$FDC8, $03EC,$FF3C, $FC14,$FF3C ; 8
+                dc.w    $03EC,$00C4, $FC14,$00C4, $0350,$0238, $FCB0,$0238 ; 12
+                dc.w    $0238,$0350, $FDC8,$0350, $00C4,$03EC, $FF3C,$03EC ; 16
+                dc.w    $0062,$FE0A, $FF9E,$FE0A, $011C,$FE58, $FEE4,$FE58 ; 20
+                even
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 4B - giant ring for entry to special stage

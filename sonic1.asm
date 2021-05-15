@@ -3732,19 +3732,33 @@ LevelSelect:
 		bsr.w	RunPLC_RAM
 		tst.l	($FFFFF680).w
 		bne.s	LevelSelect
-		andi.b	#$F0,($FFFFF605).w ; is	A, B, C, or Start pressed?
-		beq.s	LevelSelect	; if not, branch
 		move.w	($FFFFFF82).w,d0
 		cmpi.w	#$14,d0		; have you selected item $14 (sound test)?
-		bne.s	LevSel_Level_SS	; if not, go to	Level/SS subroutine
+		bne.s	LevSelLevCheckStart; if not, go to	Level/SS subroutine
+		cmpi.b	#$80,($FFFFF605).w ; is	Start pressed?
+		beq.s	LevSelStartPress	; if true, branch
+		cmpi.b	#$20,($FFFFF605).w ; is	B pressed?
+		beq.s	LevSelBCPress	; if not, branch
+		cmpi.b	#$10,($FFFFF605).w ; is	C pressed?
+		beq.s	LevSelBCPress	; if not, branch
+		bra.s	LevelSelect
+; ===========================================================================
+LevSelLevCheckStart:				; XREF: LevelSelect
+		andi.b	#$80,($FFFFF605).w ; is	Start pressed?
+		beq.s	LevelSelect	; if not, branch
+		bra.s	LevSel_Level_SS
 
+LevSelBCPress:				; XREF: LevelSelect
 		move.w	($FFFFFF84).w,d0
-
-LevSel_NoCheat:
+		addi.w	#MusOff,d0
 
 LevSel_PlaySnd:
 		move.b	d0,mQueue+2.w	; play that sound!
 		bra.s	LevelSelect
+		
+LevSelStartPress:				; XREF: LevelSelect
+		move.b	#$00,($FFFFF600).w
+		rts
 ; ===========================================================================
 
 LevSel_Level_SS:			; XREF: LevelSelect
@@ -3905,14 +3919,24 @@ LevSel_SndTest:				; XREF: LevSelControls
 		cmpi.w	#$14,($FFFFFF82).w ; is	item $14 selected?
 		bne.s	LevSel_NoMove	; if not, branch
 		move.b	($FFFFF605).w,d1
-		andi.b	#$C,d1		; is left/right	pressed?
+		andi.b	#$4C,d1		; is left/right/A	pressed?
 		beq.s	LevSel_NoMove	; if not, branch
 		move.w	($FFFFFF84).w,d0
+		btst	#6,d1		; is A pressed?
+		bne.s	LevSel_A	; if not, branch
 		btst	#2,d1		; is left pressed?
 		beq.s	LevSel_Right	; if not, branch
 		subq.w	#1,d0		; subtract 1 from sound	test
 		bge.s	LevSel_Right
 		moveq	#SFXoff+SFXcount-1,d0; if sound test moves below 0, set to max
+		
+LevSel_A:
+		btst	#6,d1		; is A button pressed?
+		beq.s	LevSel_Right	; if not, branch
+		add.w	#16,d0		; add $10 to sound test
+		cmpi.w	#SFXoff+SFXcount,d0	        ; addition by Shadow05 to stop the sound test from going above $D0
+		bcs.s	LevSel_Refresh2
+		moveq	#0,d0		; if sound test	moves above max, set to	0
 
 LevSel_Right:
 		btst	#3,d1		; is right pressed?
@@ -4222,7 +4246,6 @@ Level_LoadObj:
 		moveq	#0,d0
 		tst.b	($FFFFFE30).w	; are you starting from	a lamppost?
 		bne.s	loc_39E8	; if yes, branch
-		move.w	d0,($FFFFFE20).w ; clear rings
 		move.l	d0,($FFFFFE22).w ; clear time
 		move.b	d0,($FFFFFE1B).w ; clear lives counter
 
@@ -13175,8 +13198,7 @@ Obj37_Loop:
 Obj37_MakeRings:			; XREF: Obj37_CountRings
 		move.b	#$37,0(a1)	; load bouncing	ring object
 		addq.b	#2,$24(a1)
-		move.b	#8,$16(a1)
-		move.b	#8,$17(a1)
+		move.w	#0808,$16(a1)
 		move.w	8(a0),8(a1)
 		move.w	$C(a0),$C(a1)
 		move.l	#Map_obj25,4(a1)
@@ -13387,7 +13409,7 @@ locret_9F76:
 
 Obj7C_End:				; XREF: Obj7C_Collect
 		addq.b	#2,$24(a0)
-		move.w	#0,($FFFFD000).w ; remove Sonic	object
+		clr.w	($FFFFD000).w ; remove Sonic	object
 		addq.l	#4,sp
 		rts
 ; End of function Obj7C_Collect
@@ -24599,9 +24621,9 @@ Obj01_Modes:	dc.w Obj01_MdNormal-Obj01_Modes
 ; ===========================================================================
 
 Sonic_Display:				; XREF: loc_12C7E
-		move.w	$30(a0),d0
+		move.b	invulnerable_time(a0),d0
 		beq.s	Obj01_Display
-		subq.w	#1,$30(a0)
+		subq.b	#1,invulnerable_time(a0)
 		lsr.w	#3,d0
 		bcc.s	Obj01_ChkInvin
 
@@ -24611,9 +24633,12 @@ Obj01_Display:
 Obj01_ChkInvin:
 		tst.b	($FFFFFE2D).w	; does Sonic have invincibility?
 		beq.s	Obj01_ChkShoes	; if not, branch
-		tst.w	$32(a0)		; check	time remaining for invinciblity
+		tst.b	invincibility_time(a0)		; check	time remaining for invinciblity
 		beq.s	Obj01_ChkShoes	; if no	time remains, branch
-		subq.w	#1,$32(a0)	; subtract 1 from time
+        move.b	($FFFFFE05).w,d0
+        andi.b	#7,d0
+        bne.s	Obj01_ChkShoes
+		subq.b	#1,invincibility_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ChkShoes
 		tst.b	($FFFFF7AA).w
 		bne.s	Obj01_RmvInvin
@@ -24631,19 +24656,22 @@ Obj01_PlayMusic:
 		move.b	d0,mQueue+1.w	; play normal music
 
 Obj01_RmvInvin:
-		move.b	#0,($FFFFFE2D).w ; cancel invincibility
+		clr.b	($FFFFFE2D).w ; cancel invincibility
 
 Obj01_ChkShoes:
 		tst.b	($FFFFFE2E).w	; does Sonic have speed	shoes?
 		beq.s	Obj01_ExitChk	; if not, branch
-		tst.w	$34(a0)		; check	time remaining
+		tst.b	speedshoes_time(a0)		; check	time remaining
 		beq.s	Obj01_ExitChk
-		subq.w	#1,$34(a0)	; subtract 1 from time
+        move.b	($FFFFFE05).w,d0
+        andi.b	#7,d0
+        bne.s	Obj01_ExitChk
+		subq.b	#1,speedshoes_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ExitChk
 		move.w	#$600,($FFFFF760).w ; restore Sonic's speed
 		move.w	#$C,($FFFFF762).w ; restore Sonic's acceleration
 		move.w	#$80,($FFFFF764).w ; restore Sonic's deceleration
-		move.b	#0,($FFFFFE2E).w ; cancel speed	shoes
+		clr.b	($FFFFFE2E).w ; cancel speed	shoes
 		command	mus_ShoesOff	; run music at normal speed
 		rts
 ; ===========================================================================
@@ -26010,7 +26038,7 @@ Sonic_HurtStop:				; XREF: Obj01_Hurt
 		move.w	($FFFFF72E).w,d0
 		addi.w	#$E0,d0
 		cmp.w	$C(a0),d0
-		bcs.w	KillSonic
+		blt.w	KillSonic
 		bsr.w	Sonic_Floor
 		btst	#1,$22(a0)
 		bne.s	locret_13860
@@ -26020,7 +26048,7 @@ Sonic_HurtStop:				; XREF: Obj01_Hurt
 		move.w	d0,$14(a0)
 		move.b	#0,$1C(a0)
 		subq.b	#2,$24(a0)
-		move.w	#$78,$30(a0)
+		move.b	#$78,invulnerable_time(a0)
 
 locret_13860:
 		rts
@@ -35755,7 +35783,7 @@ Touch_ChkValue:
 		andi.b	#$3F,d0
 		cmpi.b	#6,d0		; is touch response $46	?
 		beq.s	Touch_Monitor	; if yes, branch
-		cmpi.w	#$5A,$30(a0)
+		cmpi.b	#$5A,invulnerable_time(a0)
 		bcc.w	locret_1AEF2
 		addq.b	#2,$24(a1)	; advance the object's routine counter
 
@@ -35865,8 +35893,7 @@ loc_1AFE6:				; XREF: Touch_Hurt
 ; ===========================================================================
 
 Touch_Hurt:				; XREF: Touch_ChkHurt
-		nop
-		tst.w	$30(a0)
+		tst.b	invulnerable_time(a0)
 		bne.s	loc_1AFE6
 		movea.l	a1,a2
 
@@ -35913,7 +35940,7 @@ Hurt_ChkSpikes:
 		move.b	#0,$39(a0)	; clear Spin Dash flag
 		move.w	#0,$14(a0)
 		move.b	#$1A,$1C(a0)
-		move.w	#$78,$30(a0)
+		move.b	#$78,invulnerable_time(a0)
 		moveq	#sfx_Death,d0	; load normal damage sound
 		cmpi.b	#$36,(a2)	; was damage caused by spikes?
 		bne.s	Hurt_Sound	; if not, branch
@@ -35942,7 +35969,8 @@ Hurt_NoRings:
 KillSonic:
 		tst.w	($FFFFFE08).w	; is debug mode	active?
 		bne.s	Kill_NoDeath	; if yes, branch
-		move.b	#0,($FFFFFE2D).w ; remove invincibility
+		clr.b	($FFFFFE2D).w ; remove invincibility
+		clr.w	($FFFFFE20).w ; clear rings
 		move.b	#6,$24(a0)
 		bsr.w	Sonic_ResetOnFloor
 		bset	#1,$22(a0)

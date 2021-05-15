@@ -7,6 +7,10 @@ ChecksumStart	equ $FFFFFFF4		; set if start button was pressed during checksum c
 r_DMA_Queue		equ	$FFFFC800
 r_DMA_Slot		equ	r_DMA_Queue+$FC
 
+invulnerable_time	=	$30
+invincibility_time	=	$31
+speedshoes_time		=	$32
+
 ; ---------------------------------------------------------------------------
 ; Art tile stuff (taken from sonic 2 github disasm)
 flip_x              =      (1<<11)

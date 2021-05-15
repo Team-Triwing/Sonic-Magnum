@@ -130,9 +130,9 @@ SetupValues:	dc.w $8000		; XREF: PortA_Ok
 		dc.w $3FFF
 		dc.w $100
 
-		dc.l $A00000		; start	of Z80 RAM
-		dc.l $A11100		; Z80 bus request
-		dc.l $A11200		; Z80 reset
+		dc.l z80_ram		; start	of Z80 RAM
+		dc.l z80_bus_request		; Z80 bus request
+		dc.l z80_reset		; Z80 reset
 		dc.l VDP_DATA
 		dc.l VDP_CTRL		; address for VDP registers
 

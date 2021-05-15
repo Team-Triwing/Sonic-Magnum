@@ -24755,8 +24755,7 @@ Sonic_SpinDash:
 		andi.b	#$70,d0
 		beq.w	locret_1AC8C
 		move.b	#2,$1C(a0)
-	;	move.w	#$E0,d0	; will need conversion to AMPS sometime
-	;	jsr	(PlaySound_Special).l	; will need conversion to AMPS sometime
+		sfx		sfx_Roll
 		addq.l	#4,sp
 		move.b	#1,$39(a0)
 		move.w	#0,$3A(a0)
@@ -24799,8 +24798,7 @@ loc_1AC8E:
 loc_1ACF4:
 		bset	#2,$22(a0)
 		move.b	#0,($FFFFD11C).w
-	;	move.w	#$BC,d0	; will need conversion to AMPS sometime
-	;	jsr	(PlaySound_Special).l	; will need conversion to AMPS sometime
+		sfx		sfx_Dash
 		bra.s	loc_1AD78
 ; ===========================================================================
 Dash_Speeds:	dc.w  $800		; 0
@@ -24828,8 +24826,7 @@ loc_1AD48:
 		andi.b	#$70,d0	; 'p'
 		beq.w	loc_1AD78
 	;	move.w	#$900,$1C(a0)
-	;	move.w	#$E0,d0	; will need conversion to AMPS sometime
-	;	jsr	(PlaySound_Special).l	; will need conversion to AMPS sometime
+		sfx		sfx_Roll
 		addi.w	#$200,$3A(a0)
 		cmpi.w	#$800,$3A(a0)
 		bcs.s	loc_1AD78

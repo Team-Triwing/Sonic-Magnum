@@ -9899,7 +9899,6 @@ Obj11_Action:				; XREF: Obj11_Index
 		bsr.w	Obj11_Bend
 
 Obj11_Display:
-		bsr.w	DisplaySprite
 		bra.w	Obj11_ChkDel
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
@@ -10060,7 +10059,6 @@ Obj15_Solid:				; XREF: Obj15_SetSolid
 
 Obj11_Action2:				; XREF: Obj11_Index
 		bsr.s	Obj11_WalkOff
-		bsr.w	DisplaySprite
 		bra.w	Obj11_ChkDel
 
 ; ---------------------------------------------------------------------------
@@ -10240,7 +10238,7 @@ Obj11_ChkDel:				; XREF: Obj11_Display; Obj11_Action2
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	Obj11_DelAll
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj11_DelAll:				; XREF: Obj11_ChkDel
@@ -10264,18 +10262,15 @@ loc_791E:
 		dbf	d2,Obj11_DelLoop ; repeat d2 times (bridge length)
 
 Obj11_Delete:
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 
 Obj11_Delete2:				; XREF: Obj11_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 
 Obj11_Display2:				; XREF: Obj11_Index
-		bsr.w	DisplaySprite
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - GHZ	bridge
@@ -10405,7 +10400,6 @@ Obj15_SetSolid:				; XREF: Obj15_Index
 
 Obj15_Action:				; XREF: Obj15_Index
 		bsr.w	Obj15_Move
-		bsr.w	DisplaySprite
 		bra.w	Obj15_ChkDel
 ; ===========================================================================
 
@@ -10420,10 +10414,7 @@ Obj15_Action2:				; XREF: Obj15_Index
 		move.b	$16(a0),d3
 		addq.b	#1,d3
 		bsr.w	MvSonicOnPtfm
-		bsr.w	DisplaySprite
 		bra.w	Obj15_ChkDel
-
-		rts
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	change Sonic's position with a platform
@@ -10559,7 +10550,7 @@ Obj15_ChkDel:				; XREF: Obj15_Action; Obj15_Action2
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	Obj15_DelAll
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj15_DelAll:				; XREF: Obj15_ChkDel
@@ -10579,8 +10570,7 @@ Obj15_DelLoop:
 ; ===========================================================================
 
 Obj15_Delete:				; XREF: Obj15_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 
 Obj15_Display:				; XREF: Obj15_Index
@@ -10673,8 +10663,7 @@ loc_7D78:
 		dbf	d1,Obj17_MakeHelix ; repeat d1 times (helix length)
 
 Obj17_Action:				; XREF: Obj17_Index
-		bsr.w	Obj17_RotateSpikes
-		bsr.w	DisplaySprite
+		bsr.s	Obj17_RotateSpikes
 		bra.w	Obj17_ChkDel
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
@@ -10704,7 +10693,7 @@ Obj17_ChkDel:				; XREF: Obj17_Action
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	Obj17_DelAll
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj17_DelAll:				; XREF: Obj17_ChkDel
@@ -10724,8 +10713,7 @@ Obj17_DelLoop:
 		dbf	d2,Obj17_DelLoop ; repeat d2 times (helix length)
 
 Obj17_Delete:				; XREF: Obj17_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 
 Obj17_Display:				; XREF: Obj17_Index
@@ -10804,7 +10792,6 @@ loc_7EE0:
 Obj18_Action:				; XREF: Obj18_Index
 		bsr.w	Obj18_Move
 		bsr.w	Obj18_Nudge
-		bsr.w	DisplaySprite
 		bra.w	Obj18_ChkDel
 ; ===========================================================================
 
@@ -10822,10 +10809,7 @@ loc_7F06:
 		bsr.w	Obj18_Nudge
 		move.w	(sp)+,d2
 		bsr.w	MvSonicOnPtfm2
-		bsr.w	DisplaySprite
 		bra.w	Obj18_ChkDel
-
-		rts
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	move platform slightly when you	stand on it
@@ -11041,7 +11025,7 @@ Obj18_ChkDel:				; XREF: Obj18_Action; Obj18_Action2
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.s	Obj18_Delete
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj18_Delete:				; XREF: Obj18_Index
@@ -11179,15 +11163,13 @@ locret_8308:
 
 Obj1A_TimeZero:				; XREF: Obj1A_Display
 		bsr.w	ObjectFall
-		bsr.w	DisplaySprite
 		tst.b	1(a0)
 		bpl.s	Obj1A_Delete
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj1A_Delete:				; XREF: Obj1A_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 53 - collapsing floors	(MZ, SLZ, SBZ)
@@ -11298,15 +11280,13 @@ locret_843A:
 
 Obj53_TimeZero:				; XREF: Obj53_Display
 		bsr.w	ObjectFall
-		bsr.w	DisplaySprite
 		tst.b	1(a0)
 		bpl.s	Obj53_Delete
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj53_Delete:				; XREF: Obj53_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 
 Obj53_Collapse:				; XREF: Obj53_ChkTouch
@@ -11535,7 +11515,6 @@ Obj1D_Action:				; XREF: Obj1D_Index
 		move.w	d0,($FFFFF7E0).w ; set switch 0	as "pressed"
 
 Obj1D_ChkDel:
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -11544,12 +11523,11 @@ Obj1D_ChkDel:
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	Obj1D_Delete
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj1D_Delete:				; XREF: Obj1D_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ---------------------------------------------------------------------------
 ; Subroutine to	check if Sonic touches the object
 ; ---------------------------------------------------------------------------
@@ -11930,12 +11908,11 @@ Obj20_Animate:				; XREF: Obj20_ChkExplode
 		bchg	#0,$1A(a0)	; change frame
 
 Obj20_Display:
-		bsr.w	DisplaySprite
 		move.w	($FFFFF72E).w,d0
 		addi.w	#$E0,d0
 		cmp.w	$C(a0),d0	; has object fallen off	the level?
 		bcs.w	DeleteObject	; if yes, branch
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 24 - explosion	from a destroyed monitor
@@ -12503,8 +12480,7 @@ Obj29:					; XREF: Obj_Index
 		moveq	#0,d0
 		move.b	$24(a0),d0
 		move.w	Obj29_Index(pc,d0.w),d1
-		jsr	Obj29_Index(pc,d1.w)
-		bra.w	DisplaySprite
+		jmp	Obj29_Index(pc,d1.w)
 ; ===========================================================================
 Obj29_Index:	dc.w Obj29_Main-Obj29_Index
 		dc.w Obj29_Slower-Obj29_Index
@@ -12524,7 +12500,7 @@ Obj29_Slower:				; XREF: Obj29_Index
 		bpl.w	DeleteObject	; if not, branch
 		bsr.w	SpeedToPos
 		addi.w	#$18,$12(a0)	; reduce object	speed
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - animals
@@ -12721,8 +12697,7 @@ locret_96B6:
 ; ===========================================================================
 
 Obj1F_Delete:				; XREF: Obj1F_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sub-object - missile that the	Crabmeat throws
@@ -12743,12 +12718,11 @@ Obj1F_BallMove:				; XREF: Obj1F_Index
 		lea	(Ani_obj1F).l,a1
 		bsr.w	AnimateSprite
 		bsr.w	ObjectFall
-		bsr.w	DisplaySprite
 		move.w	($FFFFF72E).w,d0
 		addi.w	#$E0,d0
 		cmp.w	$C(a0),d0	; has object moved below the level boundary?
 		bcs.s	Obj1F_Delete2	; if yes, branch
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj1F_Delete2:
@@ -12882,8 +12856,7 @@ locret_992A:
 ; ===========================================================================
 
 Obj22_Delete:				; XREF: Obj22_Index
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 23 - missile that Buzz	Bomber throws
@@ -12950,12 +12923,11 @@ Obj23_FromBuzz:				; XREF: Obj23_Index
 		bsr.w	SpeedToPos
 		lea	(Ani_obj23).l,a1
 		bsr.w	AnimateSprite
-		bsr.w	DisplaySprite
 		move.w	($FFFFF72E).w,d0
 		addi.w	#$E0,d0
 		cmp.w	$C(a0),d0	; has object moved below the level boundary?
 		bcs.s	Obj23_Delete	; if yes, branch
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj23_Explode:				; XREF: Obj23_FromBuzz
@@ -13100,7 +13072,6 @@ loc_9C0E:
 
 Obj25_Animate:				; XREF: Obj25_Index
 		move.b	($FFFFFEC3).w,$1A(a0)	; set frame
-		bsr.w	DisplaySprite
 		move.w	$32(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -13109,7 +13080,7 @@ Obj25_Animate:				; XREF: Obj25_Index
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.s	Obj25_Delete
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj25_Collect:				; XREF: Obj25_Index
@@ -13574,7 +13545,6 @@ Obj26_Animate:				; XREF: Obj26_Index
 		bsr.w	AnimateSprite
 
 Obj26_Display:				; XREF: Obj26_Index
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -13583,7 +13553,7 @@ Obj26_Display:				; XREF: Obj26_Index
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj26_BreakOpen:			; XREF: Obj26_Index
@@ -14387,7 +14357,6 @@ loc_AF8E:
 		bsr.w	SolidObject2F
 
 Obj2F_Display:				; XREF: Obj2F_Action
-		bsr.w	DisplaySprite
 		bra.w	Obj2F_ChkDel
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
@@ -14544,7 +14513,7 @@ loc_B0C6:
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj2F_DelFlames:			; XREF: Obj2F_ChkDel
@@ -15056,7 +15025,6 @@ loc_B798:				; XREF: Obj31_Index
 		movea.l	a2,a0
 
 Obj31_Display:
-		bsr.w	DisplaySprite
 		bra.w	Obj31_ChkDel
 ; ===========================================================================
 
@@ -15077,7 +15045,6 @@ loc_B7FE:				; XREF: Obj31_Index
 		move.w	d0,$C(a0)
 
 Obj31_Display2:				; XREF: Obj31_Index
-		bsr.w	DisplaySprite
 
 Obj31_ChkDel:				; XREF: Obj31_Display
 		move.w	8(a0),d0
@@ -15088,7 +15055,7 @@ Obj31_ChkDel:				; XREF: Obj31_Display
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj31_Types:				; XREF: loc_B798
@@ -15302,7 +15269,6 @@ Obj45_Solid:				; XREF: Obj45_Index
 		move.w	#$20,d3
 		move.w	(sp)+,d4
 		bsr.w	SolidObject
-		bsr.w	DisplaySprite
 		bra.w	Obj45_ChkDel
 ; ===========================================================================
 
@@ -15323,7 +15289,6 @@ loc_BA8E:				; XREF: Obj45_Index
 		move.w	d0,8(a0)
 
 Obj45_Display:				; XREF: Obj45_Index
-		bsr.w	DisplaySprite
 
 Obj45_ChkDel:				; XREF: Obj45_Solid
 		move.w	$3A(a0),d0
@@ -15334,7 +15299,7 @@ Obj45_ChkDel:				; XREF: Obj45_Solid
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -15482,7 +15447,6 @@ loc_BDDE:
 		bchg	#1,$1A(a0)
 
 Obj32_Display:
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -15491,12 +15455,11 @@ Obj32_Display:
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	Obj32_Delete
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj32_Delete:
-		bsr.w	DeleteObject
-		rts
+		bra.w	DeleteObject
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -15935,9 +15898,7 @@ loc_C294:
 		add.w	d0,8(a1)
 		move.w	d1,$14(a1)
 		move.w	#0,$10(a1)
-	;	move.w	d0,-(sp)
 		sfx	sfx_PushBlock	; play pushing sound
-	;	move.w	(sp)+,d0
 		tst.b	$28(a0)
 		bmi.s	locret_C2E4
 		move.w	d0,-(sp)
@@ -16174,7 +16135,7 @@ Obj39_Move:
 Obj39_SetWait:				; XREF: Obj39_Main
 		move.w	#720,$1E(a0)	; set time delay to 12 seconds
 		addq.b	#2,$24(a0)
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj39_Wait:				; XREF: Obj39_Index
@@ -17010,7 +16971,6 @@ loc_CF20:
 		movea.l	(sp)+,a0
 
 Obj36_Display:
-		bsr.w	DisplaySprite
 		move.w	$30(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -17019,7 +16979,7 @@ Obj36_Display:
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj36_Type0x:				; XREF: Obj36_Solid
@@ -17124,7 +17084,6 @@ Obj3B_Solid:				; XREF: Obj3B_Index
 		move.w	#$10,d3
 		move.w	8(a0),d4
 		bsr.w	SolidObject
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -17133,7 +17092,7 @@ Obj3B_Solid:				; XREF: Obj3B_Index
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 49 - waterfall	sound effect (GHZ)
@@ -17246,10 +17205,9 @@ Obj3C_Smash:
 Obj3C_FragMove:				; XREF: Obj3C_Index
 		bsr.w	SpeedToPos
 		addi.w	#$70,$12(a0)	; make fragment	fall faster
-		bsr.w	DisplaySprite
 		tst.b	1(a0)
 		bpl.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	smash a	block (GHZ walls and MZ	blocks)
@@ -17289,16 +17247,6 @@ Smash_LoadFrag:				; XREF: SmashObject
 		move.b	$19(a0),$19(a1)
 		move.w	(a4)+,$10(a1)
 		move.w	(a4)+,$12(a1)
-		cmpa.l	a0,a1
-		bcc.s	loc_D268
-		move.l	a0,-(sp)
-		movea.l	a1,a0
-		bsr.w	SpeedToPos
-		add.w	d2,$12(a0)
-		movea.l	(sp)+,a0
-		bsr.w	DisplaySprite2
-
-loc_D268:
 		dbf	d1,Smash_Loop
 
 Smash_PlaySnd:
@@ -18123,7 +18071,6 @@ Obj41:					; XREF: Obj_Index
 		move.b	$24(a0),d0
 		move.w	Obj41_Index(pc,d0.w),d1
 		jsr	Obj41_Index(pc,d1.w)
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -18132,7 +18079,7 @@ Obj41:					; XREF: Obj_Index
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 Obj41_Index:	dc.w Obj41_Main-Obj41_Index
 		dc.w Obj41_Up-Obj41_Index
@@ -18440,8 +18387,7 @@ loc_DEA2:
 ; ===========================================================================
 
 Obj42_Speed:				; XREF: Obj42_Index2
-		bsr.w	SpeedToPos
-		rts
+		bra.w	SpeedToPos
 ; ===========================================================================
 
 Obj42_Type01:				; XREF: Obj42_Index2
@@ -18695,7 +18641,6 @@ Obj44_Solid:				; XREF: Obj44_Index
 		bsr.w	Obj44_SolidWall
 
 Obj44_Display:				; XREF: Obj44_Index
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -18704,7 +18649,7 @@ Obj44_Display:				; XREF: Obj44_Index
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - walls (GHZ)
@@ -19044,7 +18989,6 @@ Obj46_Action:				; XREF: Obj46_Index
 		bsr.w	SolidObject
 
 Obj46_ChkDel:
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -19053,7 +18997,7 @@ Obj46_ChkDel:
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 Obj46_TypeIndex:dc.w Obj46_Type00-Obj46_TypeIndex
 		dc.w Obj46_Type01-Obj46_TypeIndex
@@ -19286,7 +19230,6 @@ Obj0D:					; XREF: Obj_Index
 		jsr	Obj0D_Index(pc,d1.w)
 		lea	(Ani_obj0D).l,a1
 		bsr.w	AnimateSprite
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -19295,7 +19238,7 @@ Obj0D:					; XREF: Obj_Index
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 Obj0D_Index:	dc.w Obj0D_Main-Obj0D_Index
 		dc.w Obj0D_Touch-Obj0D_Index
@@ -19531,8 +19474,7 @@ loc_EE3E:				; XREF: Obj4C_Index
 Obj4C_Display:				; XREF: Obj4C_Index
 		lea	(Ani_obj4C).l,a1
 		bsr.w	AnimateSprite
-		bsr.w	DisplaySprite
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj4C_Delete:				; XREF: Obj4C_Index
@@ -19814,7 +19756,6 @@ Obj4E_Animate:
 		bsr.w	SpeedToPos
 
 Obj4E_ChkDel:
-		bsr.w	DisplaySprite
 		tst.b	$36(a0)
 		bne.s	locret_F17E
 		move.w	8(a0),d0
@@ -19825,6 +19766,7 @@ Obj4E_ChkDel:
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.s	Obj4E_ChkGone
+		bra.w	DisplaySprite
 
 locret_F17E:
 		rts
@@ -19977,7 +19919,7 @@ MarkObjGone:
 		andi.w	#$FF80,d1
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
-		bhi.w	Mark_ChkGone
+		bhi.s	Mark_ChkGone
 		bra.w	DisplaySprite
 ; ===========================================================================
 
@@ -20591,10 +20533,9 @@ loc_FD98:
 Obj51_Display:				; XREF: Obj51_Index
 		bsr.w	SpeedToPos
 		addi.w	#$38,$12(a0)
-		bsr.w	DisplaySprite
 		tst.b	1(a0)
 		bpl.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 Obj51_Speeds:	dc.w $FE00, $FE00	; x-speed, y-speed
 		dc.w $FF00, $FF00
@@ -21013,12 +20954,6 @@ Obj55_ChkSonic:				; XREF: Obj55_ChkDrop
 
 loc_10214:
 		cmp.w	d2,d0
-		rts
-; ===========================================================================
-		bsr.w	SpeedToPos
-		bsr.w	DisplaySprite
-		tst.b	1(a0)
-		bpl.w	DeleteObject
 		rts
 ; ===========================================================================
 Ani_obj55:
@@ -21599,7 +21534,7 @@ loc_10894:
 		move.b	#1,$1A(a0)	; use different	frame
 
 Obj57_Move:				; XREF: Obj57_Index
-		bsr.w	Obj57_MoveSub
+		bsr.s	Obj57_MoveSub
 		bra.w	Obj57_ChkDel
 ; ===========================================================================
 
@@ -22365,7 +22300,6 @@ Obj5B_Type01:				; XREF: Obj5B_TypeIndex
 
 locret_11038:
 		rts
-		rts
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - blocks that	form a staircase (SLZ)
@@ -22704,7 +22638,7 @@ Obj71_ChkDel:
 		andi.w	#$FF80,d1
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
-		bhi.s	Obj71_Delete
+		jhi	DeleteObject
 		tst.w	($FFFFFE08).w	; are you using	debug mode?
 		beq.s	Obj71_NoDisplay	; if not, branch
 		jmp	DisplaySprite	; if yes, display the object
@@ -22712,10 +22646,6 @@ Obj71_ChkDel:
 
 Obj71_NoDisplay:
 		rts
-; ===========================================================================
-
-Obj71_Delete:
-		jmp	DeleteObject
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - invisible solid blocks
@@ -22817,7 +22747,6 @@ loc_115E4:
 		move.b	d0,$1A(a0)
 
 Obj5D_ChkDel:				; XREF: Obj5D_Animate
-		bsr.w	DisplaySprite
 		move.w	8(a0),d0
 		andi.w	#$FF80,d0
 		move.w	($FFFFF700).w,d1
@@ -22826,7 +22755,7 @@ Obj5D_ChkDel:				; XREF: Obj5D_Animate
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - fans (SLZ)
@@ -24102,8 +24031,8 @@ loc_12552:
 		bsr.w	Obj63_ChangeDir
 
 loc_1256A:
-		bsr.w	SpeedToPos
-		rts
+		bra.w	SpeedToPos
+		bra.w	SpeedToPos
 ; End of function sub_12502
 
 
@@ -31240,6 +31169,7 @@ loc_17A16:
 ; ===========================================================================
 
 Obj3D_ShipDel:
+		addq.l	#4,sp
 		jmp	DeleteObject
 ; ===========================================================================
 
@@ -31823,6 +31753,7 @@ loc_18166:
 ; ===========================================================================
 
 Obj77_ShipDel:
+		addq.l	#4,sp
 		jmp	DeleteObject
 ; ===========================================================================
 
@@ -32236,6 +32167,7 @@ loc_185A2:
 ; ===========================================================================
 
 Obj73_ShipDel:
+		addq.l	#4,sp
 		jmp	DeleteObject
 ; ===========================================================================
 

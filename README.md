@@ -14,3 +14,4 @@ name hasn't been decided yet
 * AuroraFields - AMPS
 * Vladikcomper - Error handler
 * MarkeyJester - Twizzler compression
+* MainMemory - SonLVL & SonPLN

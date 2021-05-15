@@ -24,6 +24,66 @@ tile_mask           =      $07FF
 nontile_mask        =      $F800
 drawing_mask        =      $7FFF
 
+; Variables from S1 Github (really hacky i know)
+v_screenposx:	equ $FFFFF700	; screen position x (2 bytes)
+v_screenposy:	equ $FFFFF704	; screen position y (2 bytes)
+v_bgscreenposx:	equ $FFFFF708	; background screen position x (2 bytes)
+v_bgscreenposy:	equ $FFFFF70C	; background screen position y (2 bytes)
+v_bg2screenposx:	equ $FFFFF710	; 2 bytes
+v_bg2screenposy:	equ $FFFFF714	; 2 bytes
+v_bg3screenposx:	equ $FFFFF718	; 2 bytes
+v_bg3screenposy:	equ $FFFFF71C	; 2 bytes
+
+v_limitleft1:	equ $FFFFF720	; left level boundary (2 bytes)
+v_limitright1:	equ $FFFFF722	; right level boundary (2 bytes)
+v_limittop1:	equ $FFFFF724	; top level boundary (2 bytes)
+v_limitbtm1:	equ $FFFFF726	; bottom level boundary (2 bytes)
+v_limitleft2:	equ $FFFFF728	; left level boundary (2 bytes)
+v_limitright2:	equ $FFFFF72A	; right level boundary (2 bytes)
+v_limittop2:	equ $FFFFF72C	; top level boundary (2 bytes)
+v_limitbtm2:	equ $FFFFF72E	; bottom level boundary (2 bytes)
+
+v_limitleft3:	equ $FFFFF732	; left level boundary, at the end of an act (2 bytes)
+
+v_scrshiftx:	equ $FFFFF73A	; x-screen shift (new - last) * $100
+v_scrshifty:	equ $FFFFF73C	; y-screen shift (new - last) * $100
+
+v_lookshift:	equ $FFFFF73E	; screen shift when Sonic looks up/down (2 bytes)
+f_nobgscroll:	equ $FFFFF744	; flag set to cancel background scrolling
+
+v_fg_xblock:	equ	$FFFFF74A	; foreground x-block parity (for redraw)
+v_fg_yblock:	equ	$FFFFF74B	; foreground y-block parity (for redraw)
+v_bg1_xblock:	equ	$FFFFF74C	; background x-block parity (for redraw)
+v_bg1_yblock:	equ	$FFFFF74D	; background y-block parity (for redraw)
+v_bg2_xblock:	equ	$FFFFF74E	; secondary background x-block parity (for redraw)
+v_bg2_yblock:	equ	$FFFFF74F	; secondary background y-block parity (unused)
+v_bg3_xblock:	equ	$FFFFF750	; teritary background x-block parity (for redraw)
+v_bg3_yblock:	equ	$FFFFF751	; teritary background y-block parity (unused)
+f_bgscrollvert:	equ $FFFFF75C	; flag for vertical background scrolling
+v_fg_scroll_flags:	equ $FFFFF754	; screen redraw flags for foreground
+v_bg1_scroll_flags:	equ $FFFFF756	; screen redraw flags for background 1
+v_bg2_scroll_flags:	equ $FFFFF758	; screen redraw flags for background 2
+v_bg3_scroll_flags:	equ $FFFFF75A	; screen redraw flags for background 3
+v_screenposx_dup:	equ $FFFFFF10	; screen position x (duplicate) (2 bytes)
+v_screenposy_dup:	equ $FFFFFF14	; screen position y (duplicate) (2 bytes)
+v_bgscreenposx_dup:	equ $FFFFFF18	; background screen position x (duplicate) (2 bytes)
+v_bgscreenposy_dup:	equ $FFFFFF1C	; background screen position y (duplicate) (2 bytes)
+v_bg2screenposx_dup:	equ $FFFFFF20	; 2 bytes
+v_bg2screenposy_dup:	equ $FFFFFF24	; 2 bytes
+v_bg3screenposx_dup:	equ $FFFFFF28	; 2 bytes
+v_bg3screenposy_dup:	equ $FFFFFF2C	; 2 bytes
+v_fg_scroll_flags_dup:	equ $FFFFFF30
+v_bg1_scroll_flags_dup:	equ $FFFFFF32
+v_bg2_scroll_flags_dup:	equ $FFFFFF34
+v_bg3_scroll_flags_dup:	equ $FFFFFF36
+v_scrposy_dup:	equ $FFFFF616	; screen position y (duplicate) (2 bytes)
+v_bgscrposy_dup:	equ $FFFFF618	; background screen position y (duplicate) (2 bytes)
+v_scrposx_dup:	equ $FFFFF61A	; screen position x (duplicate) (2 bytes)
+v_bgscreenposx_dup_unused:	equ $FFFFF61C	; background screen position x (duplicate) (2 bytes)
+v_bg3screenposy_dup_unused:	equ $FFFFF61E	; (2 bytes)
+v_bg3screenposx_dup_unused:	equ $FFFFF620	; (2 bytes)
+v_hscrolltablebuffer:	equ $FFFFCC00 ; scrolling table data (actually $380 bytes, but $400 is reserved for it)
+
 ; Ralakimus constants, needed for DMA functions
 
 ; -------------------------------------------------------------------------

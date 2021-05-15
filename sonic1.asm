@@ -1,7 +1,7 @@
 Main		SECTION org(0)
 		opt l.			; local label symbol is .
 
-Z80_Space =	$808			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
+Z80_Space =	$8C8			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
@@ -882,12 +882,13 @@ loc_13BE:
 loc_13CA:
 		move.b	#$10,($FFFFF62A).w
 		bsr.w	DelayProgram
+		if safe=0	
 		tst.b	($FFFFFFE1).w	; is slow-motion cheat on?
 		beq.s	Pause_ChkStart	; if not, branch
+		endif
 		btst	#6,($FFFFF605).w ; is button A pressed?
 		beq.s	Pause_ChkBC	; if not, branch
 		move.b	#4,($FFFFF600).w ; set game mode to 4 (title screen)
-		nop
 		bra.s	loc_1404
 ; ===========================================================================
 
@@ -940,200 +941,194 @@ loc_1432:
 		rts
 ; End of function ShowVDPGraphics
 
-; ---------------------------------------------------------------------------
-; Nemesis decompression	algorithm
-; ---------------------------------------------------------------------------
-
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
-
-
+; ==============================================================================
+; ------------------------------------------------------------------------------
+; Nemesis decompression routine
+; ------------------------------------------------------------------------------
+; Optimized by vladikcomper
+; ------------------------------------------------------------------------------
+ 
+NemDec_RAM:
+    movem.l d0-a1/a3-a6,-(sp)
+    lea NemDec_WriteRowToRAM(pc),a3
+    bra.s   NemDec_Main
+ 
+; ------------------------------------------------------------------------------
 NemDec:
-		movem.l	d0-a1/a3-a5,-(sp)
-		lea	(loc_1502).l,a3
-		lea	($C00000).l,a4
-		bra.s	loc_145C
-; ===========================================================================
-		movem.l	d0-a1/a3-a5,-(sp)
-		lea	(loc_1518).l,a3
-
-loc_145C:				; XREF: NemDec
-		lea	($FFFFAA00).w,a1
-		move.w	(a0)+,d2
-		lsl.w	#1,d2
-		bcc.s	loc_146A
-		adda.w	#$A,a3
-
-loc_146A:
-		lsl.w	#2,d2
-		movea.w	d2,a5
-		moveq	#8,d3
-		moveq	#0,d2
-		moveq	#0,d4
-		bsr.w	NemDec4
-		move.b	(a0)+,d5
-		asl.w	#8,d5
-		move.b	(a0)+,d5
-		move.w	#$10,d6
-		bsr.s	NemDec2
-		movem.l	(sp)+,d0-a1/a3-a5
-		rts
-; End of function NemDec
-
-
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
-
-
-NemDec2:				; XREF: NemDec
-		move.w	d6,d7
-		subq.w	#8,d7
-		move.w	d5,d1
-		lsr.w	d7,d1
-		cmpi.b	#-4,d1
-		bcc.s	loc_14D6
-		andi.w	#$FF,d1
-		add.w	d1,d1
-		move.b	(a1,d1.w),d0
-		ext.w	d0
-		sub.w	d0,d6
-		cmpi.w	#9,d6
-		bcc.s	loc_14B2
-		addq.w	#8,d6
-		asl.w	#8,d5
-		move.b	(a0)+,d5
-
-loc_14B2:
-		move.b	1(a1,d1.w),d1
-		move.w	d1,d0
-		andi.w	#$F,d1
-		andi.w	#$F0,d0
-
-loc_14C0:				; XREF: NemDec3
-		lsr.w	#4,d0
-
-loc_14C2:				; XREF: NemDec3
-		lsl.l	#4,d4
-		or.b	d1,d4
-		subq.w	#1,d3
-		bne.s	loc_14D0
-		jmp	(a3)
-; End of function NemDec2
-
-
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
-
-
-NemDec3:				; XREF: loc_1502
-		moveq	#0,d4
-		moveq	#8,d3
-
-loc_14D0:				; XREF: NemDec2
-		dbf	d0,loc_14C2
-		bra.s	NemDec2
-; ===========================================================================
-
-loc_14D6:				; XREF: NemDec2
-		subq.w	#6,d6
-		cmpi.w	#9,d6
-		bcc.s	loc_14E4
-		addq.w	#8,d6
-		asl.w	#8,d5
-		move.b	(a0)+,d5
-
-loc_14E4:				; XREF: NemDec3
-		subq.w	#7,d6
-		move.w	d5,d1
-		lsr.w	d6,d1
-		move.w	d1,d0
-		andi.w	#$F,d1
-		andi.w	#$70,d0
-		cmpi.w	#9,d6
-		bcc.s	loc_14C0
-		addq.w	#8,d6
-		asl.w	#8,d5
-		move.b	(a0)+,d5
-		bra.s	loc_14C0
-; End of function NemDec3
-
-; ===========================================================================
-
-loc_1502:				; XREF: NemDec
-		move.l	d4,(a4)
-		subq.w	#1,a5
-		move.w	a5,d4
-		bne.s	NemDec3
-		rts
-; ===========================================================================
-		eor.l	d4,d2
-		move.l	d2,(a4)
-		subq.w	#1,a5
-		move.w	a5,d4
-		bne.s	NemDec3
-		rts
-; ===========================================================================
-
-loc_1518:				; XREF: NemDec
-		move.l	d4,(a4)+
-		subq.w	#1,a5
-		move.w	a5,d4
-		bne.s	NemDec3
-		rts
-; ===========================================================================
-		eor.l	d4,d2
-		move.l	d2,(a4)+
-		subq.w	#1,a5
-		move.w	a5,d4
-		bne.s	NemDec3
-		rts
-
-; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
-
-
-NemDec4:				; XREF: NemDec
-		move.b	(a0)+,d0
-
-loc_1530:
-		cmpi.b	#-1,d0
-		bne.s	loc_1538
-		rts
-; ===========================================================================
-
-loc_1538:				; XREF: NemDec4
-		move.w	d0,d7
-
-loc_153A:
-		move.b	(a0)+,d0
-		cmpi.b	#$80,d0
-		bcc.s	loc_1530
-		move.b	d0,d1
-		andi.w	#$F,d7
-		andi.w	#$70,d1
-		or.w	d1,d7
-		andi.w	#$F,d0
-		move.b	d0,d1
-		lsl.w	#8,d1
-		or.w	d1,d7
-		moveq	#8,d1
-		sub.w	d0,d1
-		bne.s	loc_1568
-		move.b	(a0)+,d0
-		add.w	d0,d0
-		move.w	d7,(a1,d0.w)
-		bra.s	loc_153A
-; ===========================================================================
-
-loc_1568:				; XREF: NemDec4
-		move.b	(a0)+,d0
-		lsl.w	d1,d0
-		add.w	d0,d0
-		moveq	#1,d5
-		lsl.w	d1,d5
-		subq.w	#1,d5
-
-loc_1574:
-		move.w	d7,(a1,d0.w)
-		addq.w	#2,d0
-		dbf	d5,loc_1574
-		bra.s	loc_153A
+    movem.l d0-a1/a3-a6,-(sp)
+    lea $C00000,a4      ; load VDP Data Port     
+    lea NemDec_WriteRowToVDP(pc),a3
+ 
+NemDec_Main:
+    lea $FFFFAA00,a1        ; load Nemesis decompression buffer
+    move.w  (a0)+,d2        ; get number of patterns
+    bpl.s   .0          ; are we in Mode 0?
+    lea $A(a3),a3       ; if not, use Mode 1
+.0  lsl.w   #3,d2
+    movea.w d2,a5
+    moveq   #7,d3
+    moveq   #0,d2
+    moveq   #0,d4
+    bsr.w   NemDec4
+    move.b  (a0)+,d5        ; get first byte of compressed data
+    asl.w   #8,d5           ; shift up by a byte
+    move.b  (a0)+,d5        ; get second byte of compressed data
+    move.w  #$10,d6         ; set initial shift value
+    bsr.s   NemDec2
+    movem.l (sp)+,d0-a1/a3-a6
+    rts
+ 
+; ---------------------------------------------------------------------------
+; Part of the Nemesis decompressor, processes the actual compressed data
+; ---------------------------------------------------------------------------
+ 
+NemDec2:
+    move.w  d6,d7
+    subq.w  #8,d7           ; get shift value
+    move.w  d5,d1
+    lsr.w   d7,d1           ; shift so that high bit of the code is in bit position 7
+    cmpi.b  #%11111100,d1       ; are the high 6 bits set?
+    bcc.s   NemDec_InlineData   ; if they are, it signifies inline data
+    andi.w  #$FF,d1
+    add.w   d1,d1
+    sub.b   (a1,d1.w),d6        ; ~~ subtract from shift value so that the next code is read next time around
+    cmpi.w  #9,d6           ; does a new byte need to be read?
+    bcc.s   .0          ; if not, branch
+    addq.w  #8,d6
+    asl.w   #8,d5
+    move.b  (a0)+,d5        ; read next byte
+.0  move.b  1(a1,d1.w),d1
+    move.w  d1,d0
+    andi.w  #$F,d1          ; get palette index for pixel
+    andi.w  #$F0,d0
+ 
+NemDec_GetRepeatCount:
+    lsr.w   #4,d0           ; get repeat count
+ 
+NemDec_WritePixel:
+    lsl.l   #4,d4           ; shift up by a nybble
+    or.b    d1,d4           ; write pixel
+    dbf d3,NemDec_WritePixelLoop; ~~
+    jmp (a3)            ; otherwise, write the row to its destination
+; ---------------------------------------------------------------------------
+ 
+NemDec3:
+    moveq   #0,d4           ; reset row
+    moveq   #7,d3           ; reset nybble counter
+ 
+NemDec_WritePixelLoop:
+    dbf d0,NemDec_WritePixel
+    bra.s   NemDec2
+; ---------------------------------------------------------------------------
+ 
+NemDec_InlineData:
+    subq.w  #6,d6           ; 6 bits needed to signal inline data
+    cmpi.w  #9,d6
+    bcc.s   .0
+    addq.w  #8,d6
+    asl.w   #8,d5
+    move.b  (a0)+,d5
+.0  subq.w  #7,d6           ; and 7 bits needed for the inline data itself
+    move.w  d5,d1
+    lsr.w   d6,d1           ; shift so that low bit of the code is in bit position 0
+    move.w  d1,d0
+    andi.w  #$F,d1          ; get palette index for pixel
+    andi.w  #$70,d0         ; high nybble is repeat count for pixel
+    cmpi.w  #9,d6
+    bcc.s   NemDec_GetRepeatCount
+    addq.w  #8,d6
+    asl.w   #8,d5
+    move.b  (a0)+,d5
+    bra.s   NemDec_GetRepeatCount
+ 
+; ---------------------------------------------------------------------------
+; Subroutines to output decompressed entry
+; Selected depending on current decompression mode
+; ---------------------------------------------------------------------------
+ 
+NemDec_WriteRowToVDP:
+loc_1502:
+    move.l  d4,(a4)         ; write 8-pixel row
+    subq.w  #1,a5
+    move.w  a5,d4           ; have all the 8-pixel rows been written?
+    bne.s   NemDec3         ; if not, branch
+    rts
+; ---------------------------------------------------------------------------
+ 
+NemDec_WriteRowToVDP_XOR:
+    eor.l   d4,d2           ; XOR the previous row by the current row
+    move.l  d2,(a4)         ; and write the result
+    subq.w  #1,a5
+    move.w  a5,d4
+    bne.s   NemDec3
+    rts
+; ---------------------------------------------------------------------------
+ 
+NemDec_WriteRowToRAM:
+    move.l  d4,(a4)+        ; write 8-pixel row
+    subq.w  #1,a5
+    move.w  a5,d4           ; have all the 8-pixel rows been written?
+    bne.s   NemDec3         ; if not, branch
+    rts
+; ---------------------------------------------------------------------------
+ 
+NemDec_WriteRowToRAM_XOR:
+    eor.l   d4,d2           ; XOR the previous row by the current row
+    move.l  d2,(a4)+        ; and write the result
+    subq.w  #1,a5
+    move.w  a5,d4
+    bne.s   NemDec3
+    rts
+ 
+; ---------------------------------------------------------------------------
+; Part of the Nemesis decompressor, builds the code table (in RAM)
+; ---------------------------------------------------------------------------
+ 
+NemDec4:
+    move.b  (a0)+,d0        ; read first byte
+ 
+.ChkEnd:
+    cmpi.b  #$FF,d0         ; has the end of the code table description been reached?
+    bne.s   .NewPalIndex        ; if not, branch
+    rts
+; ---------------------------------------------------------------------------
+ 
+.NewPalIndex:
+    move.w  d0,d7
+ 
+.ItemLoop:
+    move.b  (a0)+,d0        ; read next byte
+    bmi.s   .ChkEnd         ; ~~
+    move.b  d0,d1
+    andi.w  #$F,d7          ; get palette index
+    andi.w  #$70,d1         ; get repeat count for palette index
+    or.w    d1,d7           ; combine the two
+    andi.w  #$F,d0          ; get the length of the code in bits
+    move.b  d0,d1
+    lsl.w   #8,d1
+    or.w    d1,d7           ; combine with palette index and repeat count to form code table entry
+    moveq   #8,d1
+    sub.w   d0,d1           ; is the code 8 bits long?
+    bne.s   .ItemShortCode      ; if not, a bit of extra processing is needed
+    move.b  (a0)+,d0        ; get code
+    add.w   d0,d0           ; each code gets a word-sized entry in the table
+    move.w  d7,(a1,d0.w)        ; store the entry for the code
+    bra.s   .ItemLoop       ; repeat
+; ---------------------------------------------------------------------------
+ 
+.ItemShortCode:
+    move.b  (a0)+,d0        ; get code
+    lsl.w   d1,d0           ; shift so that high bit is in bit position 7
+    add.w   d0,d0           ; get index into code table
+    moveq   #1,d5
+    lsl.w   d1,d5
+    subq.w  #1,d5           ; d5 = 2^d1 - 1
+    lea (a1,d0.w),a6        ; ~~
+ 
+.ItemShortCodeLoop:
+    move.w  d7,(a6)+        ; ~~ store entry
+    dbf d5,.ItemShortCodeLoop   ; repeat for required number of entries
+    bra.s   .ItemLoop
 ; End of function NemDec4
 
 ; ---------------------------------------------------------------------------
@@ -1691,6 +1686,372 @@ KosDec_ByteMap:
 	dc.b	$0F,$8F,$4F,$CF,$2F,$AF,$6F,$EF,$1F,$9F,$5F,$DF,$3F,$BF,$7F,$FF
 	endif
 ; ===========================================================================
+
+SaxmanDec:
+                move.w  (a0)+,d6
+                rol.w   #8,d6
+SaxDec2:
+                moveq   #0,d2
+                lea     (a1),a4
+                moveq   #0,d0
+                lea     byte_1AD4(pc),a2
+                move.w  #$F000,d3
+                moveq   #$F,d7
+
+loc_1A38:                               ; CODE XREF: ROM:00001A56?j
+                                        ; ROM:00001A7C?j ...
+                dbf     d2,loc_1A4A
+                moveq   #7,d2
+                subq.w  #1,d6
+                bne.s   loc_1A44
+                rts
+; ---------------------------------------------------------------------------
+
+loc_1A44:                               ; CODE XREF: ROM:00001A40?j
+                move.b  (a0)+,d0
+                move.b  (a2,d0.w),d0
+
+loc_1A4A:                               ; CODE XREF: ROM:loc_1A38?j
+                add.b   d0,d0
+                bcc.s   loc_1AA4
+                subq.w  #1,d6
+                bne.s   loc_1A54
+                rts
+; ---------------------------------------------------------------------------
+
+loc_1A54:                               ; CODE XREF: ROM:00001A50?j
+                move.b  (a0)+,(a1)+
+                bra.s   loc_1A38
+; ---------------------------------------------------------------------------
+
+loc_1A58:
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                move.b  (a5)+,(a1)+
+                bra.s   loc_1A38
+; ---------------------------------------------------------------------------
+
+loc_1A7E:
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                move.b  d3,(a1)+
+                bra.s   loc_1A38
+; ---------------------------------------------------------------------------
+
+loc_1AA4:                               ; CODE XREF: ROM:00001A4C?j
+                subq.w  #2,d6
+                bhi.s   loc_1AAA
+                rts
+; ---------------------------------------------------------------------------
+
+loc_1AAA:                               ; CODE XREF: ROM:00001AA6?j
+                move.b  (a0)+,d1
+                move.b  (a0)+,d5
+                move.b  d5,d4
+                not.w   d4
+                and.w   d7,d4
+                add.w   d4,d4
+                lsl.w   #4,d5
+                move.b  d1,d5
+                addi.w  #$12,d5
+                sub.w   a1,d5
+                add.w   a4,d5
+                or.w    d3,d5
+                lea     (a1,d5.w),a5
+                cmpa.l  a4,a5
+                bcs.s   loc_1AD0
+                jmp     loc_1A58(pc,d4.w)
+; ---------------------------------------------------------------------------
+
+loc_1AD0:                               ; CODE XREF: ROM:00001ACA?j
+                jmp     loc_1A7E(pc,d4.w)
+; ---------------------------------------------------------------------------
+byte_1AD4:      dc.b 0                  ; DATA XREF: ROM:00001A2E?o
+                dc.b $80
+                dc.b $40 ; @
+                dc.b $C0
+                dc.b $20
+                dc.b $A0
+                dc.b $60 ; `
+                dc.b $E0
+                dc.b $10
+                dc.b $90
+                dc.b $50 ; P
+                dc.b $D0
+                dc.b $30 ; 0
+                dc.b $B0
+                dc.b $70 ; p
+                dc.b $F0
+                dc.b   8
+                dc.b $88
+                dc.b $48 ; H
+                dc.b $C8
+                dc.b $28 ; (
+                dc.b $A8
+                dc.b $68 ; h
+                dc.b $E8
+                dc.b $18
+                dc.b $98
+                dc.b $58 ; X
+                dc.b $D8
+                dc.b $38 ; 8
+                dc.b $B8
+                dc.b $78 ; x
+                dc.b $F8
+                dc.b   4
+                dc.b $84
+                dc.b $44 ; D
+                dc.b $C4
+                dc.b $24 ; $
+                dc.b $A4
+                dc.b $64 ; d
+                dc.b $E4
+                dc.b $14
+                dc.b $94
+                dc.b $54 ; T
+                dc.b $D4
+                dc.b $34 ; 4
+                dc.b $B4
+                dc.b $74 ; t
+                dc.b $F4
+                dc.b  $C
+                dc.b $8C
+                dc.b $4C ; L
+                dc.b $CC
+                dc.b $2C ; ,
+                dc.b $AC
+                dc.b $6C ; l
+                dc.b $EC
+                dc.b $1C
+                dc.b $9C
+                dc.b $5C ; \
+                dc.b $DC
+                dc.b $3C ; <
+                dc.b $BC
+                dc.b $7C ; |
+                dc.b $FC
+                dc.b   2
+                dc.b $82
+                dc.b $42 ; B
+                dc.b $C2
+                dc.b $22 ; "
+                dc.b $A2
+                dc.b $62 ; b
+                dc.b $E2
+                dc.b $12
+                dc.b $92
+                dc.b $52 ; R
+                dc.b $D2
+                dc.b $32 ; 2
+                dc.b $B2
+                dc.b $72 ; r
+                dc.b $F2
+                dc.b  $A
+                dc.b $8A
+                dc.b $4A ; J
+                dc.b $CA
+                dc.b $2A ; *
+                dc.b $AA
+                dc.b $6A ; j
+                dc.b $EA
+                dc.b $1A
+                dc.b $9A
+                dc.b $5A ; Z
+                dc.b $DA
+                dc.b $3A ; :
+                dc.b $BA
+                dc.b $7A ; z
+                dc.b $FA
+                dc.b   6
+                dc.b $86
+                dc.b $46 ; F
+                dc.b $C6
+                dc.b $26 ; &
+                dc.b $A6
+                dc.b $66 ; f
+                dc.b $E6
+                dc.b $16
+                dc.b $96
+                dc.b $56 ; V
+                dc.b $D6
+                dc.b $36 ; 6
+                dc.b $B6
+                dc.b $76 ; v
+                dc.b $F6
+                dc.b  $E
+                dc.b $8E
+                dc.b $4E ; N
+                dc.b $CE
+                dc.b $2E ; .
+                dc.b $AE
+                dc.b $6E ; n
+                dc.b $EE
+                dc.b $1E
+                dc.b $9E
+                dc.b $5E ; ^
+                dc.b $DE
+                dc.b $3E ; >
+                dc.b $BE
+                dc.b $7E ; ~
+                dc.b $FE
+                dc.b   1
+                dc.b $81
+                dc.b $41 ; A
+                dc.b $C1
+                dc.b $21 ; !
+                dc.b $A1
+                dc.b $61 ; a
+                dc.b $E1
+                dc.b $11
+                dc.b $91
+                dc.b $51 ; Q
+                dc.b $D1
+                dc.b $31 ; 1
+                dc.b $B1
+                dc.b $71 ; q
+                dc.b $F1
+                dc.b   9
+                dc.b $89
+                dc.b $49 ; I
+                dc.b $C9
+                dc.b $29 ; )
+                dc.b $A9
+                dc.b $69 ; i
+                dc.b $E9
+                dc.b $19
+                dc.b $99
+                dc.b $59 ; Y
+                dc.b $D9
+                dc.b $39 ; 9
+                dc.b $B9
+                dc.b $79 ; y
+                dc.b $F9
+                dc.b   5
+                dc.b $85
+                dc.b $45 ; E
+                dc.b $C5
+                dc.b $25 ; %
+                dc.b $A5
+                dc.b $65 ; e
+                dc.b $E5
+                dc.b $15
+                dc.b $95
+                dc.b $55 ; U
+                dc.b $D5
+                dc.b $35 ; 5
+                dc.b $B5
+                dc.b $75 ; u
+                dc.b $F5
+                dc.b  $D
+                dc.b $8D
+                dc.b $4D ; M
+                dc.b $CD
+                dc.b $2D ; -
+                dc.b $AD
+                dc.b $6D ; m
+                dc.b $ED
+                dc.b $1D
+                dc.b $9D
+                dc.b $5D ; ]
+                dc.b $DD
+                dc.b $3D ; =
+                dc.b $BD
+                dc.b $7D ; }
+                dc.b $FD
+                dc.b   3
+                dc.b $83
+                dc.b $43 ; C
+                dc.b $C3
+                dc.b $23 ; #
+                dc.b $A3
+                dc.b $63 ; c
+                dc.b $E3
+                dc.b $13
+                dc.b $93
+                dc.b $53 ; S
+                dc.b $D3
+                dc.b $33 ; 3
+                dc.b $B3
+                dc.b $73 ; s
+                dc.b $F3
+                dc.b  $B
+                dc.b $8B
+                dc.b $4B ; K
+                dc.b $CB
+                dc.b $2B ; +
+                dc.b $AB
+                dc.b $6B ; k
+                dc.b $EB
+                dc.b $1B
+                dc.b $9B
+                dc.b $5B ; [
+                dc.b $DB
+                dc.b $3B ; ;
+                dc.b $BB
+                dc.b $7B ; {
+                dc.b $FB
+                dc.b   7
+                dc.b $87
+                dc.b $47 ; G
+                dc.b $C7
+                dc.b $27 ; '
+                dc.b $A7
+                dc.b $67 ; g
+                dc.b $E7
+                dc.b $17
+                dc.b $97
+                dc.b $57 ; W
+                dc.b $D7
+                dc.b $37 ; 7
+                dc.b $B7
+                dc.b $77 ; w
+                dc.b $F7
+                dc.b  $F
+                dc.b $8F
+                dc.b $4F ; O
+                dc.b $CF
+                dc.b $2F ; /
+                dc.b $AF
+                dc.b $6F ; o
+                dc.b $EF
+                dc.b $1F
+                dc.b $9F
+                dc.b $5F ; _
+                dc.b $DF
+                dc.b $3F ; ?
+                dc.b $BF
+                dc.b $7F ; 
+                dc.b $FF
 
 ; ---------------------------------------------------------------------------
 ; Pallet cycling routine loading subroutine
@@ -2903,7 +3264,6 @@ TitleScreen:				; XREF: GameModeArray
 		bsr.w	Pal_FadeFrom
 		command	mus_Reset	 ; fade reset music
 
-		move	#$2700,sr
 		lea	($C00004).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
@@ -2951,16 +3311,15 @@ Title_ClrPallet:
 		jsr	ObjectsLoad
 		jsr	BuildSprites
 		bsr.w	Pal_FadeTo
-		move	#$2700,sr
-		move.l	#$40000001,($C00004).l
-		lea	(Nem_TitleFg).l,a0 ; load title	screen patterns
-		bsr.w	NemDec
-		move.l	#$60000001,($C00004).l
-		lea	(Nem_TitleSonic).l,a0	; load Sonic title screen	patterns
-		bsr.w	NemDec
-		move.l	#$62000002,($C00004).l
-		lea	(Nem_TitleTM).l,a0 ; load "TM" patterns
-		bsr.w	NemDec
+		lea	(Twim_TitleFg).l,a0 ; load title	screen patterns
+		move.w	#$4000,d0
+		jsr	TwimDec
+		lea	(Twim_TitleSonic).l,a0	; load Sonic title screen	patterns
+		move.w	#$6000,d0
+		jsr	TwimDec
+		lea	(Twim_TitleTM).l,a0 ; load "TM" patterns
+		move.w	#$A200,d0
+		jsr	TwimDec
 		lea	($C00000).l,a6
 		move.l	#$50000003,4(a6)
 		lea	(Art_Text).l,a5
@@ -2970,12 +3329,12 @@ Title_LoadText:
 		move.w	(a5)+,(a6)
 		dbf	d1,Title_LoadText ; load uncompressed text patterns
 
-		move.b	#0,($FFFFFE30).w ; clear lamppost counter
-		move.w	#0,($FFFFFE08).w ; disable debug item placement	mode
-		move.w	#0,($FFFFFFF0).w ; disable debug mode
-		move.w	#0,($FFFFFFEA).w
-		move.w	#0,($FFFFFE10).w ; set level to	GHZ (00)
-		move.w	#0,($FFFFF634).w ; disable pallet cycling
+		clr.b	($FFFFFE30).w ; clear lamppost counter
+		clr.w	($FFFFFE08).w ; disable debug item placement	mode
+		clr.w	($FFFFFFF0).w ; disable debug mode
+		clr.w	($FFFFFFEA).w
+		clr.w	($FFFFFE10).w ; set level to	GHZ (00)
+		clr.w	($FFFFF634).w ; disable pallet cycling
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
 		lea	($FFFFB000).w,a1
@@ -2987,7 +3346,6 @@ Title_LoadText:
 		bsr.w	KosDec
 		bsr.w	LevelLayoutLoad
 		bsr.w	Pal_FadeFrom
-		move	#$2700,sr
 		bsr.w	ClearScreen
 		lea	($C00004).l,a5
 		lea	($C00000).l,a6
@@ -3034,8 +3392,8 @@ Title_ClrObjRam2:
 		jsr	BuildSprites
 		moveq	#0,d0
 		bsr.w	LoadPLC2
-		move.w	#0,($FFFFFFE4).w
-		move.w	#0,($FFFFFFE6).w
+		clr.w	($FFFFFFE4).w
+		clr.w	($FFFFFFE6).w
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
 		move.w	d0,($C00004).l
@@ -3099,7 +3457,7 @@ loc_3210:				; XREF: Title_EnterCheat
 		beq.s	Title_CountC
 		cmpi.w	#9,($FFFFFFE4).w
 		beq.s	Title_CountC
-		move.w	#0,($FFFFFFE4).w
+		clr.w	($FFFFFFE4).w
 
 Title_CountC:
 		move.b	($FFFFF605).w,d0
@@ -3114,8 +3472,10 @@ loc_3230:
 		beq.w	loc_317C	; if not, branch
 
 Title_ChkLevSel:
+		if safe=0
 		tst.b	($FFFFFFE0).w	; check	if level select	code is	on
 		beq.w	PlayLevel	; if not, play level
+		endif
 		btst	#6,($FFFFF604).w ; check if A is pressed
 		beq.w	PlayLevel	; if not, play level
 		moveq	#2,d0
@@ -3159,31 +3519,12 @@ LevelSelect:
 		bne.s	LevSel_Level_SS	; if not, go to	Level/SS subroutine
 
 		move.w	($FFFFFF84).w,d0
-	;	tst.b	($FFFFFFE3).w	; is Japanese Credits cheat on?
-	;	beq.s	LevSel_NoCheat	; if not, branch
-	;	cmpi.w	#$9F,d0		; is sound $9F being played?
-	;	beq.s	LevSel_Ending	; if yes, branch
-	;	cmpi.w	#$9E,d0		; is sound $9E being played?
-	;	beq.s	LevSel_Credits	; if yes, branch
 
 LevSel_NoCheat:
 
 LevSel_PlaySnd:
 		move.b	d0,mQueue+2.w	; play that sound!
 		bra.s	LevelSelect
-; ===========================================================================
-
-LevSel_Ending:				; XREF: LevelSelect
-		move.b	#$18,($FFFFF600).w ; set screen	mode to	$18 (Ending)
-		move.w	#$600,($FFFFFE10).w ; set level	to 0600	(Ending)
-		rts
-; ===========================================================================
-
-LevSel_Credits:				; XREF: LevelSelect
-		move.b	#$1C,($FFFFF600).w ; set screen	mode to	$1C (Credits)
-		music	mus_Credits	; play credits music
-		move.w	#0,($FFFFFFF4).w
-		rts
 ; ===========================================================================
 
 LevSel_Level_SS:			; XREF: LevelSelect
@@ -3257,7 +3598,7 @@ loc_33B6:				; XREF: loc_33E4
 		move.w	d0,($FFFFD008).w
 		cmpi.w	#$1C00,d0
 		bcs.s	loc_33E4
-		move.b	#0,($FFFFF600).w ; set screen mode to 00 (level)
+		clr.b	($FFFFF600).w ; set screen mode to 00 (level)
 		rts
 ; ===========================================================================
 
@@ -3275,7 +3616,7 @@ loc_33E4:				; XREF: Demo
 		addq.w	#1,($FFFFFFF2).w ; add 1 to demo number
 		cmpi.w	#4,($FFFFFFF2).w ; is demo number less than 4?
 		bcs.s	loc_3422	; if yes, branch
-		move.w	#0,($FFFFFFF2).w ; reset demo number to	0
+		clr.w	($FFFFFFF2).w ; reset demo number to	0
 
 loc_3422:
 		move.w	#1,($FFFFFFF0).w ; turn	demo mode on
@@ -3350,7 +3691,7 @@ LevSel_SndTest:				; XREF: LevSelControls
 		btst	#2,d1		; is left pressed?
 		beq.s	LevSel_Right	; if not, branch
 		subq.w	#1,d0		; subtract 1 from sound	test
-		bcc.s	LevSel_Right
+		bge.s	LevSel_Right
 		moveq	#SFXoff+SFXcount-1,d0; if sound test moves below 0, set to max
 
 LevSel_Right:
@@ -3358,12 +3699,12 @@ LevSel_Right:
 		beq.s	LevSel_Refresh2	; if not, branch
 		addq.w	#1,d0		; add 1	to sound test
 		cmpi.w	#SFXoff+SFXcount,d0
-		bcs.s	LevSel_Refresh2
+		blt.s	LevSel_Refresh2
 		moveq	#0,d0		; if sound test	moves above max, set to	0
 
 LevSel_Refresh2:
 		move.w	d0,($FFFFFF84).w ; set sound test number
-		bsr.w	LevSelTextLoad	; refresh text
+		bra.s	LevSelTextLoad	; refresh text
 
 LevSel_NoMove:
 		rts
@@ -3487,7 +3828,6 @@ loc_37B6:
 		bsr.w	Pal_FadeFrom
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
-		move	#$2700,sr
 		move.l	#$70000002,($C00004).l
 		lea	(Nem_TitleCard).l,a0 ; load title card patterns
 		bsr.w	NemDec
@@ -3635,8 +3975,10 @@ loc_3946:
 		move.b	#$21,($FFFFD040).w ; load HUD object
 
 Level_ChkDebug:
+		if safe=0
 		tst.b	($FFFFFFE2).w	; has debug cheat been entered?
 		beq.s	Level_ChkWater	; if not, branch
+		endif
 		btst	#6,($FFFFF604).w ; is A	button pressed?
 		beq.s	Level_ChkWater	; if not, branch
 		move.b	#1,($FFFFFFFA).w ; enable debug	mode
@@ -3675,7 +4017,7 @@ loc_39E8:
 		move.b	#1,($FFFFFE1F).w ; update score	counter
 		move.b	#1,($FFFFFE1D).w ; update rings	counter
 		move.b	#1,($FFFFFE1E).w ; update time counter
-		move.w	#0,($FFFFF790).w
+		clr.w	($FFFFF790).w
 		lea	(Demo_Index).l,a1 ; load demo data
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
@@ -4633,8 +4975,10 @@ SS_ClrNemRam:
 		clr.b	($FFFFFE1B).w
 		move.w	#0,($FFFFFE08).w
 		move.w	#1800,($FFFFF614).w
+		if safe=0
 		tst.b	($FFFFFFE2).w	; has debug cheat been entered?
 		beq.s	SS_NoDebug	; if not, branch
+		endif
 		btst	#6,($FFFFF604).w ; is A	button pressed?
 		beq.s	SS_NoDebug	; if not, branch
 		move.b	#1,($FFFFFFFA).w ; enable debug	mode
@@ -37275,11 +37619,11 @@ Eni_SegaLogo:	incbin	mapeni\segalogo.bin	; large Sega logo (mappings)
 		even
 Eni_Title:	incbin	mapeni\titlescr.bin	; title screen foreground (mappings)
 		even
-Nem_TitleFg:	incbin	artnem\titlefor.bin	; title screen foreground
+Twim_TitleFg:	incbin	arttwim\titlefor.bin	; title screen foreground
 		even
-Nem_TitleSonic:	incbin	artnem\titleson.bin	; Sonic on title screen
+Twim_TitleSonic:	incbin	arttwim\titleson.bin	; Sonic on title screen
 		even
-Nem_TitleTM:	incbin	artnem\titletm.bin	; TM on title screen
+Twim_TitleTM:	incbin	arttwim\titletm.bin	; TM on title screen
 		even
 Eni_JapNames:	incbin	mapeni\japcreds.bin	; Japanese credits (mappings)
 		even
@@ -37932,6 +38276,8 @@ ObjPos_End:	incbin	objpos\ending.bin
 		even
 ObjPos_Null:	dc.b $FF, $FF, 0, 0, 0,	0
 ; ===========================================================================
+
+		include "_inc/Twizzler.asm"
 
 		include "AMPS/code/smps2asm.asm"
 		include "AMPS/code/68k.asm"

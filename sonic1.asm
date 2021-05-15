@@ -815,7 +815,7 @@ PauseGame:				; XREF: Level_MainLoop; et al
 		beq.s	Unpause		; if not, branch
 		tst.b	($FFFFF63A).w	; is game already paused?
 		bne.s	loc_13BE	; if yes, branch
-		btst	#7,($FFFFF605).w ; is Start button pressed?
+		btst	#JbS,($FFFFF605).w ; is Start button pressed?
 		beq.s	Pause_DoNothing	; if not, branch
 
 loc_13BE:
@@ -829,20 +829,20 @@ loc_13CA:
 		tst.b	($FFFFFFE1).w	; is slow-motion cheat on?
 		beq.s	Pause_ChkStart	; if not, branch
 		endif
-		btst	#6,($FFFFF605).w ; is button A pressed?
+		btst	#JbA,($FFFFF605).w ; is button A pressed?
 		beq.s	Pause_ChkBC	; if not, branch
 		move.b	#4,($FFFFF600).w ; set game mode to 4 (title screen)
 		bra.s	loc_1404
 ; ===========================================================================
 
 Pause_ChkBC:				; XREF: PauseGame
-		btst	#4,($FFFFF604).w ; is button B pressed?
+		btst	#JbB,($FFFFF604).w ; is button B pressed?
 		bne.s	Pause_SlowMo	; if yes, branch
-		btst	#5,($FFFFF605).w ; is button C pressed?
+		btst	#JbC,($FFFFF605).w ; is button C pressed?
 		bne.s	Pause_SlowMo	; if yes, branch
 
 Pause_ChkStart:				; XREF: PauseGame
-		btst	#7,($FFFFF605).w ; is Start button pressed?
+		btst	#JbS,($FFFFF605).w ; is Start button pressed?
 		beq.s	loc_13CA	; if not, branch
 
 loc_1404:				; XREF: PauseGame
@@ -3373,18 +3373,18 @@ Sega_WaitPallet:
 Sega_WaitEnd:
 		move.b	#2,($FFFFF62A).w
 		bsr.w	DelayProgram
-		bsr.w	DoChecksum
+		bsr.s	DoChecksum
 		move.b	($FFFFF605).w,d0		; is Start button pressed?
 		or.b	d0,ChecksumStart.w		; if so, save it in a variable
 		bra.s	Sega_WaitEnd			; we go to title screen when checksum check is done
 
 DoChecksum:
 		move.l	ROMEndLoc.w,a6			; load ROM end address to a6
-		sub.w	#56-1,a6			; this will trip the detection before ROM ends (in case it would happen mid-transfer)
+		subi.w	#56-1,a6			; this will trip the detection before ROM ends (in case it would happen mid-transfer)
 		move.l	ChecksumAddr.w,a5		; load the check address to a5
 
 		cmp.l	a5,a6				; check if checksum is done
-		blo.w	ChecksumEndChk			; if yes, skip this
+		blo.s	ChecksumEndChk			; if yes, skip this
 		move.w	ChecksumValue.w,d0		; copy the last checksum value to d0
 		move.w	#(127840/268)-(40000/268)-1,d1	; load a fairly safe estimate for the maximum number of loops per frame. If you get lag, just increase the 40000 to a higher number (check will take longer!)
 
@@ -3650,7 +3650,7 @@ Title_EnterCheat:			; XREF: Title_ChkRegion
 		move.w	($FFFFFFE4).w,d0
 		adda.w	d0,a0
 		move.b	($FFFFF605).w,d0 ; get button press
-		andi.b	#$F,d0		; read only up/down/left/right buttons
+		andi.b	#J_U|J_D|J_L|J_R,d0		; read only up/down/left/right buttons
 		cmp.b	(a0),d0		; does button press match the cheat code?
 		bne.s	loc_3210	; if not, branch
 		addq.w	#1,($FFFFFFE4).w ; next	button press
@@ -3681,14 +3681,14 @@ loc_3210:				; XREF: Title_EnterCheat
 
 Title_CountC:
 		move.b	($FFFFF605).w,d0
-		andi.b	#$20,d0		; is C button pressed?
+		andi.b	#J_C,d0		; is C button pressed?
 		beq.s	loc_3230	; if not, branch
 		addq.w	#1,($FFFFFFE6).w ; increment C button counter
 
 loc_3230:
 		tst.w	($FFFFF614).w
 		beq.w	Demo
-		andi.b	#$80,($FFFFF605).w ; check if Start is pressed
+		andi.b	#J_S,($FFFFF605).w ; check if Start is pressed
 		beq.w	loc_317C	; if not, branch
 
 Title_ChkLevSel:
@@ -3696,7 +3696,7 @@ Title_ChkLevSel:
 		tst.b	($FFFFFFE0).w	; check	if level select	code is	on
 		beq.w	PlayLevel	; if not, play level
 		endif
-		btst	#6,($FFFFF604).w ; check if A is pressed
+		btst	#JbA,($FFFFF604).w ; check if A is pressed
 		beq.w	PlayLevel	; if not, play level
 		moveq	#2,d0
 		bsr.w	PalLoad2	; load level select pallet
@@ -3735,16 +3735,16 @@ LevelSelect:
 		move.w	($FFFFFF82).w,d0
 		cmpi.w	#$14,d0		; have you selected item $14 (sound test)?
 		bne.s	LevSelLevCheckStart; if not, go to	Level/SS subroutine
-		cmpi.b	#$80,($FFFFF605).w ; is	Start pressed?
+		cmpi.b	#J_S,($FFFFF605).w ; is	Start pressed?
 		beq.s	LevSelStartPress	; if true, branch
-		cmpi.b	#$20,($FFFFF605).w ; is	B pressed?
+		cmpi.b	#J_B,($FFFFF605).w ; is	B pressed?
 		beq.s	LevSelBCPress	; if not, branch
-		cmpi.b	#$10,($FFFFF605).w ; is	C pressed?
+		cmpi.b	#J_C,($FFFFF605).w ; is	C pressed?
 		beq.s	LevSelBCPress	; if not, branch
 		bra.s	LevelSelect
 ; ===========================================================================
 LevSelLevCheckStart:				; XREF: LevelSelect
-		andi.b	#$80,($FFFFF605).w ; is	Start pressed?
+		andi.b	#J_S,($FFFFF605).w ; is	Start pressed?
 		beq.s	LevelSelect	; if not, branch
 		bra.s	LevSel_Level_SS
 
@@ -3757,7 +3757,7 @@ LevSel_PlaySnd:
 		bra.s	LevelSelect
 		
 LevSelStartPress:				; XREF: LevelSelect
-		move.b	#$00,($FFFFF600).w
+		move.b	#0,($FFFFF600).w
 		rts
 ; ===========================================================================
 
@@ -3837,7 +3837,7 @@ loc_33B6:				; XREF: loc_33E4
 ; ===========================================================================
 
 loc_33E4:				; XREF: Demo
-		andi.b	#$80,($FFFFF605).w ; is	Start button pressed?
+		andi.b	#J_S,($FFFFF605).w ; is	Start button pressed?
 		bne.w	Title_ChkLevSel	; if yes, branch
 		tst.w	($FFFFF614).w
 		bne.w	loc_33B6
@@ -3884,25 +3884,25 @@ Demo_Levels:	incbin	misc\dm_ord1.bin
 
 LevSelControls:				; XREF: LevelSelect
 		move.b	($FFFFF605).w,d1
-		andi.b	#3,d1		; is up/down pressed and held?
+		andi.b	#JbU|JbD,d1		; is up/down pressed and held?
 		bne.s	LevSel_UpDown	; if yes, branch
 		subq.w	#1,($FFFFFF80).w ; subtract 1 from time	to next	move
 		bpl.s	LevSel_SndTest	; if time remains, branch
 
 LevSel_UpDown:
-		move.w	#$B,($FFFFFF80).w ; reset time delay
+		move.w	#8,($FFFFFF80).w ; reset time delay
 		move.b	($FFFFF604).w,d1
-		andi.b	#3,d1		; is up/down pressed?
+		andi.b	#JbU|JbD,d1		; is up/down pressed?
 		beq.s	LevSel_SndTest	; if not, branch
 		move.w	($FFFFFF82).w,d0
-		btst	#0,d1		; is up	pressed?
+		btst	#JbU,d1		; is up	pressed?
 		beq.s	LevSel_Down	; if not, branch
 		subq.w	#1,d0		; move up 1 selection
 		bcc.s	LevSel_Down
 		moveq	#$14,d0		; if selection moves below 0, jump to selection	$14
 
 LevSel_Down:
-		btst	#1,d1		; is down pressed?
+		btst	#JbD,d1		; is down pressed?
 		beq.s	LevSel_Refresh	; if not, branch
 		addq.w	#1,d0		; move down 1 selection
 		cmpi.w	#$15,d0
@@ -3911,27 +3911,26 @@ LevSel_Down:
 
 LevSel_Refresh:
 		move.w	d0,($FFFFFF82).w ; set new selection
-		bsr.w	LevSelTextLoad	; refresh text
-		rts
+		bra.w	LevSelTextLoad	; refresh text
 ; ===========================================================================
 
 LevSel_SndTest:				; XREF: LevSelControls
 		cmpi.w	#$14,($FFFFFF82).w ; is	item $14 selected?
 		bne.s	LevSel_NoMove	; if not, branch
 		move.b	($FFFFF605).w,d1
-		andi.b	#$4C,d1		; is left/right/A	pressed?
+		andi.b	#J_L|J_R|J_A,d1		; is left/right/A	pressed?
 		beq.s	LevSel_NoMove	; if not, branch
 		move.w	($FFFFFF84).w,d0
-		btst	#6,d1		; is A pressed?
+		btst	#JbA,d1		; is A pressed?
 		bne.s	LevSel_A	; if not, branch
-		btst	#2,d1		; is left pressed?
+		btst	#JbL,d1		; is left pressed?
 		beq.s	LevSel_Right	; if not, branch
 		subq.w	#1,d0		; subtract 1 from sound	test
 		bge.s	LevSel_Right
 		moveq	#SFXoff+SFXcount-1,d0; if sound test moves below 0, set to max
 		
 LevSel_A:
-		btst	#6,d1		; is A button pressed?
+		btst	#JbA,d1		; is A button pressed?
 		beq.s	LevSel_Right	; if not, branch
 		add.w	#16,d0		; add $10 to sound test
 		cmpi.w	#SFXoff+SFXcount,d0	        ; addition by Shadow05 to stop the sound test from going above $D0
@@ -3939,7 +3938,7 @@ LevSel_A:
 		moveq	#0,d0		; if sound test	moves above max, set to	0
 
 LevSel_Right:
-		btst	#3,d1		; is right pressed?
+		btst	#JbR,d1		; is right pressed?
 		beq.s	LevSel_Refresh2	; if not, branch
 		addq.w	#1,d0		; add 1	to sound test
 		cmpi.w	#SFXoff+SFXcount,d0
@@ -4225,13 +4224,13 @@ Level_ChkDebug:
 		tst.b	($FFFFFFE2).w	; has debug cheat been entered?
 		beq.s	Level_ChkWater	; if not, branch
 		endif
-		btst	#6,($FFFFF604).w ; is A	button pressed?
+		btst	#JbA,($FFFFF604).w ; is A	button pressed?
 		beq.s	Level_ChkWater	; if not, branch
 		move.b	#1,($FFFFFFFA).w ; enable debug	mode
 
 Level_ChkWater:
-		move.w	#0,($FFFFF602).w
-		move.w	#0,($FFFFF604).w
+		clr.w	($FFFFF602).w
+		clr.w	($FFFFF604).w
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
 		bne.s	Level_LoadObj	; if not, branch
 		move.b	#$1B,($FFFFD780).w ; load water	surface	object
@@ -5225,7 +5224,7 @@ SS_ClrNemRam:
 		tst.b	($FFFFFFE2).w	; has debug cheat been entered?
 		beq.s	SS_NoDebug	; if not, branch
 		endif
-		btst	#6,($FFFFF604).w ; is A	button pressed?
+		btst	#JbA,($FFFFF604).w ; is A	button pressed?
 		beq.s	SS_NoDebug	; if not, branch
 		move.b	#1,($FFFFFFFA).w ; enable debug	mode
 
@@ -5980,7 +5979,7 @@ End_LoadData:
 		moveq	#3,d0
 		bsr.w	PalLoad1	; load Sonic's pallet
 		music	mus_Ending	; play ending sequence music
-		btst	#6,($FFFFF604).w ; is button A pressed?
+		btst	#JbA,($FFFFF604).w ; is button A pressed?
 		beq.s	End_LoadSonic	; if not, branch
 		move.b	#1,($FFFFFFFA).w ; enable debug	mode
 
@@ -5988,7 +5987,7 @@ End_LoadSonic:
 		move.b	#1,($FFFFD000).w ; load	Sonic object
 		bset	#0,($FFFFD022).w ; make	Sonic face left
 		move.b	#1,($FFFFF7CC).w ; lock	controls
-		move.w	#$400,($FFFFF602).w ; move Sonic to the	left
+		move.b	#J_L,($FFFFF602).w ; move Sonic to the	left
 		move.w	#$F800,($FFFFD014).w ; set Sonic's speed
 		move.b 	#1,($FFFFFFD0).w
 		jsr	ObjPosLoad
@@ -6566,7 +6565,7 @@ TryAg_MainLoop:
 		bsr.w	DelayProgram
 		jsr	ObjectsLoad
 		jsr	BuildSprites
-		andi.b	#$80,($FFFFF605).w ; is	Start button pressed?
+		andi.b	#J_S,($FFFFF605).w ; is	Start button pressed?
 		bne.s	TryAg_Exit	; if yes, branch
 		tst.w	($FFFFF614).w	; has 30 seconds elapsed?
 		beq.s	TryAg_Exit	; if yes, branch
@@ -16140,7 +16139,7 @@ Obj39_SetWait:				; XREF: Obj39_Main
 
 Obj39_Wait:				; XREF: Obj39_Index
 		move.b	($FFFFF605).w,d0
-		andi.b	#$70,d0		; is button A, B or C pressed?
+		andi.b	#J_B|J_C|J_A,d0		; is button A, B or C pressed?
 		bne.s	Obj39_ChgMode	; if yes, branch
 		btst	#0,$1A(a0)
 		bne.s	Obj39_Display
@@ -22386,7 +22385,7 @@ loc_11114:
 		move.w	d1,$C(a0)	; match	obj y-position to water	height
 		tst.b	$32(a0)
 		bne.s	Obj1B_Animate
-		btst	#7,($FFFFF605).w ; is Start button pressed?
+		btst	#JbS,($FFFFF605).w ; is Start button pressed?
 		beq.s	loc_1114A	; if not, branch
 		addq.b	#3,$1A(a0)	; use different	frames
 		move.b	#1,$32(a0)	; stop animation
@@ -22461,7 +22460,7 @@ Obj0B_MoveUp:				; XREF: Obj0B_Action
 		lea	($FFFFD000).w,a1
 		move.w	$C(a0),d0
 		subi.w	#$18,d0
-		btst	#0,($FFFFF604).w ; check if "up" is pressed
+		btst	#JbU,($FFFFF604).w ; check if "up" is pressed
 		beq.s	Obj0B_MoveDown
 		subq.w	#1,$C(a1)	; move Sonic up
 		cmp.w	$C(a1),d0
@@ -22470,7 +22469,7 @@ Obj0B_MoveUp:				; XREF: Obj0B_Action
 
 Obj0B_MoveDown:
 		addi.w	#$24,d0
-		btst	#1,($FFFFF604).w ; check if "down" is pressed
+		btst	#JbD,($FFFFF604).w ; check if "down" is pressed
 		beq.s	Obj0B_LetGo
 		addq.w	#1,$C(a1)	; move Sonic down
 		cmp.w	$C(a1),d0
@@ -24498,7 +24497,7 @@ Obj01_Main:				; XREF: Obj01_Index
 Obj01_Control:				; XREF: Obj01_Index
 		tst.w	($FFFFFFFA).w	; is debug cheat enabled?
 		beq.s	loc_12C58	; if not, branch
-		btst	#4,($FFFFF605).w ; is button C pressed?
+		btst	#JbB,($FFFFF605).w ; is button B pressed?
 		beq.s	loc_12C58	; if not, branch
 		move.w	#1,($FFFFFE08).w ; change Sonic	into a ring/item
 		clr.b	($FFFFF7CC).w
@@ -30836,7 +30835,7 @@ Obj8A_Main:				; XREF: Obj8A_Index
 		move.b	#$A,$1A(a0)	; display "SONIC TEAM PRESENTS"
 		tst.b	($FFFFFFE3).w	; is hidden credits cheat on?
 		beq.s	Obj8A_Display	; if not, branch
-		cmpi.b	#$72,($FFFFF604).w ; is	Start+A+C+Down being pressed?
+		cmpi.b	#J_B|J_C|J_A,($FFFFF604).w ; is	A+B+C being pressed?
 		bne.s	Obj8A_Display	; if not, branch
 		move.w	#$EEE,($FFFFFBC0).w ; 3rd pallet, 1st entry = white
 		move.w	#$880,($FFFFFBC2).w ; 3rd pallet, 2nd entry = cyan
@@ -36611,7 +36610,7 @@ Obj09_Main:				; XREF: Obj09_Index
 Obj09_ChkDebug:				; XREF: Obj09_Index
 		tst.w	($FFFFFFFA).w	; is debug mode	cheat enabled?
 		beq.s	Obj09_NoDebug	; if not, branch
-		btst	#4,($FFFFF605).w ; is button B pressed?
+		btst	#JbB,($FFFFF605).w ; is button B pressed?
 		beq.s	Obj09_NoDebug	; if not, branch
 		move.w	#1,($FFFFFE08).w ; change Sonic	into a ring
 
@@ -38580,7 +38579,7 @@ Debug_Control:
 		moveq	#0,d4
 		move.w	#1,d1
 		move.b	($FFFFF605).w,d4
-		andi.w	#$F,d4		; is up/down/left/right	pressed?
+		andi.w	#JbU|JbD|JbL|JbR,d4		; is up/down/left/right	pressed?
 		bne.s	loc_1D018	; if yes, branch
 		move.b	($FFFFF604).w,d0
 		andi.w	#$F,d0
@@ -38609,14 +38608,14 @@ loc_1D01C:
 		asr.l	#4,d1
 		move.l	$C(a0),d2
 		move.l	8(a0),d3
-		btst	#0,d4		; is up	being pressed?
+		btst	#JbU,d4		; is up	being pressed?
 		beq.s	loc_1D03C	; if not, branch
 		sub.l	d1,d2
 		bcc.s	loc_1D03C
 		moveq	#0,d2
 
 loc_1D03C:
-		btst	#1,d4		; is down being	pressed?
+		btst	#JbD,d4		; is down being	pressed?
 		beq.s	loc_1D052	; if not, branch
 		add.l	d1,d2
 		cmpi.l	#$7FF0000,d2
@@ -38640,9 +38639,9 @@ loc_1D066:
 		move.l	d3,8(a0)
 
 Debug_BackItem:
-		btst	#6,($FFFFF604).w ; is button A pressed?
+		btst	#JbA,($FFFFF604).w ; is button A pressed?
 		beq.s	Debug_MakeItem	; if not, branch
-		btst	#5,($FFFFF605).w ; is button C pressed?
+		btst	#JbC,($FFFFF605).w ; is button C pressed?
 		beq.s	Debug_NextItem	; if not, branch
 		subq.b	#1,($FFFFFE06).w ; go back 1 item
 		bcc.s	Debug_NoLoop
@@ -38651,7 +38650,7 @@ Debug_BackItem:
 ; ===========================================================================
 
 Debug_NextItem:
-		btst	#6,($FFFFF605).w ; is button A pressed?
+		btst	#JbA,($FFFFF605).w ; is button A pressed?
 		beq.s	Debug_MakeItem	; if not, branch
 		addq.b	#1,($FFFFFE06).w ; go forwards 1 item
 		cmp.b	($FFFFFE06).w,d6
@@ -38663,7 +38662,7 @@ Debug_NoLoop:
 ; ===========================================================================
 
 Debug_MakeItem:
-		btst	#5,($FFFFF605).w ; is button C pressed?
+		btst	#JbC,($FFFFF605).w ; is button C pressed?
 		beq.s	Debug_Exit	; if not, branch
 		jsr	SingleObjLoad
 		bne.s	Debug_Exit
@@ -38681,7 +38680,7 @@ Debug_MakeItem:
 ; ===========================================================================
 
 Debug_Exit:
-		btst	#4,($FFFFF605).w ; is button B pressed?
+		btst	#JbB,($FFFFF605).w ; is button B pressed?
 		beq.s	Debug_DoNothing	; if not, branch
 		moveq	#0,d0
 		move.w	d0,($FFFFFE08).w ; deactivate debug mode

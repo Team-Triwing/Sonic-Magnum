@@ -16,3 +16,4 @@ name hasn't been decided yet
 * MarkeyJester - Twizzler compression
 * MainMemory - SonLVL & SonPLN
 * Selbi - Sonic 1: Text Code Generator
+* Xenowhirl - SonMapEd

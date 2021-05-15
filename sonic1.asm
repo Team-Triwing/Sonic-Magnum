@@ -3348,9 +3348,8 @@ SegaScreen:				; XREF: GameModeArray
 		moveq	#0,d0
 		bsr.w	PalLoad2	; load Sega logo pallet
 		move.w	#-$A,($FFFFF632).w
-		move.w	#0,($FFFFF634).w
-		move.w	#0,($FFFFF662).w
-		move.w	#0,($FFFFF660).w
+		clr.w	($FFFFF634).w
+        clr.b  	($FFFFFFD0).w
 		clr.b	ChecksumStart.w			; clear start button check
 		clr.b	mComm.w				; make sure playback wont be marked as ended
 		move.w	($FFFFF60C).w,d0
@@ -3481,10 +3480,9 @@ Sega_Locret:
 ; ---------------------------------------------------------------------------
 
 TitleScreen:				; XREF: GameModeArray
-		command	mus_Stop	; stop music
+		command	mus_FadeOut	; fade music
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
-		command	mus_Reset	 ; fade reset music
 
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8004,(a6)
@@ -3526,7 +3524,7 @@ Title_ClrObjRam:
 Title_ClrPallet:
 		move.l	d0,(a1)+
 		dbf	d1,Title_ClrPallet ; fill pallet with 0	(black)
-
+		clr.b  	($FFFFFFD0).w
 		moveq	#3,d0		; load Sonic's pallet
 		bsr.w	PalLoad1
 		move.b	#$8A,($FFFFD080).w ; load "SONIC TEAM PRESENTS"	object
@@ -3580,7 +3578,7 @@ Title_LoadText:
 		move.w	#0,d0
 		bsr.w	EniDec
 		lea	($FF0000).l,a1
-		move.l	#$42060003,d0
+		move.l	#$42080003,d0
 		moveq	#$21,d1
 		moveq	#$15,d2
 		bsr.w	ShowVDPGraphics
@@ -4040,6 +4038,7 @@ MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ, mus_FZ
 ; ---------------------------------------------------------------------------
 
 Level:					; XREF: GameModeArray
+		clr.b  	($FFFFFFD0).w
 		bset	#7,($FFFFF600).w ; add $80 to screen mode (for pre level sequence)
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_37B6
@@ -4195,7 +4194,7 @@ loc_3946:
 		move.b	#1,($FFFFD000).w ; load	Sonic object
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ChkDebug
-		move.b	#$21,($FFFFD040).w ; load HUD object
+		move.b 	#1,($FFFFFFD0).w
 
 Level_ChkDebug:
 		if safe=0
@@ -5180,8 +5179,9 @@ SS_ClrNemRam:
 		moveq	#$A,d0
 		bsr.w	PalLoad1	; load special stage pallet
 		jsr	SS_Load
-		move.l	#0,($FFFFF700).w
-		move.l	#0,($FFFFF704).w
+		clr.l	($FFFFF700).w
+		clr.l	($FFFFF704).w
+		clr.b  	($FFFFFFD0).w
 		move.b	#9,($FFFFD000).w ; load	special	stage Sonic object
 		bsr.w	PalCycle_SS
 		clr.w	($FFFFF780).w	; set stage angle to "upright"
@@ -5196,7 +5196,7 @@ SS_ClrNemRam:
 		subq.b	#1,($FFFFF792).w
 		clr.w	($FFFFFE20).w
 		clr.b	($FFFFFE1B).w
-		move.w	#0,($FFFFFE08).w
+		clr.w	($FFFFFE08).w
 		move.w	#1800,($FFFFF614).w
 		if safe=0
 		tst.b	($FFFFFFE2).w	; has debug cheat been entered?
@@ -5612,6 +5612,7 @@ byte_4CCC:	dc.b 8,	2, 4, $FF, 2, 3, 8, $FF, 4, 2, 2, 3, 8,	$FD, 4,	2, 2, 3, 2, $
 
 ContinueScreen:				; XREF: GameModeArray
 		bsr.w	Pal_FadeFrom
+		music	mus_FadeOut
 		move	#$2700,sr
 		move.w	($FFFFF60C).w,d0
 		andi.b	#$BF,d0
@@ -5627,7 +5628,7 @@ ContinueScreen:				; XREF: GameModeArray
 Cont_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cont_ClrObjRam ; clear object RAM
-
+		clr.b  	($FFFFFFD0).w
 		move.l	#$70000002,(VDP_CTRL).l
 		lea	(Nem_TitleCard).l,a0 ; load title card patterns
 		bsr.w	NemDec
@@ -5688,7 +5689,7 @@ loc_4DF2:
 		bcc.s	Cont_MainLoop
 		tst.w	($FFFFF614).w
 		bne.w	Cont_MainLoop
-		move.b	#0,($FFFFF600).w ; go to Sega screen
+		clr.b	($FFFFF600).w ; go to Sega screen
 		rts
 ; ===========================================================================
 
@@ -5787,22 +5788,16 @@ Obj80_ChkType:				; XREF: Obj80_Index
 		andi.b	#1,d0
 		bne.s	loc_4F40
 		tst.w	($FFFFD010).w
-		bne.s	Obj80_Delete
+		jne		DeleteObject
 		rts
 ; ===========================================================================
 
 loc_4F40:				; XREF: Obj80_ChkType
 		move.b	($FFFFFE0F).w,d0
 		andi.b	#$F,d0
-		bne.s	Obj80_Display2
+		jne		DisplaySprite
 		bchg	#0,$1A(a0)
-
-Obj80_Display2:
 		jmp	DisplaySprite
-; ===========================================================================
-
-Obj80_Delete:				; XREF: Obj80_ChkType
-		jmp	DeleteObject
 ; ===========================================================================
 
 ; ---------------------------------------------------------------------------
@@ -5835,19 +5830,12 @@ Obj81_Main:				; XREF: Obj81_Index
 
 Obj81_ChkLand:				; XREF: Obj81_Index
 		cmpi.w	#$1A0,$C(a0)	; has Sonic landed yet?
-		bne.s	Obj81_ShowFall	; if not, branch
+		bne.s	Obj81_ShowRun	; if not, branch
 		addq.b	#2,$24(a0)
 		clr.w	$12(a0)		; stop Sonic falling
 		move.l	#Map_obj80,4(a0)
 		move.w	#$8500,2(a0)
 		move.b	#0,$1C(a0)
-		bra.s	Obj81_Animate
-; ===========================================================================
-
-Obj81_ShowFall:				; XREF: Obj81_ChkLand
-		jsr	SpeedToPos
-		jsr	Sonic_Animate
-		jmp	LoadSonicDynPLC
 ; ===========================================================================
 
 Obj81_Animate:				; XREF: Obj81_Index
@@ -5864,12 +5852,13 @@ Obj81_GetUp:				; XREF: Obj81_Animate
 		move.b	#$1E,$1C(a0)	; use "getting up" animation
 		clr.w	$14(a0)
 		subq.w	#8,$C(a0)
-		command	mus_FadeOut	; fade out music
+		sfx		sfx_Roll
 
 Obj81_Run:				; XREF: Obj81_Index
 		cmpi.w	#$800,$14(a0)	; check	Sonic's "run speed" (not moving)
 		bne.s	Obj81_AddSpeed	; if too low, branch
 		move.w	#$1000,$10(a0)	; move Sonic to	the right
+		sfx		sfx_Dash
 		bra.s	Obj81_ShowRun
 ; ===========================================================================
 
@@ -5978,7 +5967,7 @@ End_LoadSonic:
 		move.b	#1,($FFFFF7CC).w ; lock	controls
 		move.w	#$400,($FFFFF602).w ; move Sonic to the	left
 		move.w	#$F800,($FFFFD014).w ; set Sonic's speed
-		move.b	#$21,($FFFFD040).w ; load HUD object
+		move.b 	#1,($FFFFFFD0).w
 		jsr	ObjPosLoad
 		jsr	ObjectsLoad
 		jsr	BuildSprites
@@ -6411,7 +6400,7 @@ Cred_ClrObjRam:
 Cred_ClrPallet:
 		move.l	d0,(a1)+
 		dbf	d1,Cred_ClrPallet ; fill pallet	with black ($0000)
-
+		clr.b  	($FFFFFFD0).w
 		moveq	#3,d0
 		bsr.w	PalLoad1	; load Sonic's pallet
 		move.b	#$8A,($FFFFD080).w ; load credits object
@@ -13774,7 +13763,7 @@ Obj0E_Index:	dc.w Obj0E_Main-Obj0E_Index
 
 Obj0E_Main:				; XREF: Obj0E_Index
 		addq.b	#2,$24(a0)
-		move.w	#$F0,8(a0)
+		move.w	#$F8,8(a0)
 		move.w	#$DE,$A(a0)
 		move.l	#Map_obj0E,4(a0)
 		move.w	#$2300,2(a0)
@@ -13803,15 +13792,11 @@ Obj0E_Move:				; XREF: Obj0E_Index
 Obj0E_Display:
 		bra.w	DisplaySprite
 ; ===========================================================================
-		rts
-; ===========================================================================
 
 Obj0E_Animate:				; XREF: Obj0E_Index
 		lea	(Ani_obj0E).l,a1
 		bsr.w	AnimateSprite
 		bra.w	DisplaySprite
-; ===========================================================================
-		rts
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 0F - "PRESS START BUTTON" and "TM" from title screen
@@ -13831,7 +13816,7 @@ Obj0F_Index:	dc.w Obj0F_Main-Obj0F_Index
 
 Obj0F_Main:				; XREF: Obj0F_Index
 		addq.b	#2,$24(a0)
-		move.w	#$D0,8(a0)
+		move.w	#$D8,8(a0)
 		move.w	#$130,$A(a0)
 		move.l	#Map_obj0F,4(a0)
 		move.w	#$200,2(a0)
@@ -13841,7 +13826,7 @@ Obj0F_Main:				; XREF: Obj0F_Index
 		cmpi.b	#3,$1A(a0)	; is the object	"TM"?
 		bne.s	locret_A6F8	; if not, branch
 		move.w	#$2510,2(a0)	; "TM" specific	code
-		move.w	#$170,8(a0)
+		move.w	#$178,8(a0)
 		move.w	#$F8,$A(a0)
 
 locret_A6F8:				; XREF: Obj0F_Index
@@ -17451,6 +17436,11 @@ BldSpr_ScrPos:	dc.l 0			; blank
 BuildSprites:				; XREF: TitleScreen; et al
 		lea	($FFFFF800).w,a2 ; set address for sprite table
 		moveq	#0,d5
+        moveq	#0,d4
+        tst.b	($FFFFFFD0).w ; this was level_started_flag
+        beq.s	BuildSprites_2
+        jsr	loc_40804
+BuildSprites_2:
 		lea	($FFFFAC00).w,a4
 		moveq	#7,d7
 
@@ -37823,47 +37813,53 @@ loc_1C518:
 
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
-; Object 21 - SCORE, TIME, RINGS
+; Object 21 - (null)
 ; ---------------------------------------------------------------------------
 
 Obj21:					; XREF: Obj_Index
-		moveq	#0,d0
-		move.b	$24(a0),d0
-		move.w	Obj21_Index(pc,d0.w),d1
-		jmp	Obj21_Index(pc,d1.w)
-; ===========================================================================
-Obj21_Index:	dc.w Obj21_Main-Obj21_Index
-		dc.w Obj21_Flash-Obj21_Index
-; ===========================================================================
-
-Obj21_Main:				; XREF: Obj21_Main
-		addq.b	#2,$24(a0)
-		move.w	#$90,8(a0)
-		move.w	#$108,$A(a0)
-		move.l	#Map_obj21,4(a0)
-		move.w	#$6CA,2(a0)
-		move.b	#0,1(a0)
-		move.b	#0,$18(a0)
-
-Obj21_Flash:				; XREF: Obj21_Main
-		tst.w	($FFFFFE20).w	; do you have any rings?
-		beq.s	Obj21_Flash2	; if not, branch
-		clr.b	$1A(a0)		; make all counters yellow
-		jmp	DisplaySprite
+		rts
+		
+; ---------------------------------------------------------------------------
+; HUD Object code - SCORE, TIME, RINGS
+; ---------------------------------------------------------------------------
+loc_40804:
+		tst.w	($FFFFFE20).w
+		beq.s   loc_40820
+		moveq   #0,d1
+		btst   	#3,($FFFFFE05).w
+		bne.s  	loc_40836
+		cmpi.b 	#9,($FFFFFE23).w
+		bne.s 	loc_40836
+		addq.w	#2,d1
+		bra.s   loc_40836
 ; ===========================================================================
 
-Obj21_Flash2:
-		moveq	#0,d0
-		btst	#3,($FFFFFE05).w
-		bne.s	Obj21_Display
-		addq.w	#1,d0		; make ring counter flash red
-		cmpi.b	#9,($FFFFFE23).w ; have	9 minutes elapsed?
-		bne.s	Obj21_Display	; if not, branch
-		addq.w	#2,d0		; make time counter flash red
+loc_40820:
+		moveq   #0,d1
+		btst   	#3,($FFFFFE05).w
+		bne.s   loc_40836
+		addq.w  #1,d1
+		cmpi.b  #9,($FFFFFE23).w
+		bne.s   loc_40836
+		addq.w  #2,d1
 
-Obj21_Display:
-		move.b	d0,$1A(a0)
-		jmp	DisplaySprite
+loc_40836:
+		move.w  #$90,d3
+		move.w  #$108,d2
+		lea    	(Map_Obj21).l,a1
+		movea.w #$6CA,a3
+		add.w   d1,d1
+		adda.w  (a1,d1.w),a1
+		moveq   #0,d1
+		move.b  (a1)+,d1
+		subq.b  #1,d1
+		bmi.s  	return_40858
+		jsr    	sub_D762
+
+return_40858:
+    rts
+; End of function h		
+
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - SCORE, TIME, RINGS

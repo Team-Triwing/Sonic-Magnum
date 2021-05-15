@@ -6,7 +6,7 @@ name hasn't been decided yet
 ## Creator
 * RepellantMold
 ## Level design
-* valvastYT
+* valvast/valvastVT
 ## Sound
 
 ## Tools

@@ -15,4 +15,4 @@ name hasn't been decided yet
 * Vladikcomper - Error handler
 * MarkeyJester - Twizzler compression
 * MainMemory - SonLVL & SonPLN
-* Selbi - Sonic 1 - Text Code Generator
+* Selbi - Sonic 1: Text Code Generator

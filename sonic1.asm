@@ -3727,7 +3727,7 @@ Title_ClrVram:
 ; ---------------------------------------------------------------------------
 
 LevelSelect:
-		move.b	#4,($FFFFF62A).w
+		move.b	#2,($FFFFF62A).w
 		bsr.w	DelayProgram
 		bsr.w	LevSelControls
 		bsr.w	RunPLC_RAM
@@ -13530,6 +13530,10 @@ loc_A246:
 loc_A25C:
 		btst	#5,$22(a0)
 		beq.s	Obj26_Animate
+		cmp.b	#2,$1C(a1)	; check if in jumping/rolling animation
+		beq.s	loc_A26A
+		cmp.b	#$17,$1C(a1)	; check if in drowning animation
+		beq.s	loc_A26A
 		move.w	#1,$1C(a1)
 
 loc_A26A:
@@ -16953,6 +16957,8 @@ Obj36_Upright:				; XREF: Obj36_Solid
 Obj36_Hurt:				; XREF: Obj36_SideWays; Obj36_Upright
 		tst.b	($FFFFFE2D).w	; is Sonic invincible?
 		bne.s	Obj36_Display	; if yes, branch
+		tst.w	($FFFFD030).w	; is Sonic invulnerable?
+		bne.s	Obj36_Display	; if yes, branch
 		move.l	a0,-(sp)
 		movea.l	a0,a2
 		lea	($FFFFD000).w,a0
@@ -20338,6 +20344,12 @@ loc_FB8C:
 loc_FB92:
 		btst	#5,$22(a0)
 		beq.s	loc_FBAC
+		cmp.b	#2,$1C(a1)	; check if in jumping/rolling animation
+		beq.s	loc_FBA0
+		cmp.b	#$17,$1C(a1)	; check if in drowning animation
+		beq.s	loc_FBA0
+		cmp.b	#$1A,$1C(a1)	; check if in hurt animation
+		beq.s	loc_FBA0
 		move.w	#1,$1C(a1)	; use walking animation
 
 loc_FBA0:

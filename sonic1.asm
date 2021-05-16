@@ -4,7 +4,7 @@ Z80_Space =	$8D0			; The amount of space reserved for Z80 driver. The compressor
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
-Drvmem		equ $FFFFF000
+Drvmem		equ $FFFFF100
 
 
 		include "AMPS/lang.asm"
@@ -30895,13 +30895,6 @@ Obj8A_Main:				; XREF: Obj8A_Index
 		bne.s	Obj8A_Display	; if not, branch
 		move.w	#$A6,2(a0)
 		move.b	#$A,$1A(a0)	; display "SONIC TEAM PRESENTS"
-		tst.b	($FFFFFFE3).w	; is hidden credits cheat on?
-		beq.s	Obj8A_Display	; if not, branch
-		cmpi.b	#J_B|J_C|J_A,($FFFFF604).w ; is	A+B+C being pressed?
-		bne.s	Obj8A_Display	; if not, branch
-		move.w	#$EEE,($FFFFFBC0).w ; 3rd pallet, 1st entry = white
-		move.w	#$880,($FFFFFBC2).w ; 3rd pallet, 2nd entry = cyan
-		jmp	DeleteObject
 ; ===========================================================================
 
 Obj8A_Display:				; XREF: Obj8A_Index

@@ -851,7 +851,7 @@ inc	macro reg
 	endif
     endm
 
-dec	macro reg
+zdec	macro reg
 	if narg<>1
 		inform 2,"Incorrect number of arguments!"
 	endif

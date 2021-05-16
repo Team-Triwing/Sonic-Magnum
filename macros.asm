@@ -133,7 +133,7 @@ rsEven macros
 ;	eaddr	- Address to finish clearing memory at
 ;		  (not required if [saddr]_end exists)
 ; -------------------------------------------------------------------------
-
+	
 clrRAM macro &
 	saddr, eaddr
 	
@@ -161,8 +161,7 @@ clrsize		=	(\endaddr-\saddr)&$FFFFFF
 
 	if clrsize&2
 		move.w	d0,(a1)+		; Clear remaining word of data
-	endif
-	if clrsize&1
+	elseif clrsize&1
 		move.b	d0,(a1)+		; Clear remaining byte of data
 	endif
 

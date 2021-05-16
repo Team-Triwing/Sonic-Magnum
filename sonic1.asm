@@ -3453,7 +3453,7 @@ TitleScreen:				; XREF: GameModeArray
 		command	mus_FadeOut	; fade music
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
-
+		clrRAM	$FFFFFA00,$FFFFFBA0	; fill pallet with 0	(black)
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
@@ -3465,7 +3465,6 @@ TitleScreen:				; XREF: GameModeArray
 		clr.b	($FFFFF64E).w
 		bsr.w	ClearScreen
 		clrRAM	$FFFFD000,$FFFFEFFF	; fill object RAM ($D000-$EFFF) with	$0
-
 		move.l	#$40000000,(VDP_CTRL).l
 		lea	(Nem_JapNames).l,a0 ; load Japanese credits
 		bsr.w	NemDec
@@ -3481,7 +3480,6 @@ TitleScreen:				; XREF: GameModeArray
 		moveq	#$27,d1
 		moveq	#$1B,d2
 		bsr.w	ShowVDPGraphics
-		clrRAM	$FFFFFB80,$FFFFFB9F	; fill pallet with 0	(black)
 		clr.b  	($FFFFFFD0).w
 		moveq	#3,d0		; load Sonic's pallet
 		bsr.w	PalLoad1
@@ -9041,13 +9039,7 @@ locret_6D10:
 
 
 LevelLayoutLoad:			; XREF: TitleScreen; MainLoadBlockLoad
-		lea	($FFFFA400).w,a3
-		move.w	#$1FF,d1
-		moveq	#0,d0
-
-LevLoad_ClrRam:
-		move.l	d0,(a3)+
-		dbf	d1,LevLoad_ClrRam ; clear the RAM ($FFFFA400-A7FF)
+		clrRAM	$FFFFA400,$FFFFA7FF
 
 		lea	($FFFFA400).w,a3 ; RAM address for level layout
 		moveq	#0,d1

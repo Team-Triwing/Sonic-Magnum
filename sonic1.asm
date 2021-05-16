@@ -3674,8 +3674,8 @@ Title_ClrScroll:
 Title_ClrVram:
 		move.l	d0,(a6)
 		dbf	d1,Title_ClrVram ; fill	VRAM with 0
-
-		move.w	#MusOff,($FFFFFF84).w
+		moveq	#0,d0				; clear d0
+		move.l	d0,($FFFFFF30).w		; clear foreground strip draw flags
 		bsr.w	LevSelTextLoad
 
 ; ---------------------------------------------------------------------------
@@ -3707,7 +3707,6 @@ LevSelLevCheckStart:				; XREF: LevelSelect
 
 LevSelBCPress:				; XREF: LevelSelect
 		move.w	($FFFFFF84).w,d0
-		addi.w	#MusOff,d0
 
 LevSel_PlaySnd:
 		move.b	d0,mQueue+2.w	; play that sound!
@@ -3763,9 +3762,6 @@ LSelectPointers:
 ; Level	select codes
 ; ---------------------------------------------------------------------------
 LevelSelectCode_J:
-		incbin	misc\ls_jcode.bin
-		even
-
 LevelSelectCode_US:
 		incbin	misc\ls_ucode.bin
 		even

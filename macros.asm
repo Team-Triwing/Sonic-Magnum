@@ -159,7 +159,9 @@ clrsize		=	(\endaddr-\saddr)&$FFFFFF
 	move.l	d0,(a1)+			; Clear data
 	dbf	d1,.Clear\@			; Loop until data is cleared
 
-	if clrsize&2
+	if clrsize&3
+		move.l	d0,(a1)+		; Clear remaining long of data
+	elseif clrsize&2
 		move.w	d0,(a1)+		; Clear remaining word of data
 	elseif clrsize&1
 		move.b	d0,(a1)+		; Clear remaining byte of data

@@ -3666,7 +3666,6 @@ Title_ClrScroll:
 		dbf	d1,Title_ClrScroll ; fill scroll data with 0
 
 		move.l	d0,($FFFFF616).w
-		move	#$2700,sr
 		lea	(VDP_DATA).l,a6
 		move.l	#$60000003,(VDP_CTRL).l
 		move.w	#$3FF,d1
@@ -3674,8 +3673,8 @@ Title_ClrScroll:
 Title_ClrVram:
 		move.l	d0,(a6)
 		dbf	d1,Title_ClrVram ; fill	VRAM with 0
-
-		move.w	#MusOff,($FFFFFF84).w
+		moveq	#0,d0				; clear d0
+		move.l	d0,($FFFFFF30).w		; clear foreground strip draw flags
 		bsr.w	LevSelTextLoad
 
 ; ---------------------------------------------------------------------------
@@ -3707,7 +3706,6 @@ LevSelLevCheckStart:				; XREF: LevelSelect
 
 LevSelBCPress:				; XREF: LevelSelect
 		move.w	($FFFFFF84).w,d0
-		addi.w	#MusOff,d0
 
 LevSel_PlaySnd:
 		move.b	d0,mQueue+2.w	; play that sound!
@@ -3763,9 +3761,6 @@ LSelectPointers:
 ; Level	select codes
 ; ---------------------------------------------------------------------------
 LevelSelectCode_J:
-		incbin	misc\ls_jcode.bin
-		even
-
 LevelSelectCode_US:
 		incbin	misc\ls_ucode.bin
 		even
@@ -4142,6 +4137,8 @@ Level_PlayBgm:
 		lea	(MusicList).l,a1; load music playlist
 		move.b	(a1,d0.w),d0	; add d0 to a1
 		move.b	d0,mQueue+1.w	; play music
+		move.b	#$C,($FFFFF62A).w
+		bsr.w	DelayProgram
 		move.b	#$34,($FFFFD080).w ; load title	card object
 
 Level_TtlCard:
@@ -4313,7 +4310,7 @@ loc_3B14:
 		tst.w	($FFFFFE02).w	; is the level set to restart?
 		bne.w	Level		; if yes, branch
 		cmpi.b	#$C,($FFFFF600).w
-		beq.w	Level_MainLoop	; if screen mode is $0C	(level), branch
+		beq.s	Level_MainLoop	; if screen mode is $0C	(level), branch
 		rts
 ; ===========================================================================
 
@@ -4324,14 +4321,14 @@ Level_ChkDemo:				; XREF: Level_MainLoop
 		beq.s	Level_EndDemo	; if not, branch
 		cmpi.b	#8,($FFFFF600).w
 		beq.w	Level_MainLoop	; if screen mode is 08 (demo), branch
-		move.b	#0,($FFFFF600).w ; go to Sega screen
+		move.b	#4,($FFFFF600).w ; go to Sega screen
 		rts
 ; ===========================================================================
 
 Level_EndDemo:				; XREF: Level_ChkDemo
 		cmpi.b	#8,($FFFFF600).w ; is screen mode 08 (demo)?
 		bne.s	loc_3B88	; if not, branch
-		move.b	#0,($FFFFF600).w ; go to Sega screen
+		move.b	#4,($FFFFF600).w ; go to Sega screen
 		tst.w	($FFFFFFF0).w	; is demo mode on?
 		bpl.s	loc_3B88	; if yes, branch
 		move.b	#$1C,($FFFFF600).w ; go	to credits

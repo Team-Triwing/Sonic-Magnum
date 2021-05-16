@@ -3884,7 +3884,7 @@ Demo_Levels:	incbin	misc\dm_ord1.bin
 
 LevSelControls:				; XREF: LevelSelect
 		move.b	($FFFFF605).w,d1
-		andi.b	#JbU|JbD,d1		; is up/down pressed and held?
+		andi.b	#J_U|J_D,d1		; is up/down pressed and held?
 		bne.s	LevSel_UpDown	; if yes, branch
 		subq.w	#1,($FFFFFF80).w ; subtract 1 from time	to next	move
 		bpl.s	LevSel_SndTest	; if time remains, branch
@@ -3892,7 +3892,7 @@ LevSelControls:				; XREF: LevelSelect
 LevSel_UpDown:
 		move.w	#8,($FFFFFF80).w ; reset time delay
 		move.b	($FFFFF604).w,d1
-		andi.b	#JbU|JbD,d1		; is up/down pressed?
+		andi.b	#J_U|J_D,d1		; is up/down pressed?
 		beq.s	LevSel_SndTest	; if not, branch
 		move.w	($FFFFFF82).w,d0
 		btst	#JbU,d1		; is up	pressed?
@@ -25415,6 +25415,9 @@ loc_134AE:
 		move.w	d1,$12(a0)
 
 locret_134C2:
+        move.b  ($FFFFF603).w,d0
+        andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
+        bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
 		rts
 ; ===========================================================================
 
@@ -25424,9 +25427,6 @@ loc_134C4:
 		move.w	#-$FC0,$12(a0)
 
 locret_134D2:
-        move.b  ($FFFFF603).w,d0
-        andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
-        bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
 		rts
 ; End of function Sonic_JumpHeight
 
@@ -25444,16 +25444,16 @@ Sonic_CheckGoSuper:
 	if safe=0
 	cmpi.b	#6,($FFFFFFB1).w	; does Sonic have exactly 6 emeralds?
 	bne.s	return_1ABA4		; if not, branch
-	endif
 	cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
 	bcs.s	return_1ABA4		; if not, branch
 	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
 	beq.w	return_1ABA4		; if yes, branch
+	endif
 	move.b	#1,($FFFFF65F).w
 	move.b	#$F,($FFFFF65E).w
 	move.b	#1,($FFFFFE19).w
 	move.b	#$81,$2A(a0)
-	;move.b	#$1F,$1C(a0)			; use transformation animation
+	move.b	#$1F,$1C(a0)			; use transformation animation
 ;	move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
 	sfx		sfx_BigRing
 	move.w	#$A00,($FFFFF760).w

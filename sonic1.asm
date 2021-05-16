@@ -3555,6 +3555,7 @@ Title_LoadText:
 		clr.w	($FFFFFFEA).w
 		clr.w	($FFFFFE10).w ; set level to	GHZ (00)
 		clr.w	($FFFFF634).w ; disable pallet cycling
+		clr.b	($FFFFFE19).w
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
 		lea	($FFFFB000).w,a1
@@ -3932,7 +3933,7 @@ LevSel_SndTest:				; XREF: LevSelControls
 LevSel_A:
 		btst	#JbA,d1		; is A button pressed?
 		beq.s	LevSel_Right	; if not, branch
-		add.w	#16,d0		; add $10 to sound test
+		addi.w	#16,d0		; add $10 to sound test
 		cmpi.w	#SFXoff+SFXcount,d0	        ; addition by Shadow05 to stop the sound test from going above $D0
 		bcs.s	LevSel_Refresh2
 		moveq	#0,d0		; if sound test	moves above max, set to	0
@@ -4075,7 +4076,6 @@ loc_37B6:
 		move.l	#$70000002,(VDP_CTRL).l
 		lea	(Nem_TitleCard).l,a0 ; load title card patterns
 		bsr.w	NemDec
-		move	#$2300,sr
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#4,d0
@@ -4123,7 +4123,6 @@ Level_ClrVars3:
 		move.l	d0,(a1)+
 		dbf	d1,Level_ClrVars3 ; clear object variables
 
-		move	#$2700,sr
 		bsr.w	ClearScreen
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8B03,(a6)
@@ -4153,7 +4152,6 @@ Level_ClrVars3:
 
 Level_LoadPal:
 		move.w	#$1E,($FFFFFE14).w
-		move	#$2300,sr
 		moveq	#3,d0
 		bsr.w	PalLoad2	; load Sonic's pallet line
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
@@ -4211,7 +4209,6 @@ loc_3946:
 		bset	#2,($FFFFF754).w
 		bsr.w	MainLoadBlockLoad ; load block mappings	and pallets
 		bsr.w	LoadTilesFromStart
-		jsr	FloorLog_Unk
 		bsr.w	ColIndexLoad
 		bsr.w	LZWaterEffects
 		move.b	#1,($FFFFD000).w ; load	Sonic object
@@ -13649,9 +13646,8 @@ Obj2E_ChkShoes:
         bne.w 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
 		move.w	#$4B0,($FFFFD034).w ; time limit for the power-up
-		move.w	#$C00,($FFFFF760).w ; change Sonic's top speed
-		move.w	#$18,($FFFFF762).w
-		move.w	#$80,($FFFFF764).w
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		jsr	ApplySpeedSettings	; Fetch Speed settings
 		command	mus_ShoesOn	; Speed	up the music
 		rts
 ; ===========================================================================
@@ -24495,9 +24491,8 @@ Obj01_Main:				; XREF: Obj01_Index
 		move.b	#2,$18(a0)
 		move.b	#$18,$19(a0)
 		move.b	#4,1(a0)
-		move.w	#$600,($FFFFF760).w ; Sonic's top speed
-		move.w	#$C,($FFFFF762).w ; Sonic's acceleration
-		move.w	#$80,($FFFFF764).w ; Sonic's deceleration
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings	; Fetch Speed settings
 
 Obj01_Control:				; XREF: Obj01_Index
 		tst.w	($FFFFFFFA).w	; is debug cheat enabled?
@@ -24602,9 +24597,8 @@ Obj01_ChkShoes:
         bne.s	Obj01_ExitChk
 		subq.b	#1,speedshoes_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ExitChk
-		move.w	#$600,($FFFFF760).w ; restore Sonic's speed
-		move.w	#$C,($FFFFF762).w ; restore Sonic's acceleration
-		move.w	#$80,($FFFFF764).w ; restore Sonic's deceleration
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings	; Fetch Speed settings
 		clr.b	($FFFFFE2E).w ; cancel speed	shoes
 		command	mus_ShoesOff	; run music at normal speed
 		rts
@@ -24656,9 +24650,8 @@ Obj01_InWater:
 
 		move.b	#$A,($FFFFD340).w ; load bubbles object	from Sonic's mouth
 		move.b	#$81,($FFFFD368).w
-		move.w	#$300,($FFFFF760).w ; change Sonic's top speed
-		move.w	#6,($FFFFF762).w ; change Sonic's acceleration
-		move.w	#$40,($FFFFF764).w ; change Sonic's deceleration
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings	; Fetch Speed settings
 		asr	$10(a0)
 		asr	$12(a0)
 		asr	$12(a0)
@@ -24675,9 +24668,8 @@ Obj01_OutWater:
 		bsr.w	ResumeMusic
 		command	mus_OutWater	; get out of water(tm)
 
-		move.w	#$600,($FFFFF760).w ; restore Sonic's speed
-		move.w	#$C,($FFFFF762).w ; restore Sonic's acceleration
-		move.w	#$80,($FFFFF764).w ; restore Sonic's deceleration
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings	; Fetch Speed settings
 		asl	$12(a0)
 		beq.w	locret_12D80
 		move.b	#8,($FFFFD300).w ; load	splash object
@@ -24762,12 +24754,12 @@ Sonic_Move:				; XREF: Obj01_MdNormal
 		bne.w	loc_12FEE
 		tst.w	$3E(a0)
 		bne.w	Obj01_ResetScr
-		btst	#2,($FFFFF602).w ; is left being pressed?
+		btst	#JbL,($FFFFF602).w ; is left being pressed?
 		beq.s	Obj01_NotLeft	; if not, branch
 		bsr.w	Sonic_MoveLeft
 
 Obj01_NotLeft:
-		btst	#3,($FFFFF602).w ; is right being pressed?
+		btst	#JbR,($FFFFF602).w ; is right being pressed?
 		beq.s	Obj01_NotRight	; if not, branch
 		bsr.w	Sonic_MoveRight
 
@@ -25446,9 +25438,9 @@ Sonic_CheckGoSuper:
 	bne.s	return_1ABA4		; if not, branch
 	cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
 	bcs.s	return_1ABA4		; if not, branch
+	endif
 	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
 	beq.w	return_1ABA4		; if yes, branch
-	endif
 	move.b	#1,($FFFFF65F).w
 	move.b	#$F,($FFFFF65E).w
 	move.b	#1,($FFFFFE19).w
@@ -25456,9 +25448,8 @@ Sonic_CheckGoSuper:
 	move.b	#$1F,$1C(a0)			; use transformation animation
 ;	move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
 	sfx		sfx_BigRing
-	move.w	#$A00,($FFFFF760).w
-	move.w	#$30,($FFFFF762).w
-	move.w	#$100,($FFFFF764).w
+	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+	bsr.w	ApplySpeedSettings	; Fetch Speed settings
 	clr.b	invincibility_time(a0)
 	move.b 	#1,($FFFFFE2D).w ; make Sonic invincible
 	music	mus_Invincibility
@@ -25507,14 +25498,8 @@ Sonic_RevertToNormal:
 	move.b	#0,($FFFFFE19).w
 	move.b	#1,$1D(a0)	; Change animation back to normal ?
 	move.b	#1,invincibility_time(a0)	; Remove invincibility
-	move.w	#$600,($FFFFF760).w
-	move.w	#$C,($FFFFF762).w
-	move.w	#$80,($FFFFF764).w
-	btst	#6,$22(a0)	; Check if underwater, return if not
-	beq.s	return_1AC3C
-	move.w	#$300,($FFFFF760).w
-	move.w	#6,($FFFFF762).w
-	move.w	#$40,($FFFFF764).w
+	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+	bsr.w	ApplySpeedSettings	; Fetch Speed settings
 
 return_1AC3C:
 	rts
@@ -26517,6 +26502,50 @@ SPLC_ReadEntry:
 locret_13C96:
 		rts	
 ; End of function LoadSonicDynPLC
+
+; ---------------------------------------------------------------------------
+; Subroutine to collect the right speed setting for a character
+; a0 must be character
+; a1 will be the result and have the correct speed settings
+; a2 is characters' speed
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+ApplySpeedSettings:
+	moveq	#0,d0				; Quickly clear d0
+	tst.w	speedshoes_time(a0)		; Does character have speedshoes?
+	beq.s	.noshoes			; If not, branch
+	addq.b	#6,d0				; Quickly add 6 to d0
+.noshoes
+	btst	#6,$32(a0)			; Is the character underwater?
+	beq.s	.notunderwater				; If not, branch
+	addi.b	#12,d0				; Add 12 to d0
+.notunderwater:
+	tst.b	($FFFFFE19).w		; Is the character Super?
+	beq.s	.notsuper				; If not, branch
+	addi.b	#24,d0				; Add 24 to d0
+.notsuper:
+	lea	Speedsettings(pc,d0.w),a1	; Load correct speed settings into a1
+	move.l	(a1)+,(a2)+			; Set character's new top speed and acceleration
+	move.w	(a1),(a2)			; Set character's deceleration
+	rts					; Finish subroutine
+; ===========================================================================
+; ----------------------------------------------------------------------------
+; Speed Settings Array
+
+; This array defines what speeds the character should be set to
+; ----------------------------------------------------------------------------
+;		top_speed	acceleration	deceleration	; #	; Comment
+Speedsettings:
+	dc.w	$600,		$C,		$80		; $00	; Normal
+	dc.w	$C00,		$18,		$80		; $08	; Normal Speedshoes
+	dc.w	$300,		$6,		$40		; $16	; Normal Underwater
+	dc.w	$600,		$C,		$40		; $24	; Normal Underwater Speedshoes
+	dc.w	$A00,		$30,		$100		; $32	; Super
+	dc.w	$C00,		$30,		$100		; $40	; Super Speedshoes
+	dc.w	$500,		$18,		$80		; $48	; Super Underwater
+	dc.w	$A00,		$30,		$80		; $56	; Super Underwater Speedshoes
 
 ; ===========================================================================
 ; ---------------------------------------------------------------------------

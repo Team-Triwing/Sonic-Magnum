@@ -13880,7 +13880,8 @@ Anim_Run:
 		moveq	#0,d1
 		move.b	$1B(a0),d1	; load current frame number
 		move.b	1(a1,d1.w),d0	; read sprite number from script
-		bmi.s	Anim_End_FF	; if animation is complete, branch
+		cmp.b	#$FA,d0					; MJ: is it a flag from FA to FF?
+		bhs.s	Anim_End_FF				; MJ: if so, branch to flag routines
 
 Anim_Next:
 		move.b	d0,d1
@@ -17501,8 +17502,9 @@ loc_D700:
 		btst	#5,d4
 		bne.s	loc_D71C
 		move.b	$1A(a0),d1
-		add.b	d1,d1
+		add.w	d1,d1
 		adda.w	(a1,d1.w),a1
+		moveq	#$00,d1
 		move.b	(a1)+,d1
 		subq.b	#1,d1
 		bmi.s	loc_D720

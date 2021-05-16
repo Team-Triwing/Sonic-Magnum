@@ -4753,11 +4753,6 @@ locret_3F7A:
 ; ===========================================================================
 
 LZSlide_Move:				; XREF: LZWaterSlides
-		cmpi.w	#3,d1
-		bcc.s	loc_3F84
-		nop
-
-loc_3F84:
 		bclr	#0,$22(a1)
 		move.b	byte_3FC0(pc,d1.w),d0
 		move.b	d0,$14(a1)
@@ -7726,9 +7721,9 @@ MoveScreenHoriz:
 		move.w	($FFFFD008).w,d0
 		sub.w	(v_screenposx).w,d0 ; Sonic's distance from left edge of screen
 		subi.w	#144,d0		; is distance less than 144px?
-		bcs.s	SH_BehindMid	; if yes, branch
+		bmi.s	SH_BehindMid	; if yes, branch
 		subi.w	#16,d0		; is distance more than 160px?
-		bcc.s	SH_AheadOfMid	; if yes, branch
+		bpl.s	SH_AheadOfMid	; if yes, branch
 		clr.w	(v_scrshiftx).w
 		rts	
 ; ===========================================================================
@@ -7754,6 +7749,11 @@ SH_SetScreen:
 ; ===========================================================================
 
 SH_BehindMid:
+		cmpi.w	#$FFF0,d0				; has the screen moved more than 10 pixels left?
+		bcc.s	Left_NoMax				; if not, branch
+		move.w	#$FFF0,d0				; set the maximum move distance to 10 pixels left
+
+Left_NoMax:
 		add.w	(v_screenposx).w,d0
 		cmp.w	(v_limitleft2).w,d0
 		bgt.s	SH_SetScreen
@@ -13587,7 +13587,12 @@ Obj2E_ChkEggman:			; XREF: Obj2E_Move
 		move.b	$1C(a0),d0
 		cmpi.b	#1,d0		; does monitor contain Eggman?
 		bne.s	Obj2E_ChkSonic
-		rts			; Eggman monitor does nothing
+        move.l	a0,a1 				; move a0 to a1, because Touch_ChkHurt wants the damaging object to be in a1
+        move.l	a0,-(sp) 			; push a0 on the stack, and decrement stack pointer
+        lea		($FFFFD000).w,a0 	; put Sonic's ram address in a0, because Touch_ChkHurt wants the damaged object to be in a0
+        jsr	Touch_ChkHurt 			; run the Touch_ChkHurt routine
+        move.l	(sp)+,a0 			; pop the previous value of a0 from the stack, and increment stack pointer
+		rts
 ; ===========================================================================
 
 Obj2E_ChkSonic:
@@ -13668,6 +13673,29 @@ Obj2E_RingSound:
 
 Obj2E_ChkS:
 		cmpi.b	#7,d0		; does monitor contain 'S'
+		bne.s	Obj2E_ChkGoggles
+		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
+        bne.w 	Obj2E_ChkEnd
+		move.b	#1,($FFFFFE2C).w ; give	Sonic a	shield
+		move.b	#$38,($FFFFD180).w ; load shield object	($38)
+		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
+		move.w	#$4B0,($FFFFD034).w ; time limit for the power-up
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		jsr	ApplySpeedSettings	; Fetch Speed settings
+		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
+		move.w	#$4B0,($FFFFD032).w ; time limit for the power-up
+		move.b	#$38,($FFFFD200).w ; load stars	object ($3801)
+		move.b	#1,($FFFFD21C).w
+		move.b	#$38,($FFFFD240).w ; load stars	object ($3802)
+		move.b	#2,($FFFFD25C).w
+		move.b	#$38,($FFFFD280).w ; load stars	object ($3803)
+		move.b	#3,($FFFFD29C).w
+		move.b	#$38,($FFFFD2C0).w ; load stars	object ($3804)
+		move.b	#4,($FFFFD2DC).w
+		rts
+		
+Obj2E_ChkGoggles:	
+		cmpi.b	#8,d0			; does monitor contain Goggles?
 		bne.s	Obj2E_ChkEnd
 		nop
 
@@ -25668,7 +25696,6 @@ locret_13544:
 
 
 Sonic_SlopeRepel:			; XREF: Obj01_MdNormal; Obj01_MdRoll
-		nop
 		tst.b	$38(a0)
 		bne.s	locret_13580
 		tst.w	$3E(a0)
@@ -30842,7 +30869,7 @@ Obj7D_Delete:
 Obj7D_Points:	dc.w 0			; Bonus	points array
 		dc.w 1000
 		dc.w 100
-		dc.w 1
+		dc.w 10
 ; ===========================================================================
 
 Obj7D_DelayDel:				; XREF: Obj7D_Index
@@ -35649,7 +35676,6 @@ Map_obj3E:
 
 
 TouchResponse:				; XREF: Obj01
-		nop
 		move.w	8(a0),d2	; load Sonic's x-axis value
 		move.w	$C(a0),d3	; load Sonic's y-axis value
 		subq.w	#8,d2
@@ -36687,6 +36713,7 @@ Obj09_Modes:	dc.w Obj09_OnWall-Obj09_Modes
 ; ===========================================================================
 
 Obj09_OnWall:				; XREF: Obj09_Modes
+		bclr	#7,$22(a0)	; clear "Sonic has jumped" flag
 		bsr.w	Obj09_Jump
 		bsr.w	Obj09_Move
 		bsr.w	Obj09_Fall
@@ -36694,7 +36721,7 @@ Obj09_OnWall:				; XREF: Obj09_Modes
 ; ===========================================================================
 
 Obj09_InAir:				; XREF: Obj09_Modes
-		bsr.w	nullsub_2
+		bsr.w	Obj09_JumpHeight
 		bsr.w	Obj09_Move
 		bsr.w	Obj09_Fall
 
@@ -36795,11 +36822,6 @@ loc_1BB14:
 ; ===========================================================================
 
 loc_1BB1A:
-		subi.w	#$40,d0
-		bcc.s	loc_1BB22
-		nop
-
-loc_1BB22:
 		move.w	d0,$14(a0)
 		rts
 ; End of function Obj09_MoveLeft
@@ -36823,11 +36845,6 @@ loc_1BB42:
 ; ===========================================================================
 
 loc_1BB48:
-		addi.w	#$40,d0
-		bcc.s	loc_1BB50
-		nop
-
-loc_1BB50:
 		move.w	d0,$14(a0)
 
 locret_1BB54:
@@ -36854,26 +36871,56 @@ Obj09_Jump:				; XREF: Obj09_OnWall
 		asr.l	#8,d0
 		move.w	d0,$12(a0)
 		bset	#1,$22(a0)
+		bset	#7,$22(a0)	; set "Sonic has jumped" flag
 		sfx	sfx_Jump	; play jumping sound
 
 Obj09_NoJump:
-nullsub_2:				; XREF: Obj09_InAir
-		rts
-
+		rts	
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
-; unused subroutine to limit Sonic's upward vertical speed
-; ---------------------------------------------------------------------------
-		move.w	#-$400,d1
-		cmp.w	$12(a0),d1
-		ble.s	locret_1BBB4
-		move.b	($FFFFF602).w,d0
-		andi.b	#$70,d0
-		bne.s	locret_1BBB4
-		move.w	d1,$12(a0)
+; Subroutine to limit Sonic's upward vertical speed
+; ---------------------------------------------------------------------------	
 
+; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
+
+	
+Obj09_JumpHeight:			; XREF: Obj09_InAir
+		move.b	($FFFFF602).w,d0	; is the jump button up?
+		andi.b	#$70,d0
+		bne.s	locret_1BBB4		; if not, branch to return
+		btst	#7,$22(a0)		; did Sonic jump or is he just falling or hit by a bumper?
+		beq.s	locret_1BBB4		; if not, branch to return
+		move.b	($FFFFF780).w,d0	; get SS angle
+		andi.b	#$FC,d0
+		neg.b	d0
+		subi.b	#$40,d0
+		jsr	(CalcSine).l			
+		move.w	$12(a0),d2		; get Y speed
+		muls.w	d2,d0			; multiply Y speed by sin
+		asr.l	#8,d0			; find the new Y speed
+		move.w	$10(a0),d2		; get X speed
+		muls.w	d2,d1			; multiply X speed by cos
+		asr.l	#8,d1			; find the new X speed
+		add.w	d0,d1			; combine the two speeds
+		cmpi.w	#$400,d1		; compare the combined speed with the jump release speed
+		ble.s	locret_1BBB4		; if it's less, branch to return
+		move.b	($FFFFF780).w,d0
+		andi.b	#$FC,d0
+		neg.b	d0
+		subi.b	#$40,d0
+		jsr	(CalcSine).l
+		muls.w	#$400,d1
+		asr.l	#8,d1
+		move.w	d1,$10(a0)
+		muls.w	#$400,d0
+		asr.l	#8,d0
+		move.w	d0,$12(a0)		; set the speed to the jump release speed
+		bclr	#7,$22(a0)		; clear "Sonic has jumped" flag
+ 
 locret_1BBB4:
 		rts
+		
+		
 ; ---------------------------------------------------------------------------
 ; Subroutine to	fix the	camera on Sonic's position (special stage)
 ; ---------------------------------------------------------------------------
@@ -37234,6 +37281,7 @@ Obj09_ChkBumper:
 		asr.l	#8,d0
 		move.w	d0,$12(a0)
 		bset	#1,$22(a0)
+		bclr	#7,$22(a0)	; clear "Sonic has jumped" flag
 		bsr.w	SS_RemoveCollectedItem
 		bne.s	Obj09_BumpSnd
 		move.b	#2,(a2)

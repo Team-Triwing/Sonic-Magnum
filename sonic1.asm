@@ -172,20 +172,14 @@ endinit
 ; ===========================================================================
 
 GameProgram:
-		tst.w	(VDP_CTRL).l
+		waitDMA				; RM: sonic 2 onward does this
 		btst	#6,(IO_C_CTRL).l
 		beq.s	.skip
 		cmpi.l	#'init',($FFFFFFFC).w ; has checksum routine already run?
 		beq.w	GameInit	; if yes, branch
 
 .skip
-		lea	($FFFFFE00).w,a6
-		moveq	#0,d7
-		move.w	#$7F,d6
-
-loc_348:
-		move.l	d7,(a6)+
-		dbf	d6,loc_348
+		clrRAM	$FFFFFE00,$FFFFFE7F
 		move.b	(HW_VERSION).l,d0
 		andi.b	#$C0,d0
 		move.b	d0,(ConsoleRegion).w
@@ -194,18 +188,12 @@ loc_348:
 		move.l	#'init',($FFFFFFFC).w		; set flag so checksum won't be run again
 
 GameInit:
-		lea	($FF0000).l,a6
-		moveq	#0,d7
-		move.w	#$3F7F,d6
-
-GameClrRAM:
-		move.l	d7,(a6)+
-		dbf	d6,GameClrRAM	; fill RAM ($0000-$FDFF) with $0
+		clrRAM	$FF0000,$FFFFFDFF
 		jsr	(InitDMA).l
 		bsr.w	VDPSetupGame
 		jsr	LoadDualPCM
 		bsr.w	JoypadInit
-		move.b	#0,($FFFFF600).w ; set Game Mode to Sega Screen
+		clr.b	($FFFFF600).w ; set Game Mode to Sega Screen
 
 MainGameLoop:
 		move.b	($FFFFF600).w,d0 ; load	Game Mode
@@ -265,13 +253,11 @@ loc_B10:				; XREF: Vectors
 		btst	#6,(ConsoleRegion).w
 		beq.s	loc_B42
 		move.w	#$700,d0
-
-loc_B3E:
-		dbf	d0,loc_B3E
+		dbf	d0,*
 
 loc_B42:
 		move.b	($FFFFF62A).w,d0
-		move.b	#0,($FFFFF62A).w
+		clr.b	($FFFFF62A).w
 		move.b	#1,($FFFFF644).w
 		andi.w	#$3E,d0
 		move.w	off_B6E(pc,d0.w),d0
@@ -366,8 +352,7 @@ locret_C5C:
 ; ===========================================================================
 
 loc_C5E:				; XREF: off_B6E
-		bsr.w	sub_106E
-		rts
+		bra.w	sub_106E
 ; ===========================================================================
 
 loc_C64:				; XREF: off_B6E
@@ -3494,13 +3479,7 @@ TitleScreen:				; XREF: GameModeArray
 		move.w	#$8720,(a6)
 		clr.b	($FFFFF64E).w
 		bsr.w	ClearScreen
-		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
-
-Title_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,Title_ClrObjRam ; fill object RAM ($D000-$EFFF) with	$0
+		clrRAM	$FFFFD000,$FFFFEFFF	; fill object RAM ($D000-$EFFF) with	$0
 
 		move.l	#$40000000,(VDP_CTRL).l
 		lea	(Nem_JapNames).l,a0 ; load Japanese credits
@@ -3517,13 +3496,7 @@ Title_ClrObjRam:
 		moveq	#$27,d1
 		moveq	#$1B,d2
 		bsr.w	ShowVDPGraphics
-		lea	($FFFFFB80).w,a1
-		moveq	#0,d0
-		move.w	#$1F,d1
-
-Title_ClrPallet:
-		move.l	d0,(a1)+
-		dbf	d1,Title_ClrPallet ; fill pallet with 0	(black)
+		clrRAM	$FFFFFB80,$FFFFFB9F	; fill pallet with 0	(black)
 		clr.b  	($FFFFFFD0).w
 		moveq	#3,d0		; load Sonic's pallet
 		bsr.w	PalLoad1
@@ -3758,7 +3731,7 @@ LevSel_PlaySnd:
 		bra.s	LevelSelect
 		
 LevSelStartPress:				; XREF: LevelSelect
-		move.b	#0,($FFFFF600).w
+		clr.b	($FFFFF600).w
 		rts
 ; ===========================================================================
 

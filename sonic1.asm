@@ -4726,12 +4726,12 @@ LZWind_Move:
 		move.w	#0,$12(a1)
 		move.b	#$F,$1C(a1)	; use floating animation
 		bset	#1,$22(a1)
-		btst	#0,($FFFFF602).w ; is up pressed?
+		btst	#JbU,($FFFFF602).w ; is up pressed?
 		beq.s	LZWind_MoveDown	; if not, branch
 		subq.w	#1,$C(a1)	; move Sonic up
 
 LZWind_MoveDown:
-		btst	#1,($FFFFF602).w ; is down being pressed?
+		btst	#JbD,($FFFFF602).w ; is down being pressed?
 		beq.s	locret_3EF2	; if not, branch
 		addq.w	#1,$C(a1)	; move Sonic down
 
@@ -13645,6 +13645,8 @@ ExtraLife:
 Obj2E_ChkShoes:
 		cmpi.b	#3,d0		; does monitor contain speed shoes?
 		bne.s	Obj2E_ChkShield
+		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
+        bne.w 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
 		move.w	#$4B0,($FFFFD034).w ; time limit for the power-up
 		move.w	#$C00,($FFFFF760).w ; change Sonic's top speed
@@ -13666,6 +13668,8 @@ Obj2E_ChkShield:
 Obj2E_ChkInvinc:
 		cmpi.b	#5,d0		; does monitor contain invincibility?
 		bne.s	Obj2E_ChkRings
+		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
+        bne.s 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
 		move.w	#$4B0,($FFFFD032).w ; time limit for the power-up
 		move.b	#$38,($FFFFD200).w ; load stars	object ($3801)
@@ -19261,6 +19265,7 @@ Obj0D_Touch:				; XREF: Obj0D_Index
 		cmpi.w	#$20,d0		; is Sonic within $20 pixels of	the signpost?
 		bcc.s	locret_EBBA	; if not, branch
 		sfx	sfx_Signpost	; play signpost	sound
+		clr.b 	($FFFFFE19).w ; Revert Sonic to Normal
 		clr.b	($FFFFFE1E).w	; stop time counter
 		move.w	($FFFFF72A).w,($FFFFF728).w ; lock screen position
 		addq.b	#2,$24(a0)
@@ -24520,6 +24525,7 @@ loc_12C64:
 
 loc_12C7E:
 		bsr.s	Sonic_Display
+		bsr.w	Sonic_Super       ;<--- add this!
 		bsr.w	Sonic_RecordPos
 		bsr.w	Sonic_Water
 		move.b	($FFFFF768).w,$36(a0)
@@ -24822,7 +24828,7 @@ loc_12F70:
 ; ===========================================================================
 
 Sonic_LookUp:
-		btst	#0,($FFFFF602).w ; is up being pressed?
+		btst	#JbU,($FFFFF602).w ; is up being pressed?
 		beq.s	Sonic_Duck	; if not, branch
 		move.b	#7,$1C(a0)	; use "looking up" animation
 		cmpi.w	#$C8,($FFFFF73E).w
@@ -24832,7 +24838,7 @@ Sonic_LookUp:
 ; ===========================================================================
 
 Sonic_Duck:
-		btst	#1,($FFFFF602).w ; is down being pressed?
+		btst	#JbD,($FFFFF602).w ; is down being pressed?
 		beq.s	Obj01_ResetScr	; if not, branch
 		move.b	#8,$1C(a0)	; use "ducking"	animation
 		cmpi.w	#8,($FFFFF73E).w
@@ -24852,7 +24858,7 @@ loc_12FBE:
 
 loc_12FC2:
 		move.b	($FFFFF602).w,d0
-		andi.b	#$C,d0		; is left/right	pressed?
+		andi.b	#J_L|J_R,d0		; is left/right	pressed?
 		bne.s	loc_12FEE	; if yes, branch
 		move.w	$14(a0),d0
 		beq.s	loc_12FEE
@@ -25037,20 +25043,19 @@ loc_13120:
 Sonic_RollSpeed:			; XREF: Obj01_MdRoll
 		move.w	($FFFFF760).w,d6
 		asl.w	#1,d6
-		move.w	($FFFFF762).w,d5
-		asr.w	#1,d5
+		moveq	#6,d5	; natural roll deceleration = 1/2 normal acceleration
 		move.w	($FFFFF764).w,d4
 		asr.w	#2,d4
 		tst.b	($FFFFF7CA).w
 		bne.w	loc_131CC
 		tst.w	$3E(a0)
 		bne.s	loc_13188
-		btst	#2,($FFFFF602).w ; is left being pressed?
+		btst	#JbL,($FFFFF602).w ; is left being pressed?
 		beq.s	loc_1317C	; if not, branch
 		bsr.w	Sonic_RollLeft
 
 loc_1317C:
-		btst	#3,($FFFFF602).w ; is right being pressed?
+		btst	#JbR,($FFFFF602).w ; is right being pressed?
 		beq.s	loc_13188	; if not, branch
 		bsr.w	Sonic_RollRight
 
@@ -25164,10 +25169,8 @@ Sonic_ChgJumpDir:			; XREF: Obj01_MdJump; Obj01_MdJump2
 		move.w	($FFFFF760).w,d6
 		move.w	($FFFFF762).w,d5
 		asl.w	#1,d5
-		btst	#4,$22(a0)
-		bne.s	Obj01_ResetScr2
 		move.w	$10(a0),d0
-		btst	#2,($FFFFF602).w ; is left being pressed?
+		btst	#JbL,($FFFFF602).w ; is left being pressed?
 		beq.s	loc_13278	; if not, branch
 		bset	#0,$22(a0)
 		sub.w	d5,d0
@@ -25178,7 +25181,7 @@ Sonic_ChgJumpDir:			; XREF: Obj01_MdJump; Obj01_MdJump2
 		move.w	d1,d0
 
 loc_13278:
-		btst	#3,($FFFFF602).w ; is right being pressed?
+		btst	#JbR,($FFFFF602).w ; is right being pressed?
 		beq.s	Obj01_JumpMove	; if not, branch
 		bclr	#0,$22(a0)
 		add.w	d5,d0
@@ -25227,24 +25230,6 @@ locret_132D2:
 		rts
 ; End of function Sonic_ChgJumpDir
 
-; ===========================================================================
-; ---------------------------------------------------------------------------
-; Unused subroutine to squash Sonic
-; ---------------------------------------------------------------------------
-		move.b	$26(a0),d0
-		addi.b	#$20,d0
-		andi.b	#$C0,d0
-		bne.s	locret_13302
-		bsr.w	Sonic_DontRunOnWalls
-		tst.w	d1
-		bpl.s	locret_13302
-		move.w	#0,$14(a0)	; stop Sonic moving
-		move.w	#0,$10(a0)
-		move.w	#0,$12(a0)
-		move.b	#$B,$1C(a0)	; use "warping"	animation
-
-locret_13302:
-		rts
 ; ---------------------------------------------------------------------------
 ; Subroutine to	prevent	Sonic leaving the boundaries of	a level
 ; ---------------------------------------------------------------------------
@@ -25287,9 +25272,9 @@ Boundary_Bottom:
 		cmp.w	d0,d1			; screen still scrolling down?
 		blt.s	Boundary_Bottom_locret	; if so, don't kill Sonic
 		cmpi.w	#$501,($FFFFFE10).w	; is level SBZ2 ?
-		bne.w	KillSonic		; if not, kill Sonic
+		jne	KillSonic		; if not, kill Sonic
 		cmpi.w	#$2000,($FFFFD008).w
-		bcs.w	KillSonic
+		jcs	KillSonic
 		clr.b	($FFFFFE30).w		; clear lamppost counter
 		move.w	#1,($FFFFFE02).w	; restart the level
 		move.w	#$103,($FFFFFE10).w	; set level to SBZ3 (LZ4)
@@ -25321,10 +25306,10 @@ Sonic_Roll:				; XREF: Obj01_MdNormal
 		neg.w	d0
 
 loc_13392:
-        btst	#1,($FFFFF602).w    ; is down being pressed?
+        btst	#JbD,($FFFFF602).w    ; is down being pressed?
         beq.s	Obj01_NoRoll    	; if not, branch
         move.b	($FFFFF602).w,d0
-        andi.b	#$C,d0    			; is left/right being pressed?
+        andi.b	#J_L|J_R,d0    			; is left/right being pressed?
         bne.s	Obj01_NoRoll    	; if yes, branch
         move.w	$14(a0),d0
         bpl.s	.cont 				; If ground speed is positive, continue
@@ -25367,7 +25352,7 @@ locret_133E8:
 
 Sonic_Jump:				; XREF: Obj01_MdNormal; Obj01_MdRoll
 		move.b	($FFFFF603).w,d0
-		andi.b	#$70,d0		; is A,	B or C pressed?
+		andi.b	#J_B|J_C|J_A,d0		; is A,	B or C pressed?
 		beq.w	locret_1348E	; if not, branch
 		moveq	#0,d0
 		move.b	$26(a0),d0
@@ -25399,8 +25384,6 @@ loc_1341C:
 		sfx	sfx_Jump	; play jumping sound
 		move.b	#$13,$16(a0)
 		move.b	#9,$17(a0)
-		btst	#2,$22(a0)
-		bne.s	loc_13490
 		move.b	#$E,$16(a0)
 		move.b	#7,$17(a0)
 		move.b	#2,$1C(a0)	; use "jumping"	animation
@@ -25408,11 +25391,6 @@ loc_1341C:
 		addq.w	#5,$C(a0)
 
 locret_1348E:
-		rts
-; ===========================================================================
-
-loc_13490:
-		bset	#4,$22(a0)
 		rts
 ; End of function Sonic_Jump
 
@@ -25432,7 +25410,7 @@ loc_134AE:
 		cmp.w	$12(a0),d1
 		ble.s	locret_134C2
 		move.b	($FFFFF602).w,d0
-		andi.b	#$70,d0		; is A,	B or C pressed?
+		andi.b	#J_B|J_C|J_A,d0		; is A,	B or C pressed?
 		bne.s	locret_134C2	; if yes, branch
 		move.w	d1,$12(a0)
 
@@ -25446,8 +25424,101 @@ loc_134C4:
 		move.w	#-$FC0,$12(a0)
 
 locret_134D2:
+		tst.b	$12(a0)		; is Sonic exactly at the height of his jump?
+		beq.s	Sonic_CheckGoSuper	; if yes, test for turning into Super Sonic
 		rts
 ; End of function Sonic_JumpHeight
+
+; ---------------------------------------------------------------------------
+; Subroutine called at the peak of a jump that transforms Sonic into Super Sonic
+; if he has enough rings and emeralds
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+; loc_1AB38: test_set_SS:
+Sonic_CheckGoSuper:
+	tst.b	($FFFFFE19).w	; is Sonic already Super?
+	bne.w	return_1ABA4		; if yes, branch
+	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
+	beq.w	return_1ABA4		; if yes, branch
+	if safe=0
+	cmpi.b	#6,($FFFFFFB1).w	; does Sonic have exactly 6 emeralds?
+	bne.s	return_1ABA4		; if not, branch
+	endif
+	cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
+	bcs.s	return_1ABA4		; if not, branch
+
+	move.b	#1,($FFFFF65F).w
+	move.b	#$F,($FFFFF65E).w
+	move.b	#1,($FFFFFE19).w
+	move.b	#$81,$2A(a0)
+	;move.b	#$1F,$1C(a0)			; use transformation animation
+;	move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
+	sfx		sfx_BigRing
+	move.w	#$A00,($FFFFF760).w
+	move.w	#$30,($FFFFF762).w
+	move.w	#$100,($FFFFF764).w
+	clr.b	invincibility_time(a0)
+	move.b 	#1,($FFFFFE2D).w ; make Sonic invincible
+	music	mus_Invincibility
+
+; ---------------------------------------------------------------------------
+return_1ABA4:
+	rts
+; End of subroutine Sonic_CheckGoSuper
+
+
+; ---------------------------------------------------------------------------
+; Subroutine doing the extra logic for Super Sonic
+; ---------------------------------------------------------------------------
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+
+; loc_1ABA6:
+Sonic_Super:
+	tst.b	($FFFFFE19).w	; Ignore all this code if not Super Sonic
+	beq.w	return_1AC3C
+	cmpi.b	#1,($FFFFF65F).w	; is Super Sonic's transformation sequence finished?
+	beq.s	return_1ABA4			; if not, branch
+	tst.b	($FFFFFE1E).w
+	beq.s	Sonic_RevertToNormal ; ?
+	subq.w	#1,($FFFFF670).w
+	bhi.w	return_1AC3C
+	move.w	#60,($FFFFF670).w	; Reset frame counter to 60
+	tst.w	($FFFFFE20).w
+	beq.s	Sonic_RevertToNormal
+	ori.b	#1,($FFFFFE1D).w
+	cmpi.w	#1,($FFFFFE20).w
+	beq.s	.update
+	cmpi.w	#10,($FFFFFE20).w
+	beq.s	.update
+	cmpi.w	#100,($FFFFFE20).w
+	bne.s	.update2
+.update
+	ori.b	#$80,($FFFFFE1D).w
+.update2
+	subq.w	#1,($FFFFFE20).w
+	bne.s	return_1AC3C
+; loc_1ABF2:
+Sonic_RevertToNormal:
+	move.b	#2,($FFFFF65F).w	; Remove rotating palette
+	move.w	#$28,($FFFFF65C).w	; Unknown
+	move.b	#0,($FFFFFE19).w
+	move.b	#1,$1D(a0)	; Change animation back to normal ?
+	move.b	#1,invincibility_time(a0)	; Remove invincibility
+	move.w	#$600,($FFFFF760).w
+	move.w	#$C,($FFFFF762).w
+	move.w	#$80,($FFFFF764).w
+	btst	#6,$22(a0)	; Check if underwater, return if not
+	beq.s	return_1AC3C
+	move.w	#$300,($FFFFF760).w
+	move.w	#6,($FFFFF762).w
+	move.w	#$40,($FFFFF764).w
+
+return_1AC3C:
+	rts
+; End of subroutine Sonic_Super
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to make Sonic perform a spindash
@@ -25911,16 +25982,8 @@ locret_1379E:
 
 
 Sonic_ResetOnFloor:			; XREF: PlatformObject; et al
-		btst	#4,$22(a0)
-		beq.s	loc_137AE
-		nop
-		nop
-		nop
-
-loc_137AE:
 		bclr	#5,$22(a0)
 		bclr	#1,$22(a0)
-		bclr	#4,$22(a0)
 		btst	#2,$22(a0)
 		beq.s	loc_137E4
 		bclr	#2,$22(a0)
@@ -35901,6 +35964,7 @@ KillSonic:
 		tst.w	($FFFFFE08).w	; is debug mode	active?
 		bne.s	Kill_NoDeath	; if yes, branch
 		clr.b	($FFFFFE2D).w ; remove invincibility
+		clr.b 	($FFFFFE19).w ; Revert Sonic to Normal
 		clr.w	($FFFFFE20).w ; clear rings
 		move.b	#6,$24(a0)
 		bsr.w	Sonic_ResetOnFloor

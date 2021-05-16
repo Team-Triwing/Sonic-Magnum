@@ -25424,8 +25424,9 @@ loc_134C4:
 		move.w	#-$FC0,$12(a0)
 
 locret_134D2:
-		tst.b	$12(a0)		; is Sonic exactly at the height of his jump?
-		beq.s	Sonic_CheckGoSuper	; if yes, test for turning into Super Sonic
+        move.b  ($FFFFF603).w,d0
+        andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
+        bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
 		rts
 ; End of function Sonic_JumpHeight
 
@@ -25439,16 +25440,15 @@ locret_134D2:
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
 	tst.b	($FFFFFE19).w	; is Sonic already Super?
-	bne.w	return_1ABA4		; if yes, branch
-	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
-	beq.w	return_1ABA4		; if yes, branch
+	bne.w	Sonic_RevertToNormal		; if yes, branch
 	if safe=0
 	cmpi.b	#6,($FFFFFFB1).w	; does Sonic have exactly 6 emeralds?
 	bne.s	return_1ABA4		; if not, branch
 	endif
 	cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
 	bcs.s	return_1ABA4		; if not, branch
-
+	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
+	beq.w	return_1ABA4		; if yes, branch
 	move.b	#1,($FFFFF65F).w
 	move.b	#$F,($FFFFF65E).w
 	move.b	#1,($FFFFFE19).w

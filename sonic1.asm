@@ -180,9 +180,6 @@ GameProgram:
 
 .skip
 		clrRAM	$FFFFFE00,$FFFFFE7F
-		move.b	(HW_VERSION).l,d0
-		andi.b	#$C0,d0
-		move.b	d0,(ConsoleRegion).w
 		move.l	#EndOfHeader,ChecksumAddr.w	; load end of header to checksum check
 		clr.w	ChecksumValue.w			; initial value of 0
 		move.l	#'init',($FFFFFFFC).w		; set flag so checksum won't be run again
@@ -196,6 +193,9 @@ GameInit:
 		clr.b	($FFFFF600).w ; set Game Mode to Sega Screen
 
 MainGameLoop:
+		move.b	(HW_VERSION).l,d0
+		andi.b	#$C0,d0
+		move.b	d0,(ConsoleRegion).w
 		move.b	($FFFFF600).w,d0 ; load	Game Mode
 		blt.s	InvalidGameMode
 		andi.w	#$1C,d0
@@ -241,12 +241,6 @@ loc_B10:				; XREF: Vectors
 		move.w	(VDP_CTRL).l,d0
 		move.l	#$40000010,(VDP_CTRL).l
 		move.l	($FFFFF616).w,(VDP_DATA).l
-		btst	#6,(ConsoleRegion).w
-		beq.s	loc_B42
-		move.w	#$700,d0
-		dbf	d0,*
-
-loc_B42:
 		move.b	($FFFFF62A).w,d0
 		clr.b	($FFFFF62A).w
 		move.b	#1,($FFFFF644).w
@@ -263,6 +257,12 @@ loc_B5E:				; XREF: loc_B88
         clr.b   ($FFFFF64F).w       ; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
+		btst	#6,(ConsoleRegion).w
+		beq.s	loc_B42
+		move.w	#$700,d0
+		dbf	d0,*
+
+loc_B42:
 		addq.l	#1,($FFFFFE0C).w
 		popa
 		rte
@@ -2261,6 +2261,7 @@ byte_1AD4:      dc.b 0                  ; DATA XREF: ROM:00001A2E?o
 
 
 PalCycle_Load:				; XREF: Demo; Level_MainLoop; End_MainLoop
+		bsr.w	PalCycle_SuperSonic
 		moveq	#0,d2
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0 ; get level number
@@ -2538,6 +2539,51 @@ Pal_SBZCyc7:	incbin	pallet\c_sbz_7.bin
 Pal_SBZCyc8:	incbin	pallet\c_sbz_8.bin
 Pal_SBZCyc9:	incbin	pallet\c_sbz_9.bin
 Pal_SBZCyc10:	incbin	pallet\c_sbz_10.bin
+
+PalCycle_SuperSonic:
+        tst.b   ($FFFFF65F).w
+        beq.s   loc_24DE
+        bmi.s   loc_24E0
+        subq.b  #$1,($FFFFF65E).w 
+        bpl.s   loc_24DE
+        move.b  #$3,($FFFFF65E).w
+        lea     (loc_2516), a0
+        move.w  ($FFFFF65C).w,d0
+        addq.w  #$8,($FFFFF65C).w
+        cmpi.w  #$30,($FFFFF65C).w
+        bcs.s   loc_24D2
+        move.b  #$FF,($FFFFF65F).w
+loc_24D2:
+        lea     ($FFFFFB04).w,a1
+        move.l  $00(a0,d0),(a1)+
+        move.l  $4(a0,d0),(a1)
+loc_24DE:
+        rts
+loc_24E0:
+        subq.b  #$1,($FFFFF65E).w
+        bpl.s   loc_24DE
+        move.b  #$7,($FFFFF65E).w
+        lea     (loc_2516), a0
+        move.w  ($FFFFF65C).w,d0
+        addq.w  #$8,($FFFFF65C).w
+        cmpi.w  #$78,($FFFFF65C).w
+        bcs.s   loc_2508
+        move.w  #$30,($FFFFF65C).w
+loc_2508:
+        lea     ($FFFFFB04).w,a1
+        move.l  $00(a0,d0),(a1)+
+        move.l  $4(a0,d0),(a1)
+        rts
+loc_2516:              
+        dc.w    $A22, $C42, $E44, $E66, $844, $A64, $E66, $E88
+        dc.w    $666, $A86, $E88, $EAA, $488, $AA8, $EAA, $ECC
+        dc.w    $4AA, $ACA, $ECC, $EEE, $4CC, $AEC, $EEE, $EEE
+        dc.w    $4EE, $AEE, $EEE, $EEE, $6EE, $EEE, $EEE, $EEE
+        dc.w    $8EE, $EEE, $EEE, $EEE, $6EE, $CEE, $EEE, $EEE
+        dc.w    $4EE, $AEE, $EEE, $EEE, $2EE, $8EE, $CEE, $EEE
+        dc.w    $EE, $6EE, $AEE, $EEE, $EE, $4EE, $8EE, $CEE
+        dc.w    $EE, $6EE, $AEE, $EEE, $EE, $8EE, $CEE, $EEE
+
 ; ---------------------------------------------------------------------------
 ; Subroutine to	fade out and fade in
 ; ---------------------------------------------------------------------------
@@ -3117,6 +3163,7 @@ Pal_SBZ3SonWat:	incbin	pallet\son_sbzu.bin	; Sonic (underwater in SBZ act 3) pal
 Pal_SpeResult:	incbin	pallet\ssresult.bin	; special stage results screen pallets
 Pal_SpeContinue:incbin	pallet\sscontin.bin	; special stage results screen continue pallet
 Pal_Ending:	incbin	pallet\ending.bin	; ending sequence pallets
+Pal_PreTitle:	incbin	pallet\pretitle.bin
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	delay the program by ($FFFFF62A) frames
@@ -3448,7 +3495,6 @@ TitleScreen:				; XREF: GameModeArray
 		command	mus_FadeOut	; fade music
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
-		clrRAM	$FFFFFA00,$FFFFFBA0	; fill pallet with 0	(black)
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
@@ -3463,9 +3509,6 @@ TitleScreen:				; XREF: GameModeArray
 		move.l	#$40000000,(VDP_CTRL).l
 		lea	(Nem_JapNames).l,a0 ; load Japanese credits
 		bsr.w	NemDec
-		move.l	#$54C00000,(VDP_CTRL).l
-		lea	(Nem_CreditText).l,a0	; load alphabet
-		bsr.w	NemDec
 		lea	($FF0000).l,a1
 		lea	(Eni_JapNames).l,a0 ; load mappings for	Japanese credits
 		move.w	#0,d0
@@ -3476,11 +3519,8 @@ TitleScreen:				; XREF: GameModeArray
 		moveq	#$1B,d2
 		bsr.w	ShowVDPGraphics
 		clr.b  	($FFFFFFD0).w
-		moveq	#3,d0		; load Sonic's pallet
+		moveq	#$14,d0		; load Sonic's pallet
 		bsr.w	PalLoad1
-		move.b	#$8A,($FFFFD080).w ; load "SONIC TEAM PRESENTS"	object
-		jsr	ObjectsLoad
-		jsr	BuildSprites
 		bsr.w	Pal_FadeTo
 		lea	(Twim_TitleFg).l,a0 ; load title	screen patterns
 		move.w	#$4000,d0
@@ -24549,7 +24589,7 @@ Obj01_ChkInvin:
 		tst.b	invincibility_time(a0)		; check	time remaining for invinciblity
 		beq.s	Obj01_ChkShoes	; if no	time remains, branch
         move.b	($FFFFFE05).w,d0
-        andi.b	#7,d0
+        andi.b	#6,d0
         bne.s	Obj01_ChkShoes
 		subq.b	#1,invincibility_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ChkShoes
@@ -24577,7 +24617,7 @@ Obj01_ChkShoes:
 		tst.b	speedshoes_time(a0)		; check	time remaining
 		beq.s	Obj01_ExitChk
         move.b	($FFFFFE05).w,d0
-        andi.b	#7,d0
+        andi.b	#6,d0
         bne.s	Obj01_ExitChk
 		subq.b	#1,speedshoes_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ExitChk
@@ -25443,7 +25483,7 @@ Sonic_CheckGoSuper:
 	move.b	#$F,($FFFFF65E).w
 	move.b	#1,($FFFFFE19).w
 	move.b	#$81,$2A(a0)
-	move.b	#$1F,$1C(a0)			; use transformation animation
+	move.b	#$A,$1C(a0)			; use transformation animation
 ;	move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
 	sfx		sfx_BigRing
 	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
@@ -25472,9 +25512,9 @@ Sonic_Super:
 	beq.s	return_1ABA4			; if not, branch
 	tst.b	($FFFFFE1E).w
 	beq.s	Sonic_RevertToNormal ; ?
-	subq.w	#1,($FFFFF670).w
+	subq.b	#1,($FFFFF670).w
 	bhi.w	return_1AC3C
-	move.w	#60,($FFFFF670).w	; Reset frame counter to 60
+	move.b	#60,($FFFFF670).w	; Reset frame counter to 60
 	tst.w	($FFFFFE20).w
 	beq.s	Sonic_RevertToNormal
 	ori.b	#1,($FFFFFE1D).w
@@ -25496,6 +25536,7 @@ Sonic_RevertToNormal:
 	move.b	#0,($FFFFFE19).w
 	move.b	#1,$1D(a0)	; Change animation back to normal ?
 	move.b	#1,invincibility_time(a0)	; Remove invincibility
+	clr.b 	($FFFFFE2D).w ; Remove invincibility
 	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 	bsr.w	ApplySpeedSettings	; Fetch Speed settings
 

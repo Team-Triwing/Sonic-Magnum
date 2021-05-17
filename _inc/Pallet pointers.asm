@@ -61,3 +61,7 @@
 	dc.l Pal_Ending
 	dc.w $FB00
 	dc.w $1F
+	dc.l Pal_PreTitle
+	dc.w $FB00
+	dc.w $1F
+	

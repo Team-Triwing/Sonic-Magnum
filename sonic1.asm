@@ -4195,6 +4195,7 @@ Level_LoadObj:
 		tst.b	($FFFFFE30).w	; are you starting from	a lamppost?
 		bne.s	loc_39E8	; if yes, branch
 		move.l	d0,($FFFFFE22).w ; clear time
+		move.w	d0,($FFFFFE20).w ; clear rings
 		move.b	d0,($FFFFFE1B).w ; clear lives counter
 
 loc_39E8:

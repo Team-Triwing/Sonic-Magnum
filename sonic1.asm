@@ -32,11 +32,11 @@ Vectors:	dc.l $FFFFFE00, EntryPoint, BusError, AddressError
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
-MEGADRIVE:	dc.b 'SEGA MEGA DRIVE ' ; Hardware system ID
-Date:		dc.b 'RM/VV   XXXX.XXX' ; Release date
-Title_Local:	dc.b 'SONIC THE               HEDGEHOG                ' ; Domestic name
-Title_Int:	dc.b 'SONIC THE               HEDGEHOG                ' ; International name
-Serial:		dc.b 'GM 00001009-00'   ; Serial/version number
+MEGADRIVE:	dc.b "SEGA GENESIS    " ; Hardware system ID
+Date:		dc.b "RPMD/VT XXXX.XXX" ; Release date
+Title_Local:dc.b "                                                " ; Domestic name
+Title_Int:	dc.b "                                                " ; International name
+Serial:		dc.b "GM 00001009-00"   ; Serial/version number
 Checksum:	dc.w 0
 		dc.b 'J               ' ; I/O support
 RomStartLoc:	dc.l StartOfRom		; ROM start
@@ -46,7 +46,7 @@ RamEndLoc:	dc.l $FFFFFF		; RAM end
 SRAMSupport:	dc.l $20202020		; change to $5241E020 to create	SRAM
 		dc.l $20202020		; SRAM start
 		dc.l $20202020		; SRAM end
-Notes:		dc.b '                                                    '
+Notes:		dc.b "                                                    "
 		dc.b 'JUE             ' ; Region
 EndOfHeader:
 ; ===========================================================================
@@ -197,6 +197,7 @@ GameInit:
 
 MainGameLoop:
 		move.b	($FFFFF600).w,d0 ; load	Game Mode
+		blt.s	InvalidGameMode
 		andi.w	#$1C,d0
 		jsr	GameModeArray(pc,d0.w) ; jump to apt location in ROM
 		bra.s	MainGameLoop
@@ -222,18 +223,10 @@ GameModeArray:
 ; ===========================================================================
 		bra.w	Credits		; Credits ($1C)
 ; ===========================================================================
-		rts
+InvalidGameMode:	__ErrorMessage "Invalid game mode!", _eh_default
 ; ===========================================================================
 
-CheckSumError:
-		bsr.w	VDPSetupGame
-		move.l	#$C0000000,(VDP_CTRL).l ; set VDP to CRAM write
-		moveq	#$3F,d7
-
-CheckSum_Red:
-		move.w	#$E,(VDP_DATA).l	; fill screen with colour red
-		dbf	d7,CheckSum_Red	; repeat $3F more times
-		bra.s	*
+CheckSumError:	__ErrorMessage "Checksum invalid!"
 ; ===========================================================================
 
 Art_Text:	incbin	artunc\menutext.bin	; text used in level select and debug mode
@@ -242,9 +235,9 @@ Art_Text:	incbin	artunc\menutext.bin	; text used in level select and debug mode
 ; ===========================================================================
 
 loc_B10:				; XREF: Vectors
-		movem.l	d0-a6,-(sp)
+		pusha
 		tst.b	($FFFFF62A).w
-		beq.s	loc_B88
+		beq.w	loc_B88
 		move.w	(VDP_CTRL).l,d0
 		move.l	#$40000010,(VDP_CTRL).l
 		move.l	($FFFFF616).w,(VDP_DATA).l
@@ -258,19 +251,20 @@ loc_B42:
 		clr.b	($FFFFF62A).w
 		move.b	#1,($FFFFF644).w
 		andi.w	#$3E,d0
+		blt.s	InvalidVint
 		move.w	off_B6E(pc,d0.w),d0
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: loc_B88
         move    #$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
-        bset    #0,($FFFFF64F).w    ; set "SMPS running flag"
-        bne.s   loc_B64             ; if it was set already, don't call another instance of SMPS
+        bset    #0,($FFFFF64F).w    ; set "AMPS running flag"
+        bne.s   loc_B64             ; if it was set already, don't call another instance of AMPS
         jsr UpdateAMPS              ; run AMPS
-        clr.b   ($FFFFF64F).w       ; reset "SMPS running flag"
+        clr.b   ($FFFFF64F).w       ; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		addq.l	#1,($FFFFFE0C).w
-		movem.l	(sp)+,d0-a6
+		popa
 		rte
 ; ===========================================================================
 off_B6E:	dc.w loc_B88-off_B6E, loc_C32-off_B6E
@@ -280,6 +274,7 @@ off_B6E:	dc.w loc_B88-off_B6E, loc_C32-off_B6E
 		dc.w loc_C64-off_B6E, loc_F9A-off_B6E
 		dc.w loc_C36-off_B6E, loc_FA6-off_B6E
 		dc.w loc_E72-off_B6E
+InvalidVint:	__ErrorMessage "Invalid V-int routine!", _eh_default|_eh_address_error
 ; ===========================================================================
 
 loc_B88:				; XREF: loc_B10; off_B6E

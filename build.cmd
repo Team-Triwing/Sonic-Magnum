@@ -1,4 +1,5 @@
 @echo off
+call compress.cmd
 "AMPS\Includer.exe" ASM68K AMPS AMPS\.Data
 tools\asm68k /m /p /o ae-,op+,os+,ow+,oz+,oaq+,osq+,omq+,w-,l. sonic1.asm, s1built.md, , .lst>.log
 type .log

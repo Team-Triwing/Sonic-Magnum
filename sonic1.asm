@@ -227,10 +227,12 @@ GameModeArray:
 ; ===========================================================================
 InvalidGameMode:
 				__ErrorMessage "%<.l #Str_ErrorHeader str>Invalid game mode!%<endl>Game mode = $%<.b $FFFFF600>", _eh_default
+				even
 ; ===========================================================================
 
 CheckSumError:	if safe=0
 				__ErrorMessage "%<.l #Str_ErrorHeader str>Checksum invalid!%<endl>Checksum accumulator = %<.w ChecksumValue>%<endl>Checksum address = %<.l ChecksumAddr>"
+				even
 				endif
 ; ===========================================================================
 
@@ -250,16 +252,15 @@ loc_B10:				; XREF: Vectors
 		clr.b	($FFFFF62A).w
 		move.b	#1,($FFFFF644).w
 		andi.w	#$3E,d0
-		blt.s	InvalidVint
 		move.w	off_B6E(pc,d0.w),d0
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: loc_B88
-        move    #$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
-        bset    #0,($FFFFF64F).w    ; set "AMPS running flag"
-        bne.s   loc_B64             ; if it was set already, don't call another instance of AMPS
+        move	#$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
+        bset	#0,($FFFFF64F).w    ; set "AMPS running flag"
+        bne.s	loc_B64             ; if it was set already, don't call another instance of AMPS
         jsr UpdateAMPS              ; run AMPS
-        clr.b   ($FFFFF64F).w       ; reset "AMPS running flag"
+        clr.b	($FFFFF64F).w       ; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		btst	#6,(ConsoleRegion).w
@@ -279,7 +280,6 @@ off_B6E:	dc.w loc_B88-off_B6E, loc_C32-off_B6E
 		dc.w loc_C64-off_B6E, loc_F9A-off_B6E
 		dc.w loc_C36-off_B6E, loc_FA6-off_B6E
 		dc.w loc_E72-off_B6E
-InvalidVint:	__ErrorMessage "Invalid V-int routine!", _eh_default|_eh_address_error
 ; ===========================================================================
 
 loc_B88:				; XREF: loc_B10; off_B6E
@@ -3751,14 +3751,6 @@ TitleScreen:				; XREF: GameModeArray
 		lea	(Twim_TitleTM).l,a0 ; load "TM" patterns
 		move.w	#$A200,d0
 		jsr	TwimDec
-		lea	(VDP_DATA).l,a6
-		move.l	#$50000003,4(a6)
-		lea	(Art_Text).l,a5
-		move.w	#$28F,d1
-
-Title_LoadText:
-		move.w	(a5)+,(a6)
-		dbf	d1,Title_LoadText ; load uncompressed text patterns
 
 		clr.b	($FFFFFE30).w ; clear lamppost counter
 		clr.w	($FFFFFE08).w ; disable debug item placement	mode
@@ -3910,8 +3902,9 @@ Title_ChkLevSel:
 		endif
 		btst	#JbA,($FFFFF604).w ; check if A is pressed
 		beq.w	PlayLevel	; if not, play level
+		bsr.w	Pal_FadeFrom
 		moveq	#2,d0
-		bsr.w	PalLoad2	; load level select pallet
+		bsr.w	PalLoad1	; load level select pallet
 		lea	($FFFFCC00).w,a1
 		moveq	#0,d0
 		move.w	#$DF,d1
@@ -3919,7 +3912,8 @@ Title_ChkLevSel:
 Title_ClrScroll:
 		move.l	d0,(a1)+
 		dbf	d1,Title_ClrScroll ; fill scroll data with 0
-
+		bsr.w	ClearScreen
+		bsr.w	ClearPLC
 		move.l	d0,($FFFFF616).w
 		move	#$2700,sr
 		lea	(VDP_DATA).l,a6
@@ -3929,9 +3923,18 @@ Title_ClrScroll:
 Title_ClrVram:
 		move.l	d0,(a6)
 		dbf	d1,Title_ClrVram ; fill	VRAM with 0
+		lea	(VDP_DATA).l,a6
+		move.l	#$50000003,4(a6)
+		lea	(Art_Text).l,a5
+		move.w	#$28F,d1
+
+Title_LoadText:
+		move.w	(a5)+,(a6)
+		dbf	d1,Title_LoadText ; load uncompressed text patterns
 		moveq	#0,d0				; clear d0
 		move.l	d0,($FFFFFF30).w		; clear foreground strip draw flags
 		bsr.w	LevSelTextLoad
+		bsr.w	Pal_FadeTo
 
 ; ---------------------------------------------------------------------------
 ; Level	Select
@@ -4142,7 +4145,7 @@ LevSel_A:
 		beq.s	LevSel_Right	; if not, branch
 		addi.w	#16,d0		; add $10 to sound test
 		cmpi.w	#SFXoff+SFXcount,d0	        ; addition by Shadow05 to stop the sound test from going above $D0
-		bcs.s	LevSel_Refresh2
+		blt.s	LevSel_Refresh2
 		moveq	#0,d0		; if sound test	moves above max, set to	0
 
 LevSel_Right:
@@ -4169,21 +4172,25 @@ LevSel_NoMove:
 
 
 LevSelTextLoad:				; XREF: TitleScreen
+	textpos:	= ($40000000+(($E210&$3FFF)<<16)+(($E210&$C000)>>14))
+					; $E210 is a VRAM address
+					
+					
 		lea	(LevelMenuText).l,a1
 		lea	(VDP_DATA).l,a6
-		move.l	#$62100003,d4	; screen position (text)
+		move.l	#textpos,d4	; screen position (text)
 		move.w	#$E680,d3	; VRAM setting
 		moveq	#$14,d1		; number of lines of text
 
 loc_34FE:				; XREF: LevSelTextLoad+26j
 		move.l	d4,4(a6)
-		bsr.w	LevSel_ChgLine
+		bsr.s	LevSel_ChgLine
 		addi.l	#$800000,d4
 		dbf	d1,loc_34FE
 		moveq	#0,d0
 		move.w	($FFFFFF82).w,d0
 		move.w	d0,d1
-		move.l	#$62100003,d4
+		move.l	#textpos,d4
 		lsl.w	#7,d0
 		swap	d0
 		add.l	d0,d4
@@ -4195,7 +4202,7 @@ loc_34FE:				; XREF: LevSelTextLoad+26j
 		adda.w	d1,a1
 		move.w	#$C680,d3
 		move.l	d4,4(a6)
-		bsr.w	LevSel_ChgLine
+		bsr.s	LevSel_ChgLine
 		move.w	#$E680,d3
 		cmpi.w	#$14,($FFFFFF82).w
 		bne.s	loc_3550
@@ -4206,9 +4213,9 @@ loc_3550:
 		move.w	($FFFFFF84).w,d0
 		move.b	d0,d2
 		lsr.b	#4,d0
-		bsr.w	LevSel_ChgSnd
+		bsr.s	LevSel_ChgSnd
 		move.b	d2,d0
-		bsr.w	LevSel_ChgSnd
+		bsr.s	LevSel_ChgSnd
 		rts
 ; End of function LevSelTextLoad
 
@@ -4275,7 +4282,6 @@ Level_ClrStuff:
 ; ---------------------------------------------------------------------------
 
 Level:					; XREF: GameModeArray
-		clr.b  	($FFFFFFD0).w
 		bset	#7,($FFFFF600).w ; add $80 to screen mode (for pre level sequence)
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_37B6
@@ -4286,6 +4292,7 @@ Level:					; XREF: GameModeArray
 loc_37B6:
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
+		clr.b  	($FFFFFFD0).w
         tst.b	(Reload_level).w
         bne.s	Level_ClrStuff
 		tst.w	($FFFFFFF0).w
@@ -4387,6 +4394,7 @@ Level_WaterPal:
 		move.b	($FFFFFE53).w,($FFFFF64E).w
 
 Level_GetBgm:
+		command	mus_OutWater	; get out of water(tm)
         tst.b	(Reload_level).w
         bne.s	loc_3946
 		command	mus_Reset	; fade reset music
@@ -39164,11 +39172,11 @@ Eni_SegaLogo:	incbin	mapeni\segalogo.bin	; large Sega logo (mappings)
 		even
 Eni_Title:	incbin	mapeni\titlescr.bin	; title screen foreground (mappings)
 		even
-Twim_TitleFg:	incbin	arttwim\titlefor.bin	; title screen foreground
+Twim_TitleFg:	incbin	arttwim\titlefor.twim	; title screen foreground
 		even
-Twim_TitleSonic:	incbin	arttwim\titleson.bin	; Sonic on title screen
+Twim_TitleSonic:	incbin	arttwim\titleson.twim	; Sonic on title screen
 		even
-Twim_TitleTM:	incbin	arttwim\titletm.bin	; TM on title screen
+Twim_TitleTM:	incbin	arttwim\titletm.twim	; TM on title screen
 		even
 Eni_JapNames:	incbin	mapeni\japcreds.bin	; Japanese credits (mappings)
 		even

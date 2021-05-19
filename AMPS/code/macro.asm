@@ -20,7 +20,7 @@
 	opt ae+
 
 FEATURE_SAFE_PSGFREQ =	1	; set to 1 to enable safety checks for PSG frequency. Some S3K SFX require this to be 0
-FEATURE_SFX_MASTERVOL =	0	; set to 1 to make SFX be affected by master volumes
+FEATURE_SFX_MASTERVOL =	1	; set to 1 to make SFX be affected by master volumes
 FEATURE_MODULATION =	1	; set to 1 to enable software modulation effect
 FEATURE_PORTAMENTO =	0	; set to 1 to enable portamento effect
 FEATURE_MODENV =	0	; set to 1 to enable modulation envelopes

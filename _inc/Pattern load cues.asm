@@ -57,10 +57,6 @@ PLC_GameOver:	dc.w (((PLC_GHZ-PLC_GameOver-2)/6)-1)
 ; Pattern load cues - Green Hill
 ; ---------------------------------------------------------------------------
 PLC_GHZ:	dc.w (((PLC_GHZ2-PLC_GHZ-2)/6)-1)
-		dc.l Nem_GHZ_1st	; GHZ main patterns
-		dc.w 0
-		dc.l Nem_GHZ_2nd	; GHZ secondary	patterns
-		dc.w $39A0
 		dc.l Nem_Stalk		; flower stalk
 		dc.w $6B00
 		dc.l Nem_PplRock	; purple rock
@@ -98,8 +94,6 @@ PLC_GHZ2:	dc.w (((PLC_LZ-PLC_GHZ2-2)/6)-1)
 ; Pattern load cues - Labyrinth
 ; ---------------------------------------------------------------------------
 PLC_LZ:		dc.w (((PLC_LZ2-PLC_LZ-2)/6)-1)
-		dc.l Nem_LZ		; LZ main patterns
-		dc.w 0
 		dc.l Nem_LzBlock1	; block
 		dc.w $3C00
 		dc.l Nem_LzBlock2	; blocks
@@ -151,8 +145,6 @@ PLC_LZ2:	dc.w (((PLC_MZ-PLC_LZ2-2)/6)-1)
 ; Pattern load cues - Marble
 ; ---------------------------------------------------------------------------
 PLC_MZ:		dc.w (((PLC_MZ2-PLC_MZ-2)/6)-1)
-		dc.l Nem_MZ		; MZ main patterns
-		dc.w 0
 		dc.l Nem_MzMetal	; metal	blocks
 		dc.w $6000
 		dc.l Nem_MzFire		; fireballs
@@ -186,8 +178,6 @@ PLC_MZ2:	dc.w (((PLC_SLZ-PLC_MZ2-2)/6)-1)
 ; Pattern load cues - Star Light
 ; ---------------------------------------------------------------------------
 PLC_SLZ:	dc.w (((PLC_SLZ2-PLC_SLZ-2)/6)-1)
-		dc.l Nem_SLZ		; SLZ main patterns
-		dc.w 0
 		dc.l Nem_Bomb		; bomb enemy
 		dc.w $8000
 		dc.l Nem_Orbinaut	; orbinaut enemy
@@ -221,8 +211,6 @@ PLC_SLZ2:	dc.w (((PLC_SYZ-PLC_SLZ2-2)/6)-1)
 ; Pattern load cues - Spring Yard
 ; ---------------------------------------------------------------------------
 PLC_SYZ:	dc.w (((PLC_SYZ2-PLC_SYZ-2)/6)-1)
-		dc.l Nem_SYZ		; SYZ main patterns
-		dc.w 0
 		dc.l Nem_Crabmeat	; crabmeat enemy
 		dc.w $8000
 		dc.l Nem_Buzz		; buzz bomber enemy
@@ -252,8 +240,6 @@ PLC_SYZ2:	dc.w (((PLC_SBZ-PLC_SYZ2-2)/6)-1)
 ; Pattern load cues - Scrap Brain
 ; ---------------------------------------------------------------------------
 PLC_SBZ:	dc.w (((PLC_SBZ2-PLC_SBZ-2)/6)-1)
-		dc.l Nem_SBZ		; SBZ main patterns
-		dc.w 0
 		dc.l Nem_Stomper	; moving platform and stomper
 		dc.w $5800
 		dc.l Nem_SbzDoor1	; door
@@ -443,10 +429,6 @@ PLC_SpeStResult:dc.w (((PLC_Ending-PLC_SpeStResult-2)/6)-1)
 ; Pattern load cues - ending sequence
 ; ---------------------------------------------------------------------------
 PLC_Ending:	dc.w (((PLC_TryAgain-PLC_Ending-2)/6)-1)
-		dc.l Nem_GHZ_1st	; GHZ main patterns
-		dc.w 0
-		dc.l Nem_GHZ_2nd	; GHZ secondary	patterns
-		dc.w $39A0
 		dc.l Nem_Stalk		; flower stalk
 		dc.w $6B00
 		dc.l Nem_EndFlower	; flowers

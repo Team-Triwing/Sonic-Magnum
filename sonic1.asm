@@ -287,12 +287,6 @@ loc_B9A:
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ ?
 		bne.s	loc_B5E		; if not, branch
 		move.w	(VDP_CTRL).l,d0
-		btst	#6,(ConsoleRegion).w
-		beq.s	loc_BBA
-		move.w	#$700,d0
-		dbf	d0,*
-
-loc_BBA:
 		move.b	#1,($FFFFF644).w
 		tst.b	($FFFFF64E).w
 		bne.s	loc_BFE
@@ -2322,6 +2316,84 @@ SLZDec:
 	move.w	(sp)+, d4				; Restore registers
 	move.w	(sp)+, d3
 	rts								; End of subroutine
+	
+; ---------------------------------------------------------------------------
+; Original version written by vladikcomper, with improvements by Flamewing
+; ---------------------------------------------------------------------------
+; Permission to use, copy, modify, and/or distribute this software for any
+; purpose with or without fee is hereby granted.
+;
+; THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+; WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+; MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+; ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+; OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+; ---------------------------------------------------------------------------
+; FUNCTION:
+; 	CompDec
+;
+; DESCRIPTION
+; 	Comper Decompressor
+;
+; INPUT:
+; 	a0	Source address
+; 	a1	Destination address
+; ---------------------------------------------------------------------------
+_Comp_LoopUnroll = 3
+
+_Comp_RunBitStream macro
+	dbra	d3,.mainloop	; if bits counter remains, parse the next word
+	bra.s	.newblock		; start a new block
+	endm
+
+_Comp_ReadBit macro
+	add.w	d0,d0			; roll description field
+	endm
+; ===========================================================================
+
+
+; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
+; ---------------------------------------------------------------------------
+CompDec:
+	moveq	#(1<<_Comp_LoopUnroll)-1,d7
+
+.newblock:
+	move.w	(a0)+,d0		; fetch description field
+	moveq	#15,d3			; set bits counter to 16
+
+.mainloop:
+	_Comp_ReadBit
+	bcs.s	.flag			; if a flag issued, branch
+	move.w	(a0)+,(a1)+		; otherwise, do uncompressed data
+	_Comp_RunBitStream
+; ---------------------------------------------------------------------------
+.flag:
+	moveq	#-1,d1			; init displacement
+	move.b	(a0)+,d1		; load displacement
+	add.w	d1,d1
+	moveq	#0,d2			; init copy count
+	move.b	(a0)+,d2		; load copy length
+	beq.s	.end			; if zero, branch
+	lea	(a1,d1.w),a2		; load start copy address
+	move.w	d2,d4
+	not.w	d4
+	and.w	d7,d4
+	add.w	d4,d4
+	lsr.w	#_Comp_LoopUnroll,d2
+	jmp	.loop(pc,d4.w)
+; ---------------------------------------------------------------------------
+.loop:
+	rept (1<<_Comp_LoopUnroll)
+		move.w	(a2)+,(a1)+		; copy given sequence
+	endr
+	dbra	d2,.loop		; repeat
+	_Comp_RunBitStream
+; ---------------------------------------------------------------------------
+.end:
+	rts
+; ===========================================================================
 
 
 
@@ -3647,7 +3719,7 @@ Title_LoadText:
 		moveq	#$15,d2
 		bsr.w	ShowVDPGraphics
 		move.l	#$40000000,(VDP_CTRL).l
-		lea	(Nem_GHZ_1st).l,a0 ; load GHZ patterns
+		lea	(Nem_Title).l,a0 ; load GHZ patterns
 		bsr.w	NemDec
 		moveq	#1,d0		; load title screen pallet
 		bsr.w	PalLoad1
@@ -4266,6 +4338,7 @@ loc_3946:
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
 		bset	#2,($FFFFF754).w
+		bsr.w	LoadZoneTiles
 		bsr.w	MainLoadBlockLoad ; load block mappings	and pallets
 		bsr.w	LoadTilesFromStart
 		bsr.w	ColIndexLoad
@@ -6021,6 +6094,7 @@ End_LoadData:
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
 		bset	#2,($FFFFF754).w
+		bsr.w	LoadZoneTiles
 		bsr.w	MainLoadBlockLoad
 		bsr.w	LoadTilesFromStart
 		move.l	#Col_GHZ,($FFFFF796).w ; load collision	index
@@ -9083,6 +9157,47 @@ locret_72EE:
 		rts	
 ; End of function sub_72BA
 
+LoadZoneTiles:
+		moveq	#0,d0			; Clear d0
+		move.b	($FFFFFE10).w,d0		; Load number of current zone to d0
+		lsl.w	#4,d0			; Multiply by $10, converting the zone ID into an offset
+		lea	(MainLoadBlocks).l,a2	; Load LevelHeaders's address into a2
+		lea	(a2,d0.w),a2		; Offset LevelHeaders by the zone-offset, and load the resultant address to a2
+		move.l	(a2)+,d0		; Move the first longword of data that a2 points to to d0, this contains the zone's first PLC ID and its art's address.
+								; The auto increment is pointless as a2 is overwritten later, and nothing reads from a2 before then
+		andi.l	#$FFFFFF,d0    	; Filter out the first byte, which contains the first PLC ID, leaving the address of the zone's art in d0
+		movea.l	d0,a0			; Load the address of the zone's art into a0 (source)
+		lea	($FF0000).l,a1		; Load v_256x256/StartOfRAM (in this context, an art buffer) into a1 (destination)
+		bsr.w	CompDec			; Decompress a0 to a1 (Comper compression)
+
+		move.w	a1,d3			; Move a word of a1 to d3, note that a1 doesn't exactly contain the address of v_256x256/StartOfRAM anymore, after KosDec, a1 now contains v_256x256/StartOfRAM + the size of the file decompressed to it, d3 now contains the length of the file that was decompressed
+		move.w	d3,d7			; Move d3 to d7, for use in seperate calculations
+
+		andi.w	#$FFF,d3		; Remove the high nibble of the high byte of the length of decompressed file, this nibble is how many $1000 bytes the decompressed art is
+		lsr.w	#1,d3			; Half the value of 'length of decompressed file', d3 becomes the 'DMA transfer length'
+
+		rol.w	#4,d7			; Rotate (left) length of decompressed file by one nibble
+		andi.w	#$F,d7			; Only keep the low nibble of low byte (the same one filtered out of d3 above), this nibble is how many $1000 bytes the decompressed art is
+
+@loop:		move.w	d7,d2			; Move d7 to d2, note that the ahead dbf removes 1 byte from d7 each time it loops, meaning that the following calculations will have different results each time
+		lsl.w	#7,d2
+		lsl.w	#5,d2			; Shift (left) d2 by $C, making it high nibble of the high byte, d2 is now the size of the decompressed file rounded down to the nearest $1000 bytes, d2 becomes the 'destination address'
+
+		move.l	#$FFFFFF,d1		; Fill d1 with $FF
+		move.w	d2,d1			; Move d2 to d1, overwriting the last word of $FF's with d2, this turns d1 into 'StartOfRAM'+'However many $1000 bytes the decompressed art is', d1 becomes the 'source address'
+		lsr.l	#1,d1
+		jsr	(QueueDMA).l		; Use d1, d2, and d3 to locate the decompressed art and ready for transfer to VRAM
+		move.w	d7,-(sp)		; Store d7 in the Stack
+		move.b	#$C,($FFFFF62A).w
+		bsr.w	DelayProgram
+		bsr.w	RunPLC_RAM
+		move.w	(sp)+,d7		; Restore d7 from the Stack
+		move.w	#$800,d3		; Force the DMA transfer length to be $1000/2 (the first cycle is dynamic because the art's DMA'd backwards)
+		dbf	d7,@loop			; Loop for each $1000 bytes the decompressed art is
+
+		rts
+; End of function LoadZoneTiles
+
 ; ---------------------------------------------------------------------------
 ; Main Load Block loading subroutine
 ; ---------------------------------------------------------------------------
@@ -9454,9 +9569,9 @@ off_6FB2:	dc.w loc_6FBA-off_6FB2
 
 loc_6FBA:
 		move.w	#$1D0,($FFFFF726).w
-		cmpi.w	#$700,($FFFFF700).w
+		cmpi.w	#$058,($FFFFF700).w
 		bcs.s	locret_6FE8
-		move.w	#$220,($FFFFF726).w
+		move.w	#-$100,($FFFFF726).w
 		cmpi.w	#$D00,($FFFFF700).w
 		bcs.s	locret_6FE8
 		move.w	#$340,($FFFFF726).w
@@ -17431,19 +17546,15 @@ Obj_Index:
 
 
 ObjectFall:
-		move.l	8(a0),d2
-		move.l	$C(a0),d3
 		move.w	$10(a0),d0
 		ext.l	d0
-		asl.l	#8,d0
-		add.l	d0,d2
+		lsl.l	#8,d0
+		add.l	d0,8(a0)
 		move.w	$12(a0),d0
 		addi.w	#$38,$12(a0)	; increase vertical speed
 		ext.l	d0
-		asl.l	#8,d0
-		add.l	d0,d3
-		move.l	d2,8(a0)
-		move.l	d3,$C(a0)
+		lsl.l	#8,d0
+		add.l	d0,$C(a0)
 		rts
 ; End of function ObjectFall
 
@@ -17455,18 +17566,14 @@ ObjectFall:
 
 
 SpeedToPos:
-		move.l	8(a0),d2
-		move.l	$C(a0),d3
 		move.w	$10(a0),d0	; load horizontal speed
 		ext.l	d0
-		asl.l	#8,d0		; multiply speed by $100
-		add.l	d0,d2		; add to x-axis	position
+		lsl.l	#8,d0		; multiply speed by $100
+		add.l	d0,8(a0)	; add to x-axis	position
 		move.w	$12(a0),d0	; load vertical	speed
 		ext.l	d0
-		asl.l	#8,d0		; multiply by $100
-		add.l	d0,d3		; add to y-axis	position
-		move.l	d2,8(a0)	; update x-axis	position
-		move.l	d3,$C(a0)	; update y-axis	position
+		lsl.l	#8,d0		; multiply by $100
+		add.l	d0,$C(a0)	; add to y-axis	position
 		rts
 ; End of function SpeedToPos
 
@@ -38794,7 +38901,7 @@ Debug_Control:
 		moveq	#0,d4
 		move.w	#1,d1
 		move.b	($FFFFF605).w,d4
-		andi.w	#JbU|JbD|JbL|JbR,d4		; is up/down/left/right	pressed?
+		andi.w	#J_U|J_D|J_L|J_R,d4		; is up/down/left/right	pressed?
 		bne.s	loc_1D018	; if yes, branch
 		move.b	($FFFFF604).w,d0
 		andi.w	#$F,d0
@@ -38838,14 +38945,14 @@ loc_1D03C:
 		move.l	#$7FF0000,d2
 
 loc_1D052:
-		btst	#2,d4
+		btst	#JbL,d4
 		beq.s	loc_1D05E
 		sub.l	d1,d3
 		bcc.s	loc_1D05E
 		moveq	#0,d3
 
 loc_1D05E:
-		btst	#3,d4
+		btst	#JbR,d4
 		beq.s	loc_1D066
 		add.l	d1,d3
 
@@ -39312,39 +39419,39 @@ Nem_Squirrel:	incbin	artnem\squirrel.bin	; squirrel
 ; ---------------------------------------------------------------------------
 Blk16_GHZ:	incbin	map16\ghz.bin
 		even
-Nem_GHZ_1st:	incbin	artnem\8x8ghz1.bin	; GHZ primary patterns
+Nem_Title:	incbin	artnem\8x8ghz1.bin	; Title patterns
 		even
-Nem_GHZ_2nd:	incbin	artnem\8x8ghz2.bin	; GHZ secondary patterns
+Comp_GHZ:	incbin	artcomp\8x8ghz.bin	; GHZ primary patterns
 		even
 Blk256_GHZ:	incbin	map256\ghz.bin
 		even
 Blk16_LZ:	incbin	map16\lz.bin
 		even
-Nem_LZ:		incbin	artnem\8x8lz.bin	; LZ primary patterns
+Comp_LZ:		incbin	artcomp\8x8lz.bin	; LZ primary patterns
 		even
 Blk256_LZ:	incbin	map256\lz.bin
 		even
 Blk16_MZ:	incbin	map16\mz.bin
 		even
-Nem_MZ:		incbin	artnem\8x8mz.bin	; MZ primary patterns
+Comp_MZ:		incbin	artcomp\8x8mz.bin	; MZ primary patterns
 		even
 Blk256_MZ:	incbin	map256\mz.bin
 		even
 Blk16_SLZ:	incbin	map16\slz.bin
 		even
-Nem_SLZ:	incbin	artnem\8x8slz.bin	; SLZ primary patterns
+Comp_SLZ:	incbin	artcomp\8x8slz.bin	; SLZ primary patterns
 		even
 Blk256_SLZ:	incbin	map256\slz.bin
 		even
 Blk16_SYZ:	incbin	map16\syz.bin
 		even
-Nem_SYZ:	incbin	artnem\8x8syz.bin	; SYZ primary patterns
+Comp_SYZ:	incbin	artcomp\8x8syz.bin	; SYZ primary patterns
 		even
 Blk256_SYZ:	incbin	map256\syz.bin
 		even
 Blk16_SBZ:	incbin	map16\sbz.bin
 		even
-Nem_SBZ:	incbin	artnem\8x8sbz.bin	; SBZ primary patterns
+Comp_SBZ:	incbin	artcomp\8x8sbz.bin	; SBZ primary patterns
 		even
 Blk256_SBZ:	incbin	map256\sbz.bin
 		even

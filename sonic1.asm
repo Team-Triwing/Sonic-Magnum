@@ -3770,7 +3770,7 @@ Title_LoadText:
 		bsr.w	NemDec
 		moveq	#1,d0		; load title screen pallet
 		bsr.w	PalLoad1
-		move.b	#0,($FFFFFFFA).w ; disable debug mode
+		clr.b	($FFFFFFFA).w ; disable debug mode
 		move.w	#$178,($FFFFF614).w ; run title	screen for $178	frames
 		lea	($FFFFD080).w,a1
 		moveq	#0,d0
@@ -24716,7 +24716,7 @@ Obj01_Main:				; XREF: Obj01_Index
 		bsr.w	ApplySpeedSettings	; Fetch Speed settings
 
 Obj01_Control:				; XREF: Obj01_Index
-		tst.w	($FFFFFFFA).w	; is debug cheat enabled?
+		tst.b	($FFFFFFFA).w	; is debug cheat enabled?
 		beq.s	loc_12C58	; if not, branch
 		btst	#JbB,($FFFFF605).w ; is button B pressed?
 		beq.s	loc_12C58	; if not, branch
@@ -24798,6 +24798,8 @@ Obj01_ChkInvin:
 		move.b	d0,mQueue+1.w	; play normal music
 
 Obj01_RmvInvin:
+        subq.b	#2,$24(a0)
+        move.b	#$78,invulnerable_time(a0)
 		clr.b	($FFFFFE2D).w ; cancel invincibility
 
 Obj01_ChkShoes:
@@ -36197,7 +36199,7 @@ Hurt_Sound:
 ; ===========================================================================
 
 Hurt_NoRings:
-		tst.w	($FFFFFFFA).w	; is debug mode	cheat on?
+		tst.b	($FFFFFFFA).w	; is debug mode	cheat on?
 		bne.w	Hurt_Shield	; if yes, branch
 ; End of function HurtSonic
 
@@ -36920,7 +36922,7 @@ Obj09_Main:				; XREF: Obj09_Index
 		bset	#1,$22(a0)
 
 Obj09_ChkDebug:				; XREF: Obj09_Index
-		tst.w	($FFFFFFFA).w	; is debug mode	cheat enabled?
+		tst.b	($FFFFFFFA).w	; is debug mode	cheat enabled?
 		beq.s	Obj09_NoDebug	; if not, branch
 		btst	#JbB,($FFFFF605).w ; is button B pressed?
 		beq.s	Obj09_NoDebug	; if not, branch
@@ -38259,7 +38261,7 @@ locret_1C6B6:
 
 
 HudUpdate:
-		tst.w	($FFFFFFFA).w	; is debug mode	on?
+		tst.b	($FFFFFFFA).w	; is debug mode	on?
 		bne.w	HudDebug	; if yes, branch
 		tst.b	($FFFFFE1F).w	; does the score need updating?
 		beq.s	Hud_ChkRings	; if not, branch

@@ -1325,6 +1325,27 @@ NemDec4:
     bra.s   .ItemLoop
 ; End of function NemDec4
 
+; ===============================================================
+; ---------------------------------------------------------------
+; uncompressed art to VRAM loader
+; ---------------------------------------------------------------
+; INPUT:
+;       a0      - Source Offset
+;   d0  - length in tiles
+; ---------------------------------------------------------------
+LoadUncArt:
+        move    #$2700,sr   ; disable interrupts
+        lea VDP_DATA.l,a6    ; get VDP data port
+ 
+LoadArt_Loop:
+		rept 8
+        move.l  (a0)+,(a6)  ; transfer 4 bytes
+		endr
+ 
+        dbf d0, LoadArt_Loop; loop until d0 = 0
+        move    #$2300,sr   ; enable interrupts
+        rts
+
 ; ---------------------------------------------------------------------------
 ; Subroutine to	load pattern load cues
 ; ---------------------------------------------------------------------------
@@ -4204,9 +4225,10 @@ loc_37B6:
 		bsr.w	Pal_FadeFrom
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
-		move.l	#$70000002,(VDP_CTRL).l
-		lea	(Nem_TitleCard).l,a0 ; load title card patterns
-		bsr.w	NemDec
+        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Unc_TitleCard,a0        ; load title card patterns
+        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#4,d0
@@ -5417,9 +5439,10 @@ loc_47D4:
 		move.w	#$8407,(a6)
 		move.w	#$9001,(a6)
 		bsr.w	ClearScreen
-		move.l	#$70000002,(VDP_CTRL).l
-		lea	(Nem_TitleCard).l,a0 ; load title card patterns
-		bsr.w	NemDec
+        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Unc_TitleCard,a0        ; load title card patterns
+        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
 		jsr	Hud_Base
 		resetDMA
 		
@@ -5776,9 +5799,10 @@ Cont_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cont_ClrObjRam ; clear object RAM
 		clr.b  	($FFFFFFD0).w
-		move.l	#$70000002,(VDP_CTRL).l
-		lea	(Nem_TitleCard).l,a0 ; load title card patterns
-		bsr.w	NemDec
+        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Unc_TitleCard,a0        ; load title card patterns
+        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
 		move.l	#$60000002,(VDP_CTRL).l
 		lea	(Nem_ContSonic).l,a0 ; load Sonic patterns
 		bsr.w	NemDec
@@ -19548,8 +19572,12 @@ GotThroughAct:				; XREF: Obj3E_EndAct
 		clr.b	($FFFFFE2D).w	; disable invincibility
 		clr.b	($FFFFFE1E).w	; stop time counter
 		move.b	#$3A,($FFFFD5C0).w
-		moveq	#$10,d0
-		jsr	(LoadPLC2).l	; load title card patterns
+		move.l  a0,-(sp)
+        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Unc_TitleCard,a0        ; load title card patterns
+        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
+		move.l  (sp)+,a0
 		move.b	#1,($FFFFF7D6).w
 		moveq	#0,d0
 		move.b	($FFFFFE23).w,d0
@@ -39362,8 +39390,8 @@ Nem_Cater:	incbin	artnem\caterkil.bin	; caterkiller
 ; ---------------------------------------------------------------------------
 ; Compressed graphics - various
 ; ---------------------------------------------------------------------------
-Nem_TitleCard:	incbin	artnem\ttlcards.bin	; title cards
-		even
+Unc_TitleCard:	incbin	artunc\ttlcards.bin	; title cards
+Unc_TitleCard_End:	even
 Nem_Hud:	incbin	artnem\hud.bin		; HUD (rings, time, score)
 		even
 Nem_Lives:	incbin	artnem\lifeicon.bin	; life counter icon

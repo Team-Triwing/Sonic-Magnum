@@ -16862,16 +16862,18 @@ Map_obj34:	dc.w byte_C9FE-Map_obj34
 		dc.w byte_CB3C-Map_obj34
 		dc.w byte_CB47-Map_obj34
 		dc.w byte_CB8A-Map_obj34
-byte_C9FE:	dc.b 9 			; GREEN HILL
-		dc.b $F8, 5, 0,	$18, $B4
-		dc.b $F8, 5, 0,	$3A, $C4
-		dc.b $F8, 5, 0,	$10, $D4
-		dc.b $F8, 5, 0,	$10, $E4
-		dc.b $F8, 5, 0,	$2E, $F4
-		dc.b $F8, 5, 0,	$1C, $14
-		dc.b $F8, 1, 0,	$20, $24
-		dc.b $F8, 5, 0,	$26, $2C
-		dc.b $F8, 5, 0,	$26, $3C
+byte_C9FE:	dc.b $B	;  SUNSET ISLE (former GHZ)
+		dc.b $F8, 5, 0, $3E, $A4	; S
+		dc.b $F8, 5, 0, $46, $B4	; U
+		dc.b $F8, 5, 0, $2E, $C4	; N
+		dc.b $F8, 5, 0, $3E, $D4	; S
+		dc.b $F8, 5, 0, $10, $E4	; E
+		dc.b $F8, 5, 0, $42, $F4	; T
+		dc.b $F8, 0, 0, $56, $4	; Space
+		dc.b $F8, 1, 0, $20, $14	; I
+		dc.b $F8, 5, 0, $3E, $1C	; S
+		dc.b $F8, 5, 0, $26, $2C	; L
+		dc.b $F8, 5, 0, $10, $3C	; E
 byte_CA2C:	dc.b 9			; LABYRINTH
 		dc.b $F8, 5, 0,	$26, $BC
 		dc.b $F8, 5, 0,	0, $CC

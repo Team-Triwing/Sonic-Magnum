@@ -19567,7 +19567,6 @@ Obj0D_Touch:				; XREF: Obj0D_Index
 .continue:
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 		bsr.w	ApplySpeedSettings
-        clr.b	(Reload_level).w
 		clr.b	($FFFFFE1E).w	; stop time counter
 		move.w	($FFFFF72A).w,($FFFFF728).w ; lock screen position
 		addq.b	#2,$24(a0)
@@ -19658,6 +19657,7 @@ GotThroughAct:				; XREF: Obj3E_EndAct
 		move.w	($FFFFF72A).w,($FFFFF728).w
 		clr.b	($FFFFFE2D).w	; disable invincibility
 		clr.b	($FFFFFE1E).w	; stop time counter
+        clr.b	(Reload_level).w
 		move.b	#$3A,($FFFFD5C0).w
 		move.l  a0,-(sp)
         move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
@@ -19802,8 +19802,7 @@ Obj4D:					; XREF: Obj_Index
 		moveq	#0,d0
 		move.b	$24(a0),d0
 		move.w	Obj4D_Index(pc,d0.w),d1
-		jsr	Obj4D_Index(pc,d1.w)
-		bra.w	DisplaySprite
+		jmp	Obj4D_Index(pc,d1.w)
 ; ===========================================================================
 Obj4D_Index:	dc.w Obj4D_Main-Obj4D_Index
 		dc.w Obj4D_Action-Obj4D_Index
@@ -19898,7 +19897,7 @@ Obj4D_ChkDel:				; XREF: Obj4C
 		sub.w	d1,d0
 		cmpi.w	#$280,d0
 		bhi.w	DeleteObject
-		rts
+		bra.w	DisplaySprite
 ; ===========================================================================
 Obj4D_TypeIndex:dc.w Obj4D_Type00-Obj4D_TypeIndex
 		dc.w Obj4D_Type01-Obj4D_TypeIndex

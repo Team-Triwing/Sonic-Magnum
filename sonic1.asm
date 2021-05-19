@@ -3713,6 +3713,7 @@ Title_LoadText:
 		clr.w	($FFFFFE10).w ; set level to	GHZ (00)
 		clr.w	($FFFFF634).w ; disable pallet cycling
 		clr.b	($FFFFFE19).w
+		clr.b	(Reload_level).w
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
 		lea	(Blk16_GHZ).l,a0 ; load	GHZ 16x16 mappings
@@ -4209,6 +4210,12 @@ MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ, mus_FZ
 		even
 ; ===========================================================================
 
+Level_ClrStuff:
+        clr.w    ($FFFFFE20).w
+        clr.w    ($FFFFFE22).w
+        jsr    (Hud_Base).l
+        bra.w    Level_ClrRam
+
 ; ---------------------------------------------------------------------------
 ; Level
 ; ---------------------------------------------------------------------------
@@ -4218,11 +4225,15 @@ Level:					; XREF: GameModeArray
 		bset	#7,($FFFFF600).w ; add $80 to screen mode (for pre level sequence)
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_37B6
+        tst.b	(Reload_level).w
+        bne.s	loc_37B6
 		command	mus_FadeOut	; fade out music
 
 loc_37B6:
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
+        tst.b	(Reload_level).w
+        bne.s	Level_ClrStuff
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
         move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
@@ -4321,6 +4332,8 @@ Level_WaterPal:
 		move.b	($FFFFFE53).w,($FFFFF64E).w
 
 Level_GetBgm:
+        tst.b	(Reload_level).w
+        bne.s	loc_3946
 		command	mus_Reset	; fade reset music
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_3946
@@ -4355,6 +4368,7 @@ Level_TtlCard:
 		jsr	Hud_Base
 
 loc_3946:
+        move.b	#1,(Reload_level).w
 		moveq	#3,d0
 		bsr.w	PalLoad1	; load Sonic's pallet line
 		bsr.w	LevelSizeLoad
@@ -19481,6 +19495,7 @@ Obj0D_Touch:				; XREF: Obj0D_Index
 		bcc.s	locret_EBBA	; if not, branch
 		sfx	sfx_Signpost	; play signpost	sound
 		clr.b 	($FFFFFE19).w ; Revert Sonic to Normal
+        clr.b	(Reload_level).w
 		clr.b	($FFFFFE1E).w	; stop time counter
 		move.w	($FFFFF72A).w,($FFFFF728).w ; lock screen position
 		addq.b	#2,$24(a0)

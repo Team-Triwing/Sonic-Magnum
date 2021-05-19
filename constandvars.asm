@@ -5,6 +5,7 @@ ChecksumValue	equ $FFFFFFF0		; the accumulated value of checksum check (2 bytes)
 ChecksumStart	equ $FFFFFFF4		; set if start button was pressed during checksum check
 
 Reload_level	equ $FFFFFFF9
+Level_Music		equ	$FFFFFF90
 
 r_DMA_Queue		equ	$FFFFC800
 r_DMA_Slot		equ	r_DMA_Queue+$FC

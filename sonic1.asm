@@ -4211,10 +4211,10 @@ MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ, mus_FZ
 ; ===========================================================================
 
 Level_ClrStuff:
-        clr.w    ($FFFFFE20).w
-        clr.w    ($FFFFFE22).w
-        jsr    (Hud_Base).l
-        bra.w    Level_ClrRam
+        clr.w	($FFFFFE20).w
+        clr.w	($FFFFFE22).w
+        jsr	(Hud_Base).l
+        bra.s	Level_ClrRam
 
 ; ---------------------------------------------------------------------------
 ; Level
@@ -4339,18 +4339,9 @@ Level_GetBgm:
 		bmi.s	loc_3946
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
-		cmpi.w	#$103,($FFFFFE10).w ; is level SBZ3?
-		bne.s	Level_BgmNotLZ4	; if not, branch
-		moveq	#5,d0		; move 5 to d0
-
-Level_BgmNotLZ4:
-		cmpi.w	#$502,($FFFFFE10).w ; is level FZ?
-		bne.s	Level_PlayBgm	; if not, branch
-		moveq	#6,d0		; move 6 to d0
-
-Level_PlayBgm:
 		lea	(MusicList).l,a1; load music playlist
 		move.b	(a1,d0.w),d0	; add d0 to a1
+		move.b	d0,(Level_Music).w	; store level music
 		move.b	d0,mQueue+1.w	; play music
 		move.b	#$34,($FFFFD080).w ; load title	card object
 
@@ -19496,7 +19487,9 @@ Obj0D_Touch:				; XREF: Obj0D_Index
 		cmpi.w	#$20,d0		; is Sonic within $20 pixels of	the signpost?
 		bcc.s	locret_EBBA	; if not, branch
 		sfx	sfx_Signpost	; play signpost	sound
-		clr.b 	($FFFFFE19).w ; Revert Sonic to Normal
+		clr.b 	($FFFFFE19).w ; Revert Sonic to normal
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings
         clr.b	(Reload_level).w
 		clr.b	($FFFFFE1E).w	; stop time counter
 		move.w	($FFFFF72A).w,($FFFFF728).w ; lock screen position
@@ -24819,15 +24812,7 @@ Obj01_ChkInvin:
 		bne.s	Obj01_RmvInvin
 		cmpi.w	#$C,($FFFFFE14).w
 		bcs.s	Obj01_RmvInvin
-		moveq	#0,d0
-		move.b	($FFFFFE10).w,d0
-		cmpi.w	#$103,($FFFFFE10).w ; check if level is	SBZ3
-		bne.s	Obj01_PlayMusic
-		moveq	#5,d0		; play SBZ music
-
-Obj01_PlayMusic:
-		lea	(MusicList).l,a1
-		move.b	(a1,d0.w),d0
+		move.b	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w	; play normal music
 
 Obj01_RmvInvin:
@@ -25700,7 +25685,7 @@ Sonic_CheckGoSuper:
 	bcs.s	return_1ABA4		; if not, branch
 	endif
 	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
-	beq.w	return_1ABA4		; if yes, branch
+	beq.s	return_1ABA4		; if yes, branch
 	move.b	#1,($FFFFF65F).w
 	move.b	#$F,($FFFFF65E).w
 	move.b	#1,($FFFFFE19).w
@@ -25779,10 +25764,10 @@ Sonic_SpinDash:
 		cmpi.b	#8,$1C(a0)
 		bne.s	locret_1AC8C
 		move.b	($FFFFF603).w,d0
-		andi.b	#$70,d0
+		andi.b	#J_B|J_C|J_A,d0
 		beq.w	locret_1AC8C
-		move.b	#2,$1C(a0)
-		sfx		sfx_Roll
+		move.b	#9,$1C(a0)
+		sfx		sfx_Spindash
 		addq.l	#4,sp
 		move.b	#1,$39(a0)
 		move.w	#0,$3A(a0)
@@ -25800,7 +25785,7 @@ locret_1AC8C:
 
 loc_1AC8E:
 		move.b	($FFFFF602).w,d0
-		btst	#1,d0
+		btst	#JbD,d0
 		bne.w	loc_1AD30
 		move.b	#$E,$16(a0)
 		move.b	#7,$17(a0)
@@ -25850,10 +25835,10 @@ loc_1AD30:				; If still charging the dash...
 
 loc_1AD48:
 		move.b	($FFFFF603).w,d0
-		andi.b	#$70,d0	; 'p'
+		andi.b	#J_B|J_C|J_A,d0	; 'p'
 		beq.w	loc_1AD78
-	;	move.w	#$900,$1C(a0)
-		sfx		sfx_Roll
+		move.w	#$900,$1C(a0)
+		sfx		sfx_Spindash
 		addi.w	#$200,$3A(a0)
 		cmpi.w	#$800,$3A(a0)
 		bcs.s	loc_1AD78
@@ -27123,12 +27108,7 @@ locret_1408C:
 ResumeMusic:				; XREF: Obj64_Wobble; Sonic_Water; Obj0A_ReduceAir
 		cmpi.w	#$C,($FFFFFE14).w
 		bhi.s	loc_140AC
-		moveq	#mus_LZ,d0	; play LZ music
-		cmpi.w	#$103,($FFFFFE10).w ; check if level is	0103 (SBZ3)
-		bne.s	loc_140A6
-		moveq	#mus_SBZ,d0	; play SBZ music
-
-loc_140A6:
+		move.b	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 
 loc_140AC:
@@ -31487,7 +31467,8 @@ loc_179DA:
 
 loc_179E0:
 		clr.w	$12(a0)
-		music	mus_GHZ		; play GHZ music
+		move.b	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
 
 loc_179EE:
 		bsr.w	BossMove
@@ -32056,7 +32037,8 @@ loc_180F6:				; XREF: Obj77_ShipIndex
 		move.b	#$32,$3C(a0)
 
 loc_18112:
-		music	mus_LZ		; play LZ music
+		move.b	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
 		bset	#0,$22(a0)
 		addq.b	#2,$25(a0)
 
@@ -32485,7 +32467,8 @@ loc_18566:
 
 loc_1856C:
 		clr.w	$12(a0)
-		music	mus_MZ		; play MZ music
+		move.b	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
 
 loc_1857A:
 		bsr.w	BossMove
@@ -33131,7 +33114,8 @@ loc_18BAE:
 
 loc_18BB4:
 		clr.w	$12(a0)
-		music	mus_SLZ		; play SLZ music
+		move.b	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
 
 loc_18BC2:
 		bra.w	loc_189EE
@@ -34023,7 +34007,8 @@ loc_194DA:
 
 loc_194E0:
 		clr.w	$12(a0)
-		music	mus_SYZ		; play SYZ music
+		move.b	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
 
 loc_194EE:
 		bra.w	loc_191F2

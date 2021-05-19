@@ -79,7 +79,7 @@ SoundIndex:
 	ptrSFX	0, Signpost, Lamppost, BigRing, Bumper, Spring
 	ptrSFX	0, Collapse, Smash, Basaran, BuzzExplode, Explode
 	ptrSFX	0, Electricity, Flame, LavaBall, SpikeMove, Rumble
-	ptrSFX	0, Door, Stomp, Chain, Saw, Lava
+	ptrSFX	0, Door, Stomp, Chain, Saw, Lava, Spindash
 
 	ptrSFX	0, EnterSS, Goal, ActionBlock, Diamonds, Continue
 

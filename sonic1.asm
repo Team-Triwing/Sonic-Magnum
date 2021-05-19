@@ -2508,7 +2508,7 @@ loc_19D8:
 		neg.w	d1
 
 loc_19F0:
-		move.w	($FFFFF650).w,d0
+		move.w	($FFFFFECA).w,d0
 		andi.w	#3,d0
 		add.w	d1,d0
 		cmpi.w	#3,d0
@@ -2520,7 +2520,7 @@ loc_19F0:
 		moveq	#2,d0
 
 loc_1A0A:
-		move.w	d0,($FFFFF650).w
+		move.w	d0,($FFFFFECA).w
 		add.w	d0,d0
 		move.w	d0,d1
 		add.w	d0,d0
@@ -2611,7 +2611,7 @@ PalCycle_SBZ:				; XREF: PalCycle
 		lea	(Pal_SBZCycList2).l,a2
 
 loc_1ADA:
-		lea	($FFFFF650).w,a1
+		lea	($FFFFFECA).w,a1
 		move.w	(a2)+,d1
 
 loc_1AE0:

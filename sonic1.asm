@@ -223,10 +223,15 @@ GameModeArray:
 ; ===========================================================================
 		bra.w	Credits		; Credits ($1C)
 ; ===========================================================================
-InvalidGameMode:	__ErrorMessage "Invalid game mode!", _eh_default
+		bra.w	InvalidGameMode		; Invalid ($20)
+; ===========================================================================
+InvalidGameMode:
+				__ErrorMessage "%<.l #Str_ErrorHeader str>Invalid game mode!%<endl>Game mode = $%<.b $FFFFF600>", _eh_default
 ; ===========================================================================
 
-CheckSumError:	__ErrorMessage "Checksum invalid!"
+CheckSumError:	if safe=0
+				__ErrorMessage "%<.l #Str_ErrorHeader str>Checksum invalid!%<endl>Checksum accumulator = %<.w ChecksumValue>%<endl>Checksum address = %<.l ChecksumAddr>"
+				endif
 ; ===========================================================================
 
 Art_Text:	incbin	artunc\menutext.bin	; text used in level select and debug mode
@@ -2734,28 +2739,30 @@ PalCycle_SuperSonic:
         tst.b   ($FFFFF65F).w
         beq.s   loc_24DE
         bmi.s   loc_24E0
-        subq.b  #$1,($FFFFF65E).w 
+		cmpi.b	#1,($FFFFF65F).w
+		bgt.s	PalCycle_SuperSonic_revert	; branch for values greater than 1
+        subq.b  #1,($FFFFF65E).w 
         bpl.s   loc_24DE
-        move.b  #$3,($FFFFF65E).w
+        move.b  #3,($FFFFF65E).w
         lea     (loc_2516), a0
         move.w  ($FFFFF65C).w,d0
-        addq.w  #$8,($FFFFF65C).w
+        addq.w  #8,($FFFFF65C).w
         cmpi.w  #$30,($FFFFF65C).w
         bcs.s   loc_24D2
         move.b  #$FF,($FFFFF65F).w
 loc_24D2:
         lea     ($FFFFFB04).w,a1
-        move.l  $00(a0,d0),(a1)+
-        move.l  $4(a0,d0),(a1)
+        move.l  0(a0,d0),(a1)+
+        move.l  4(a0,d0),(a1)
 loc_24DE:
         rts
 loc_24E0:
-        subq.b  #$1,($FFFFF65E).w
+        subq.b  #1,($FFFFF65E).w
         bpl.s   loc_24DE
-        move.b  #$7,($FFFFF65E).w
+        move.b  #7,($FFFFF65E).w
         lea     (loc_2516), a0
         move.w  ($FFFFF65C).w,d0
-        addq.w  #$8,($FFFFF65C).w
+        addq.w  #8,($FFFFF65C).w
         cmpi.w  #$78,($FFFFF65C).w
         bcs.s   loc_2508
         move.w  #$30,($FFFFF65C).w
@@ -2764,6 +2771,26 @@ loc_2508:
         move.l  $00(a0,d0),(a1)+
         move.l  $4(a0,d0),(a1)
         rts
+		
+PalCycle_SuperSonic_revert:	; runs the fade in transition backwards
+	; run frame timer
+	subq.b	#1,($FFFFF65E).w
+	bpl.s	.return	; rts
+	move.b	#3,($FFFFF65E).w
+
+	; decrement palette frame and update Sonic's palette
+	lea	(loc_2516).l,a0
+	move.w	($FFFFF65C).w,d0
+	subq.w	#8,($FFFFF65C).w	; previous frame
+	bcc.s	.notfirstframe			; branch, if it isn't the first frame
+	clr.w	($FFFFF65C).w
+	clr.b	($FFFFF65F).w	; stop palette cycle
+.notfirstframe
+	lea	($FFFFFB04).w,a1
+	move.l	(a0,d0.w),(a1)+
+	move.l	4(a0,d0.w),(a1)
+.return	rts
+	
 loc_2516:              
         dc.w    $A22, $C42, $E44, $E66, $844, $A64, $E66, $E88
         dc.w    $666, $A86, $E88, $EAA, $488, $AA8, $EAA, $ECC
@@ -3581,6 +3608,7 @@ Sega_WaitEnd:
 		bra.s	Sega_WaitEnd			; we go to title screen when checksum check is done
 
 DoChecksum:
+		if safe=0
 		move.l	ROMEndLoc.w,a6			; load ROM end address to a6
 		subi.w	#56-1,a6			; this will trip the detection before ROM ends (in case it would happen mid-transfer)
 		move.l	ChecksumAddr.w,a5		; load the check address to a5
@@ -3659,6 +3687,7 @@ DoChecksum:
 		cmp.w	Checksum.w,d0			; check if the checksum matches
 		beq.s	ChecksumEndChk			; if yes, we are golden
 		jmp	CheckSumError(pc)		; we have a checksum error
+		endif
 
 ChecksumEndChk:
 		tst.b	mComm.w				; check if playback has ended
@@ -4367,7 +4396,7 @@ Level_GetBgm:
 		move.b	($FFFFFE10).w,d0
 		lea	(MusicList).l,a1; load music playlist
 		move.b	(a1,d0.w),d0	; add d0 to a1
-		move.b	d0,(Level_Music).w	; store level music
+		move.w	d0,(Level_Music).w	; store level music
 		move.b	d0,mQueue+1.w	; play music
 		move.b	#$34,($FFFFD080).w ; load title	card object
 
@@ -19529,7 +19558,13 @@ Obj0D_Touch:				; XREF: Obj0D_Index
 		cmpi.w	#$20,d0		; is Sonic within $20 pixels of	the signpost?
 		bcc.s	locret_EBBA	; if not, branch
 		sfx	sfx_Signpost	; play signpost	sound
-		clr.b 	($FFFFFE19).w ; Revert Sonic to normal
+		tst.b	($FFFFFE19).w
+		beq.s	.continue
+		clr.b 	($FFFFFE19).w ; Revert Sonic to Normal
+		move.b	#2,($FFFFF65F).w	; Remove rotating palette
+		move.w	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
+.continue:
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 		bsr.w	ApplySpeedSettings
         clr.b	(Reload_level).w
@@ -24794,7 +24829,7 @@ Obj01_ChkInvin:
 		bne.s	Obj01_RmvInvin
 		cmpi.w	#$C,($FFFFFE14).w
 		bcs.s	Obj01_RmvInvin
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w	; play normal music
 
 Obj01_RmvInvin:
@@ -25676,12 +25711,12 @@ Sonic_CheckGoSuper:
 	move.b	#$81,$2A(a0)
 	move.b	#$A,$1C(a0)			; use transformation animation
 ;	move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
-	sfx		sfx_BigRing
+	sfx		sfx_Transform
 	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 	bsr.w	ApplySpeedSettings	; Fetch Speed settings
 	clr.b	invincibility_time(a0)
 	move.b 	#1,($FFFFFE2D).w ; make Sonic invincible
-	music	mus_Invincibility
+	music	mus_SuperSonic
 
 ; ---------------------------------------------------------------------------
 return_1ABA4:
@@ -25724,12 +25759,14 @@ Sonic_Super:
 Sonic_RevertToNormal:
 	move.b	#2,($FFFFF65F).w	; Remove rotating palette
 	move.w	#$28,($FFFFF65C).w	; Unknown
-	move.b	#0,($FFFFFE19).w
+	clr.b	($FFFFFE19).w
 	move.b	#1,$1D(a0)	; Change animation back to normal ?
 	move.b	#1,invincibility_time(a0)	; Remove invincibility
 	clr.b 	($FFFFFE2D).w ; Remove invincibility
 	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 	bsr.w	ApplySpeedSettings	; Fetch Speed settings
+	move.w	(Level_Music).w,d0	; restore level music
+	move.b	d0,mQueue+1.w
 
 return_1AC3C:
 	rts
@@ -27092,7 +27129,7 @@ locret_1408C:
 ResumeMusic:				; XREF: Obj64_Wobble; Sonic_Water; Obj0A_ReduceAir
 		cmpi.w	#$C,($FFFFFE14).w
 		bhi.s	loc_140AC
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 
 loc_140AC:
@@ -31451,7 +31488,7 @@ loc_179DA:
 
 loc_179E0:
 		clr.w	$12(a0)
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 
 loc_179EE:
@@ -32021,7 +32058,7 @@ loc_180F6:				; XREF: Obj77_ShipIndex
 		move.b	#$32,$3C(a0)
 
 loc_18112:
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 		bset	#0,$22(a0)
 		addq.b	#2,$25(a0)
@@ -32451,7 +32488,7 @@ loc_18566:
 
 loc_1856C:
 		clr.w	$12(a0)
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 
 loc_1857A:
@@ -33098,7 +33135,7 @@ loc_18BAE:
 
 loc_18BB4:
 		clr.w	$12(a0)
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 
 loc_18BC2:
@@ -33991,7 +34028,7 @@ loc_194DA:
 
 loc_194E0:
 		clr.w	$12(a0)
-		move.b	(Level_Music).w,d0	; restore level music
+		move.w	(Level_Music).w,d0	; restore level music
 		move.b	d0,mQueue+1.w
 
 loc_194EE:
@@ -36214,7 +36251,13 @@ KillSonic:
 		tst.w	($FFFFFE08).w	; is debug mode	active?
 		bne.s	Kill_NoDeath	; if yes, branch
 		clr.b	($FFFFFE2D).w ; remove invincibility
+		tst.b	($FFFFFE19).w
+		beq.s	.continue
 		clr.b 	($FFFFFE19).w ; Revert Sonic to Normal
+		move.b	#2,($FFFFF65F).w	; Remove rotating palette
+		move.w	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
+.continue:
 		clr.w	($FFFFFE20).w ; clear rings
 		move.b	#6,$24(a0)
 		bsr.w	Sonic_ResetOnFloor

@@ -62,7 +62,7 @@ __mus =		MusOff
 
 MusicIndex:
 	ptrMusic GHZ, $30, LZ, $26, MZ, $1A, SLZ, $20, SYZ, $49, SBZ, $13, FZ, $18
-	ptrMusic Boss, $12, SS, $20, Invincibility, $20, Drowning, $00
+	ptrMusic Boss, $12, SS, $20, Invincibility, $20, SuperSonic, $20, Drowning, $00
 	ptrMusic Title, $00, GotThroughAct, $00, Emerald, $00, ExtraLife, $00
 	ptrMusic GameOver, $00, Continue, $00, Ending, $00, Credits, $00, SEGA, $00
 
@@ -79,7 +79,7 @@ SoundIndex:
 	ptrSFX	0, Signpost, Lamppost, BigRing, Bumper, Spring
 	ptrSFX	0, Collapse, Smash, Basaran, BuzzExplode, Explode
 	ptrSFX	0, Electricity, Flame, LavaBall, SpikeMove, Rumble
-	ptrSFX	0, Door, Stomp, Chain, Saw, Lava, Spindash
+	ptrSFX	0, Door, Stomp, Chain, Saw, Lava, Spindash, Transform
 
 	ptrSFX	0, EnterSS, Goal, ActionBlock, Diamonds, Continue
 

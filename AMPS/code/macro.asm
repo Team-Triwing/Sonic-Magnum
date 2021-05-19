@@ -42,7 +42,8 @@ TEMPO_ALGORITHM =	0
 ; if Vladik's error debugger is installed, then the error will be displayed
 ; else, the CPU is trapped
 
-safe =	1
+;safe =	1
+; RM: now used as a build flag in build.cmd!
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Channel configuration

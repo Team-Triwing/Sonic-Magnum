@@ -28,42 +28,50 @@ _eh_align_offset	equ	$80
 ; Default screen configuration
 _eh_default			equ	0 ;_eh_show_sr_usp
 
+Str_ErrorHeader:
+   dc.b   pal0,"Oops, you need to put the cartridge", endl
+   dc.b   "in your Megadrive/Genesis!..haha sry.", endl, endl
+   dc.b   pal3,"Send the following information to", endl
+   dc.b   pal2,"RepellantMold/valvastVT",pal3,":",pal0,endl,endl
+   dc.b   0
+   even
+
 ; ---------------------------------------------------------------
 BusError:
-	__ErrorMessage "BUS ERROR", _eh_default|_eh_address_error
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Bus error!", _eh_default|_eh_address_error
 
 AddressError:
-	__ErrorMessage "ADDRESS ERROR", _eh_default|_eh_address_error
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Address error exception!", _eh_default|_eh_address_error
 
 IllegalInstr:
-	__ErrorMessage "ILLEGAL INSTRUCTION", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Illegal instruction exception!", _eh_default
 
 ZeroDivide:
-	__ErrorMessage "ZERO DIVIDE", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Division by zero occured!", _eh_default
 
 ChkInstr:
-	__ErrorMessage "CHK INSTRUCTION", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>chk instruction!", _eh_default
 
 TrapvInstr:
-	__ErrorMessage "TRAPV INSTRUCTION", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>trapv instruction!", _eh_default
 
 PrivilegeViol:
-	__ErrorMessage "PRIVILEGE VIOLATION", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Privelege violation!", _eh_default
 
 Trace:
-	__ErrorMessage "TRACE", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Trace exception!", _eh_default
 
 Line1010Emu:
-	__ErrorMessage "LINE 1010 EMULATOR", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Line A Emulator!", _eh_default
 
 Line1111Emu:
-	__ErrorMessage "LINE 1111 EMULATOR", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Line F Emulator!", _eh_default
 
 ErrorExcept:
-	__ErrorMessage "ERROR EXCEPTION", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Error exception!", _eh_default
 
 ErrorTrap:
-	__ErrorMessage "ERROR TRAP", _eh_default
+	__ErrorMessage "%<.l #Str_ErrorHeader str>Error trap!", _eh_default
 
 
 

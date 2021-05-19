@@ -311,6 +311,7 @@ loc_BFE:				; XREF: loc_BC8
 
 loc_C22:				; XREF: loc_BC8
 		move.w	($FFFFF624).w,(a5)
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	loc_B5E
 ; ===========================================================================
 
@@ -371,6 +372,7 @@ loc_CB0:				; XREF: loc_C76
 
 loc_CD4:				; XREF: loc_C76
 		move.w	($FFFFF624).w,(a5)
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -475,6 +477,7 @@ loc_EB4:				; XREF: loc_E7A
 
 loc_ED8:				; XREF: loc_E7A
 		move.w	($FFFFF624).w,(a5)
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -513,6 +516,7 @@ loc_F8A:				; XREF: off_B6E
 loc_F9A:				; XREF: off_B6E
 		bsr.w	sub_106E
 		move.w	($FFFFF624).w,(a5)
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	sub_1642
 ; ===========================================================================
 
@@ -601,19 +605,40 @@ loc_10D4:				; XREF: sub_106E
 
 
 PalToCRAM:
-		move	#$2700,sr
-		tst.b	($FFFFF644).w
-		beq.s	locret_119C
-		clr.w	($FFFFF644).w
-		movem.l	a0-a1,-(sp)
-		lea	(VDP_DATA).l,a1
-		lea	($FFFFFA80).w,a0 ; load	pallet from RAM
-		move.l	#$C0000000,4(a1) ; set VDP to CRAM write
-		rept 32
-		move.l	(a0)+,(a1)	; move pallet to CRAM
-		endr
-		move.w	#$8ADF,4(a1)
-		movem.l	(sp)+,a0-a1
+        tst.w	($FFFFF644).w
+        beq.s	locret_119C
+        clr.w	($FFFFF644).w
+        movem.l	d0-d1/a0-a2,-(sp)
+ 
+        lea		(VDP_DATA).l,a1
+        move.w	#$8ADF,4(a1)        ; Reset HInt timing
+
+        movea.l	($FFFFF610).w,a2
+        moveq	#$F,d0        		; adjust to push artifacts off screen
+        dbf    	d0,*   				; waste a few cycles here
+
+        move.w	(a2)+,d1
+        move.b	($FFFFFE07).w,d0
+        subi.b	#200,d0    			; is H-int occuring below line 200?
+        bcs.s	.transferColors    	; if it is, branch
+        sub.b	d0,d1
+        bcs.s	.skipTransfer
+
+.transferColors:
+        move.w	(a2)+,d0
+        lea		($FFFFFA80).w,a0
+        adda.w	d0,a0
+        addi.w	#$C000,d0
+        swap    d0
+        move.l	d0,4(a1)    		; write to CRAM at appropriate address
+        move.l	(a0)+,(a1)   		; transfer two colors
+        move.w 	(a0)+,(a1)    		; transfer the third color
+        moveq	#$24,d0
+        dbf		d0,*
+        dbf    	d1,.transferColors	; repeat for number of colors
+
+.skipTransfer:
+        movem.l	(sp)+,d0-d1/a0-a2
 
 locret_119C:
 		rte
@@ -4301,6 +4326,7 @@ Level_ClrVars3:
 		resetDMA
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
 		bne.s	Level_LoadPal	; if not, branch
+        move.l	#WaterTransition_LZ,($FFFFF610).w
 		move.w	#$8014,(a6)
 		moveq	#0,d0
 		move.b	($FFFFFE11).w,d0
@@ -4387,12 +4413,6 @@ Level_ChkDebug:
 Level_ChkWater:
 		clr.w	($FFFFF602).w
 		clr.w	($FFFFF604).w
-		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
-		bne.s	Level_LoadObj	; if not, branch
-		move.b	#$1B,($FFFFD780).w ; load water	surface	object
-		move.w	#$60,($FFFFD788).w
-		move.b	#$1B,($FFFFD7C0).w
-		move.w	#$120,($FFFFD7C8).w
 
 Level_LoadObj:
 		jsr	ObjPosLoad
@@ -4561,6 +4581,28 @@ loc_3BC8:
 		tst.w	($FFFFF614).w
 		bne.s	loc_3B98
 		rts
+		
+WaterTransition_LZ:    dc.w $13    ; # of entries - 1
+        dc.w $62
+        dc.w $68
+        dc.w $7A
+        dc.w $6E
+        dc.w $74
+        dc.w $42
+        dc.w $48
+        dc.w $4E
+        dc.w $54
+        dc.w $5A
+        dc.w 2
+        dc.w 8
+        dc.w $E
+        dc.w $14
+        dc.w $1A
+        dc.w $34
+        dc.w $22
+        dc.w $3A
+        dc.w $2E
+        dc.w $28
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Subroutine to	do special water effects in Labyrinth Zone
@@ -22590,71 +22632,11 @@ Map_obj5C:
 
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
-; Object 1B - water surface (LZ)
+; Object 1B - (null)
 ; ---------------------------------------------------------------------------
 
 Obj1B:					; XREF: Obj_Index
-		moveq	#0,d0
-		move.b	$24(a0),d0
-		move.w	Obj1B_Index(pc,d0.w),d1
-		jmp	Obj1B_Index(pc,d1.w)
-; ===========================================================================
-Obj1B_Index:	dc.w Obj1B_Main-Obj1B_Index
-		dc.w Obj1B_Action-Obj1B_Index
-; ===========================================================================
-
-Obj1B_Main:				; XREF: Obj1B_Index
-		addq.b	#2,$24(a0)
-		move.l	#Map_obj1B,4(a0)
-		move.w	#$C300,2(a0)
-		move.b	#4,1(a0)
-		move.b	#$80,$19(a0)
-		move.w	8(a0),$30(a0)
-
-Obj1B_Action:				; XREF: Obj1B_Index
-		move.w	($FFFFF700).w,d1
-		andi.w	#$FFE0,d1
-		add.w	$30(a0),d1
-		btst	#0,($FFFFFE05).w
-		beq.s	loc_11114
-		addi.w	#$20,d1
-
-loc_11114:
-		move.w	d1,8(a0)	; match	obj x-position to screen position
-		move.w	($FFFFF646).w,d1
-		move.w	d1,$C(a0)	; match	obj y-position to water	height
-		tst.b	$32(a0)
-		bne.s	Obj1B_Animate
-		btst	#JbS,($FFFFF605).w ; is Start button pressed?
-		beq.s	loc_1114A	; if not, branch
-		addq.b	#3,$1A(a0)	; use different	frames
-		move.b	#1,$32(a0)	; stop animation
-		bra.s	Obj1B_Display
-; ===========================================================================
-
-Obj1B_Animate:				; XREF: loc_11114
-		tst.b	($FFFFF63A).w	; is the game paused?
-		bne.s	Obj1B_Display	; if yes, branch
-		move.b	#0,$32(a0)	; resume animation
-		subq.b	#3,$1A(a0)	; use normal frames
-
-loc_1114A:				; XREF: loc_11114
-		subq.b	#1,$1E(a0)
-		bpl.s	Obj1B_Display
-		move.b	#7,$1E(a0)
-		addq.b	#1,$1A(a0)
-		cmpi.b	#3,$1A(a0)
-		bcs.s	Obj1B_Display
-		move.b	#0,$1A(a0)
-
-Obj1B_Display:
-		bra.w	DisplaySprite
-; ===========================================================================
-; ---------------------------------------------------------------------------
-; Sprite mappings - water surface (LZ)
-; ---------------------------------------------------------------------------
-Map_obj1B:
-	include "_maps\obj1B.asm"
+		rts
 
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
@@ -39248,8 +39230,6 @@ Nem_GhzWall2:	incbin	artnem\ghzwall2.bin	; GHZ normal wall
 ; ---------------------------------------------------------------------------
 ; Compressed graphics - LZ stuff
 ; ---------------------------------------------------------------------------
-Nem_Water:	incbin	artnem\lzwater.bin	; LZ water surface
-		even
 Nem_Splash:	incbin	artnem\lzsplash.bin	; LZ waterfalls and splashes
 		even
 Nem_LzSpikeBall:incbin	artnem\lzspball.bin	; LZ spiked ball on chain

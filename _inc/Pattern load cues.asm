@@ -100,8 +100,6 @@ PLC_LZ:		dc.w (((PLC_LZ2-PLC_LZ-2)/6)-1)
 		dc.w $3E00
 		dc.l Nem_Splash		; waterfalls and splash
 		dc.w $4B20
-		dc.l Nem_Water		; water	surface
-		dc.w $6000
 		dc.l Nem_LzSpikeBall	; spiked ball
 		dc.w $6200
 		dc.l Nem_FlapDoor	; flapping door

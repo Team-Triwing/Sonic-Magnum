@@ -1,5 +1,5 @@
 # collab-sonic-rom-hack
-collab sonic rom hack with repellantmold and valvast, based off of AMPS in sonic 1.
+collab sonic rom hack by repellantmold and valvast, based off of AMPS in sonic 1.
 name hasn't been decided yet
 
 # Credits
@@ -17,3 +17,4 @@ name hasn't been decided yet
 * MainMemory - SonLVL & SonPLN
 * Selbi - Sonic 1: Text Code Generator
 * Xenowhirl - SonMapEd
+* Hivebrain - HivePal

@@ -875,7 +875,7 @@ Pause_ChkStart:				; XREF: PauseGame
 	else
 		btst	#JbB,($FFFFF605).w ; is button B pressed?
 		bne.s	Pause_SlowMo	; if yes, branch
-		
+
 Pause_ChkStart:				; XREF: PauseGame
 		btst	#JbS,($FFFFF605).w ; is Start button pressed?
 		beq.s	loc_13CA	; if not, branch
@@ -24814,8 +24814,7 @@ loc_12CA6:
 
 loc_12CB6:
 		bsr.w	Sonic_Loops
-		bsr.w	LoadSonicDynPLC
-		rts
+		bra.w	LoadSonicDynPLC
 ; ===========================================================================
 Obj01_Modes:	dc.w Obj01_MdNormal-Obj01_Modes
 		dc.w Obj01_MdJump-Obj01_Modes
@@ -24912,6 +24911,8 @@ Obj01_InWater:
 		move.w	($FFFFF646).w,d0
 		cmp.w	$C(a0),d0	; is Sonic above the water?
 		bge.s	Obj01_OutWater	; if yes, branch
+		tst.w	$12(a0)	; check if player is moving upward (i.e. from jumping)
+		bmi.s	locret_12D80	; if yes, skip routine
 		bset	#6,$22(a0)
 		bne.s	locret_12D80
 		bsr.w	ResumeMusic
@@ -24965,8 +24966,7 @@ Obj01_MdNormal:				; XREF: Obj01_Modes
 		bsr.w	Sonic_LevelBound
 		jsr	SpeedToPos
 		bsr.w	Sonic_AnglePos
-		bsr.w	Sonic_SlopeRepel
-		rts
+		bra.w	Sonic_SlopeRepel
 ; ===========================================================================
 
 Obj01_MdJump:				; XREF: Obj01_Modes
@@ -24980,8 +24980,7 @@ Obj01_MdJump:				; XREF: Obj01_Modes
 
 loc_12E5C:
 		bsr.w	Sonic_JumpAngle
-		bsr.w	Sonic_Floor
-		rts
+		bra.w	Sonic_Floor
 ; ===========================================================================
 
 Obj01_MdRoll:				; XREF: Obj01_Modes
@@ -24991,8 +24990,7 @@ Obj01_MdRoll:				; XREF: Obj01_Modes
 		bsr.w	Sonic_LevelBound
 		jsr	SpeedToPos
 		bsr.w	Sonic_AnglePos
-		bsr.w	Sonic_SlopeRepel
-		rts
+		bra.w	Sonic_SlopeRepel
 ; ===========================================================================
 
 Obj01_MdJump2:				; XREF: Obj01_Modes
@@ -25006,8 +25004,7 @@ Obj01_MdJump2:				; XREF: Obj01_Modes
 
 loc_12EA6:
 		bsr.w	Sonic_JumpAngle
-		bsr.w	Sonic_Floor
-		rts
+		bra.w	Sonic_Floor
 ; ---------------------------------------------------------------------------
 ; Subroutine to	make Sonic walk/run
 ; ---------------------------------------------------------------------------

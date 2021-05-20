@@ -231,8 +231,24 @@ InvalidGameMode:
 ; ===========================================================================
 
 CheckSumError:	if safe=0
-				__ErrorMessage "%<.l #Str_ErrorHeader str>Checksum invalid!%<endl>Checksum accumulator = %<.w ChecksumValue>%<endl>Checksum address = %<.l ChecksumAddr>"
+				Console.Run 	ChecksumErr_ConsProg
 				even
+
+ChecksumErr_ConsProg:
+				Console.Write 	"%<pal2>RM: %<pal0>Wait wait wait....so you're telling%<endl>"
+				Console.Write 	"me the checksum is wrong?%<endl>"
+				Console.Write 	"%<pal1>VT: %<pal0>Yes....%<endl>"
+				Console.Write 	"%<pal2>RM: %<pal0>Shoot, what do we tell the player?..%<endl>"
+				Console.Write 	"%<pal1>VT: %<pal0>Well, reload the ROM of course.%<endl>"
+				Console.Write 	"%<pal2>RM: %<pal0>Right.....%<endl>"
+				Console.BreakLine
+				Console.SetXY 	#2,#13
+				Console.Write 	"I'm very sorry for this inconvience%<endl>"
+				Console.Write 	"     The checksum is incorrect!%<endl>"
+				Console.Write 	"       Try reloading the ROM!%<endl>"
+				Console.Write 	"If that doesn't work, please contact%<endl>"
+				Console.Write 	"    %<pal2>RepellantMold %<pal0>or %<pal1>valvastVT%<pal1>!"
+				rts
 				endif
 ; ===========================================================================
 
@@ -257,7 +273,7 @@ loc_B10:				; XREF: Vectors
 
 loc_B5E:				; XREF: loc_B88
         move	#$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
-        bset	#0,($FFFFF64F).w    ; set "AMPS running flag"
+		tst.b	($FFFFF64F).w		; test "AMPS running flag" 
         bne.s	loc_B64             ; if it was set already, don't call another instance of AMPS
         jsr UpdateAMPS              ; run AMPS
         clr.b	($FFFFF64F).w       ; reset "AMPS running flag"
@@ -3444,33 +3460,7 @@ CalcSine:				; XREF: SS_BGAnimate; et al
 Sine_Data:	incbin	misc\sinewave.bin	; values for a 360º sine wave
 
 ; ===========================================================================
-		movem.l	d1-d2,-(sp)
-		move.w	d0,d1
-		swap	d1
-		moveq	#0,d0
-		move.w	d0,d1
-		moveq	#7,d2
 
-loc_2C80:
-		rol.l	#2,d1
-		add.w	d0,d0
-		addq.w	#1,d0
-		sub.w	d0,d1
-		bcc.s	loc_2C9A
-		add.w	d0,d1
-		subq.w	#1,d0
-		dbf	d2,loc_2C80
-		lsr.w	#1,d0
-		movem.l	(sp)+,d1-d2
-		rts
-; ===========================================================================
-
-loc_2C9A:
-		addq.w	#1,d0
-		dbf	d2,loc_2C80
-		lsr.w	#1,d0
-		movem.l	(sp)+,d1-d2
-		rts
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -3899,9 +3889,9 @@ Title_ChkLevSel:
 		if safe=0
 		tst.b	($FFFFFFE0).w	; check	if level select	code is	on
 		beq.w	PlayLevel	; if not, play level
-		endif
 		btst	#JbA,($FFFFF604).w ; check if A is pressed
 		beq.w	PlayLevel	; if not, play level
+		endif
 		bsr.w	Pal_FadeFrom
 		moveq	#2,d0
 		bsr.w	PalLoad1	; load level select pallet
@@ -3996,6 +3986,7 @@ LevSel_Level:				; XREF: LevSel_Level_SS
 		move.w	d0,($FFFFFE10).w ; set level number
 
 PlayLevel:				; XREF: ROM:00003246j ...
+		command	mus_FadeOut	; fade out music
 		move.b	#$C,($FFFFF600).w ; set	screen mode to $0C (level)
 		move.b	#3,($FFFFFE12).w ; set lives to	3
 		moveq	#0,d0
@@ -4007,7 +3998,6 @@ PlayLevel:				; XREF: ROM:00003246j ...
 		move.l	d0,($FFFFFE58).w ; clear emeralds
 		move.l	d0,($FFFFFE5C).w ; clear emeralds
 		move.b	d0,($FFFFFE18).w ; clear continues
-		command	mus_FadeOut	; fade out music
 		rts
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
@@ -9643,6 +9633,8 @@ Resize_SBZ3:
 		move.w	#1,($FFFFFE02).w ; restart level
 		move.w	#$502,($FFFFFE10).w ; set level	number to 0502 (FZ)
 		move.b	#1,($FFFFF7C8).w ; freeze Sonic
+		music	mus_FZ
+		move.w	#mus_FZ,(Level_Music).w
 
 locret_6F8C:
 		rts

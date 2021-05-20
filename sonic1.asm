@@ -231,6 +231,7 @@ InvalidGameMode:
 ; ===========================================================================
 
 CheckSumError:	if safe=0
+				move.w 	Checksum,d7
 				Console.Run 	ChecksumErr_ConsProg
 				even
 
@@ -242,12 +243,16 @@ ChecksumErr_ConsProg:
 				Console.Write 	"%<pal1>VT: %<pal0>Well, reload the ROM of course.%<endl>"
 				Console.Write 	"%<pal2>RM: %<pal0>Right.....%<endl>"
 				Console.BreakLine
-				Console.SetXY 	#2,#13
+				Console.SetXY 	#2,#11
 				Console.Write 	"I'm very sorry for this inconvience%<endl>"
-				Console.Write 	"     The checksum is incorrect!%<endl>"
-				Console.Write 	"       Try reloading the ROM!%<endl>"
+				Console.Write 	"   but the checksum is incorrect!%<endl>"
+				Console.Write 	"        Try reloading the ROM!%<endl>"
 				Console.Write 	"If that doesn't work, please contact%<endl>"
-				Console.Write 	"    %<pal2>RepellantMold %<pal0>or %<pal1>valvastVT%<pal1>!"
+				Console.Write 	"     %<pal2>RepellantMold %<pal0>or %<pal1>valvastVT%<pal0>!"
+				Console.BreakLine
+				Console.SetXY 	#6,#20
+				Console.Write 	"Calculated Checksum: $%<.w d0>%<endl>"
+				Console.Write 	"  Checksum in ROM: $%<.w d7>"
 				rts
 				endif
 ; ===========================================================================

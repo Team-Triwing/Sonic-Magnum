@@ -3767,7 +3767,6 @@ TitleScreen:				; XREF: GameModeArray
 		clr.b	($FFFFFE30).w ; clear lamppost counter
 		clr.w	($FFFFFE08).w ; disable debug item placement	mode
 		clr.w	($FFFFFFF0).w ; disable debug mode
-		clr.w	($FFFFFFEA).w
 		clr.w	($FFFFFE10).w ; set level to	GHZ (00)
 		clr.w	($FFFFF634).w ; disable pallet cycling
 		clr.b	($FFFFFE19).w
@@ -17633,6 +17632,8 @@ loc_D358:
 ; ===========================================================================
 
 loc_D362:
+		cmpi.b	#$A,($FFFFD000+$24).w	; Has Sonic drowned?
+		beq.s	loc_D348				; If so, run objects a little longer
 		moveq	#$1F,d7
 		bsr.s	loc_D348
 		moveq	#$5F,d7
@@ -19645,23 +19646,6 @@ Obj0D_SparkPos:	dc.b -$18,-$10		; x-position, y-position
 ; ===========================================================================
 
 Obj0D_SonicRun:				; XREF: Obj0D_Index
-		tst.w	($FFFFFE08).w	; is debug mode	on?
-		bne.s	locret_EC42	; if yes, branch
-		btst	#1,($FFFFD022).w
-		bne.s	loc_EC70
-		move.b	#1,($FFFFF7CC).w ; lock	controls
-		move.w	#$800,($FFFFF602).w ; make Sonic run to	the right
-
-loc_EC70:
-		tst.b	($FFFFD000).w
-		beq.s	loc_EC86
-		move.w	($FFFFD008).w,d0
-		move.w	($FFFFF72A).w,d1
-		addi.w	#$128,d1
-		cmp.w	d1,d0
-		bcs.s	locret_EC42
-
-loc_EC86:
 		addq.b	#2,$24(a0)
 
 ; ---------------------------------------------------------------------------
@@ -24755,6 +24739,7 @@ Obj01_Index:	dc.w Obj01_Main-Obj01_Index
 		dc.w Obj01_Hurt-Obj01_Index
 		dc.w Obj01_Death-Obj01_Index
 		dc.w Obj01_ResetLevel-Obj01_Index
+		dc.w Obj01_Drowned-Obj01_Index
 ; ===========================================================================
 
 Obj01_Main:				; XREF: Obj01_Index
@@ -26460,6 +26445,21 @@ locret_139C2:
 ; End of function Sonic_Loops
 
 ; ---------------------------------------------------------------------------
+; Sonic when he's drowning
+; ---------------------------------------------------------------------------
+ 
+; ||||||||||||||| S	U B	R O	U T	I N	E |||||||||||||||||||||||||||||||||||||||
+ 
+ 
+Obj01_Drowned:
+		bsr.w   SpeedToPos		; Make Sonic able to move
+		addi.w  #$10,$12(a0)	; Apply gravity
+		bsr.w   Sonic_RecordPos	; Record position
+		bsr.s   Sonic_Animate	; Animate Sonic
+		bsr.w   LoadSonicDynPLC	; Load Sonic's DPLCs
+		bra.w   DisplaySprite	; And finally, display Sonic
+
+; ---------------------------------------------------------------------------
 ; Subroutine to	animate	Sonic's sprites
 ; ---------------------------------------------------------------------------
 
@@ -27041,25 +27041,18 @@ Obj0A_ReduceAir:
 		move.w	#0,$12(a0)
 		move.w	#0,$10(a0)
 		move.w	#0,$14(a0)
+		move.b	#$A,$24(a0)		; Force the character to drown
 		move.b	#1,($FFFFF744).w
+		clr.b	($FFFFFE1E).w	; Stop the timer immediately
 		movea.l	(sp)+,a0
 		rts
 ; ===========================================================================
 
 loc_13F86:
 		subq.w	#1,$2C(a0)
-		bne.s	loc_13F94
-		move.b	#6,($FFFFD024).w
+		bne.s	loc_13FAC	; Make it jump straight to this location
+		move.b	#6,($FFFFD000+$24).w
 		rts
-; ===========================================================================
-
-loc_13F94:
-		move.l	a0,-(sp)
-		lea	($FFFFD000).w,a0
-		jsr	SpeedToPos
-		addi.w	#$10,$12(a0)
-		movea.l	(sp)+,a0
-		bra.s	loc_13FAC
 ; ===========================================================================
 
 Obj0A_GoMakeItem:			; XREF: Obj0A_ReduceAir
@@ -38297,14 +38290,8 @@ AddPoints:
 		add.l	d0,(a3)		; add d0*10 to the score
 		move.l	#999999,d1
 		cmp.l	(a3),d1		; is #999999 higher than the score?
-		bhi.w	loc_1C6AC	; if yes, branch
+		bhi.s	locret_1C6B6	; if yes, branch
 		move.l	d1,(a3)		; reset	score to #999999
-
-loc_1C6AC:
-		move.l	(a3),d0
-		cmp.l	(a2),d0
-		bcs.w	locret_1C6B6
-		move.l	d0,(a2)
 
 locret_1C6B6:
 		rts

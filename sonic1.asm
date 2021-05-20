@@ -23,7 +23,7 @@ Vectors:	dc.l $FFFFFE00, EntryPoint, BusError, AddressError
 		dc.l ErrorExcept, ErrorExcept, ErrorExcept, ErrorExcept
 		dc.l ErrorExcept, ErrorExcept, ErrorExcept, ErrorExcept
 		dc.l ErrorExcept, ErrorTrap, ErrorTrap,	ErrorTrap
-		dc.l PalToCRAM,	ErrorTrap, loc_B10, ErrorTrap
+		dc.l H_int_jump,	ErrorTrap, V_int_jump, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
@@ -121,6 +121,10 @@ PSGInitLoop:
 		move	#$2700,sr	; set the sr
 
 PortC_Ok:
+		move.w	#$4EF9,(V_int_jump).w	; machine code for jmp
+		move.l	#VInt,(V_int_addr).w
+		move.w	#$4EF9,(H_int_jump).w
+		move.l	#HInt,(H_int_addr).w
 		bra.s	GameProgram
 ; ===========================================================================
 SetupValues:	dc.w $8000		; XREF: PortA_Ok
@@ -236,23 +240,23 @@ CheckSumError:	if safe=0
 				even
 
 ChecksumErr_ConsProg:
-				Console.Write 	"%<pal2>RM: %<pal0>Wait wait wait....so you're telling%<endl>"
-				Console.Write 	"me the checksum is wrong?%<endl>"
-				Console.Write 	"%<pal1>VT: %<pal0>Yes....%<endl>"
-				Console.Write 	"%<pal2>RM: %<pal0>Shoot, what do we tell the player?..%<endl>"
-				Console.Write 	"%<pal1>VT: %<pal0>Well, reload the ROM of course.%<endl>"
-				Console.Write 	"%<pal2>RM: %<pal0>Right.....%<endl>"
+				Console.WriteLine 	"%<pal2>RM: %<pal0>Wait wait wait....so you're telling"
+				Console.WriteLine 	"me the checksum is wrong?"
+				Console.WriteLine 	"%<pal1>VT: %<pal0>Yes...."
+				Console.WriteLine 	"%<pal2>RM: %<pal0>Shoot, what do we tell the player?.."
+				Console.WriteLine 	"%<pal1>VT: %<pal0>Well, reload the ROM of course."
+				Console.WriteLine 	"%<pal2>RM: %<pal0>Right....."
 				Console.BreakLine
 				Console.SetXY 	#2,#11
-				Console.Write 	"I'm very sorry for this inconvience%<endl>"
-				Console.Write 	"   but the checksum is incorrect!%<endl>"
-				Console.Write 	"        Try reloading the ROM!%<endl>"
-				Console.Write 	"If that doesn't work, please contact%<endl>"
-				Console.Write 	"     %<pal2>RepellantMold %<pal0>or %<pal1>valvastVT%<pal0>!"
+				Console.WriteLine 	"I'm very sorry for this inconvience"
+				Console.WriteLine 	"   but the checksum is incorrect!"
+				Console.WriteLine 	"        Try reloading the ROM!"
+				Console.WriteLine 	"If that doesn't work, please contact"
+				Console.WriteLine 	"     %<pal2>RepellantMold %<pal0>or %<pal1>valvastVT%<pal0>!"
 				Console.BreakLine
 				Console.SetXY 	#6,#20
-				Console.Write 	"Calculated Checksum: $%<.w d0>%<endl>"
-				Console.Write 	"  Checksum in ROM: $%<.w d7>"
+				Console.WriteLine 	"Calculated Checksum: $%<.w d0>%<endl>"
+				Console.WriteLine 	"  Checksum in ROM: $%<.w d7>"
 				rts
 				endif
 ; ===========================================================================
@@ -262,10 +266,10 @@ Art_Text:	incbin	artunc\menutext.bin	; text used in level select and debug mode
 
 ; ===========================================================================
 
-loc_B10:				; XREF: Vectors
+Vint:				; XREF: Vectors
 		pusha
 		tst.b	($FFFFF62A).w
-		beq.w	loc_B88
+		beq.w	Vint_00
 		move.w	(VDP_CTRL).l,d0
 		move.l	#$40000010,(VDP_CTRL).l
 		move.l	($FFFFF616).w,(VDP_DATA).l
@@ -276,7 +280,7 @@ loc_B10:				; XREF: Vectors
 		move.w	off_B6E(pc,d0.w),d0
 		jsr	off_B6E(pc,d0.w)
 
-loc_B5E:				; XREF: loc_B88
+loc_B5E:				; XREF: Vint_00
         move	#$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
 		tst.b	($FFFFF64F).w		; test "AMPS running flag" 
         bne.s	loc_B64             ; if it was set already, don't call another instance of AMPS
@@ -294,16 +298,16 @@ loc_B42:
 		popa
 		rte
 ; ===========================================================================
-off_B6E:	dc.w loc_B88-off_B6E, loc_C32-off_B6E
-		dc.w loc_C44-off_B6E, loc_C5E-off_B6E
-		dc.w loc_C6E-off_B6E, loc_DA6-off_B6E
-		dc.w loc_E72-off_B6E, loc_F8A-off_B6E
-		dc.w loc_C64-off_B6E, loc_F9A-off_B6E
-		dc.w loc_C36-off_B6E, loc_FA6-off_B6E
-		dc.w loc_E72-off_B6E
+off_B6E:	dc.w Vint_00-off_B6E, Vint_01-off_B6E
+		dc.w Vint_02-off_B6E, Vint_03-off_B6E
+		dc.w Vint_04-off_B6E, Vint_05-off_B6E
+		dc.w Vint_06-off_B6E, Vint_07-off_B6E
+		dc.w Vint_08-off_B6E, Vint_09-off_B6E
+		dc.w Vint_0A-off_B6E, Vint_0B-off_B6E
+		dc.w Vint_06-off_B6E
 ; ===========================================================================
 
-loc_B88:				; XREF: loc_B10; off_B6E
+Vint_00:				; XREF: Vint; off_B6E
 		cmpi.b	#$8C,($FFFFF600).w
 		beq.s	loc_B9A
 		cmpi.b	#$C,($FFFFF600).w
@@ -341,10 +345,10 @@ loc_C22:				; XREF: loc_BC8
 		bra.w	loc_B5E
 ; ===========================================================================
 
-loc_C32:				; XREF: off_B6E
+Vint_01:				; XREF: off_B6E
 		bsr.w	sub_106E
 
-loc_C36:				; XREF: off_B6E
+Vint_0A:				; XREF: off_B6E
 		tst.w	($FFFFF614).w
 		beq.s	locret_C42
 		subq.w	#1,($FFFFF614).w
@@ -353,7 +357,7 @@ locret_C42:
 		rts
 ; ===========================================================================
 
-loc_C44:				; XREF: off_B6E
+Vint_02:				; XREF: off_B6E
 		bsr.w	sub_106E
 		bsr.w	sub_6886
 		bsr.w	sub_1642
@@ -365,15 +369,15 @@ locret_C5C:
 		rts
 ; ===========================================================================
 
-loc_C5E:				; XREF: off_B6E
+Vint_03:				; XREF: off_B6E
 		bra.w	sub_106E
 ; ===========================================================================
 
-loc_C64:				; XREF: off_B6E
+Vint_08:				; XREF: off_B6E
 		cmpi.b	#$10,($FFFFF600).w ; is	game mode = $10	(special stage)	?
-		beq.w	loc_DA6		; if yes, branch
+		beq.w	Vint_05		; if yes, branch
 
-loc_C6E:				; XREF: off_B6E
+Vint_04:				; XREF: off_B6E
 		bsr.w	ReadJoypads
 		tst.b	($FFFFF64E).w
 		bne.s	loc_CB0
@@ -428,7 +432,7 @@ loc_D50:
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-Demo_Time:				; XREF: loc_D50; PalToCRAM
+Demo_Time:				; XREF: loc_D50; Hint
 		bsr.w	LoadTilesAsYouMove
 		jsr	AniArt_Load
 		jsr	HudUpdate
@@ -443,7 +447,7 @@ Demo_TimeEnd:
 
 ; ===========================================================================
 
-loc_DA6:				; XREF: off_B6E
+Vint_05:				; XREF: off_B6E
 		bsr.w	ReadJoypads
 		lea	(VDP_CTRL).l,a5
 		move.l	#$94009340,(a5)
@@ -478,7 +482,7 @@ locret_E70:
 		rts
 ; ===========================================================================
 
-loc_E72:				; XREF: off_B6E
+Vint_06:				; XREF: off_B6E
 		bsr.w	ReadJoypads
 		tst.b	($FFFFF64E).w
 		bne.s	loc_EB4
@@ -532,21 +536,21 @@ loc_F54:
 		rts
 ; ===========================================================================
 
-loc_F8A:				; XREF: off_B6E
+Vint_07:				; XREF: off_B6E
 		bsr.w	sub_106E
 		addq.b	#1,($FFFFF628).w
 		move.b	#$E,($FFFFF62A).w
 		rts
 ; ===========================================================================
 
-loc_F9A:				; XREF: off_B6E
+Vint_09:				; XREF: off_B6E
 		bsr.w	sub_106E
 		move.w	($FFFFF624).w,(a5)
         move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	sub_1642
 ; ===========================================================================
 
-loc_FA6:				; XREF: off_B6E
+Vint_0B:				; XREF: off_B6E
 		bsr.w	ReadJoypads
 		lea	(VDP_CTRL).l,a5
 		move.l	#$94009340,(a5)
@@ -582,7 +586,7 @@ locret_106C:
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-sub_106E:				; XREF: loc_C32; et al
+sub_106E:				; XREF: Vint_01; et al
 		bsr.w	ReadJoypads
 		tst.b	($FFFFF64E).w
 		bne.s	loc_10B0
@@ -630,7 +634,7 @@ loc_10D4:				; XREF: sub_106E
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-PalToCRAM:
+Hint:
         tst.w	($FFFFF644).w
         beq.s	locret_119C
         clr.w	($FFFFF644).w
@@ -668,7 +672,7 @@ PalToCRAM:
 
 locret_119C:
 		rte
-; End of function PalToCRAM
+; End of function Hint
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	initialise joypads
@@ -859,6 +863,7 @@ loc_13CA:
 ; ===========================================================================
 
 Pause_ChkBC:				; XREF: PauseGame
+	if safe=0
 		btst	#JbB,($FFFFF604).w ; is button B pressed?
 		bne.s	Pause_SlowMo	; if yes, branch
 		btst	#JbC,($FFFFF605).w ; is button C pressed?
@@ -867,6 +872,14 @@ Pause_ChkBC:				; XREF: PauseGame
 Pause_ChkStart:				; XREF: PauseGame
 		btst	#JbS,($FFFFF605).w ; is Start button pressed?
 		beq.s	loc_13CA	; if not, branch
+	else
+		btst	#JbB,($FFFFF605).w ; is button B pressed?
+		bne.s	Pause_SlowMo	; if yes, branch
+		
+Pause_ChkStart:				; XREF: PauseGame
+		btst	#JbS,($FFFFF605).w ; is Start button pressed?
+		beq.s	loc_13CA	; if not, branch
+	endif
 
 loc_1404:				; XREF: PauseGame
 	AMPS_MUSUNPAUSE			; unpause music
@@ -879,8 +892,12 @@ Pause_DoNothing:			; XREF: PauseGame
 ; ===========================================================================
 
 Pause_SlowMo:				; XREF: PauseGame
+	if safe=0
 		move.b	#1,($FFFFF63A).w
 	AMPS_MUSUNPAUSE			; unpause music
+	else
+   		Console.Run SampleLevelDebugger
+	endif
 		rts
 ; End of function PauseGame
 
@@ -1519,7 +1536,7 @@ locret_1640:
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-sub_1642:				; XREF: loc_C44; loc_F54; loc_F9A
+sub_1642:				; XREF: Vint_02; loc_F54; Vint_09
 		tst.w	($FFFFF6F8).w
 		beq.w	locret_16DA
 		move.w	#9,($FFFFF6FA).w
@@ -5648,7 +5665,7 @@ loc_491C:
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-PalCycle_SS:				; XREF: loc_DA6; SpecialStage
+PalCycle_SS:				; XREF: Vint_05; SpecialStage
 		tst.b	($FFFFF63A).w
 		bne.s	locret_49E6
 		subq.w	#1,($FFFFF79C).w
@@ -16625,12 +16642,12 @@ Obj3A_NextLevel:			; XREF: Obj3A_Index
 Obj3A_ChkSS:				; XREF: Obj3A_NextLevel
 		clr.b	($FFFFFE30).w	; clear	lamppost counter
 		tst.b	($FFFFF7CD).w	; has Sonic jumped into	a giant	ring?
-		beq.s	loc_C6EA	; if not, branch
+		beq.s	Vint_04A	; if not, branch
 		move.b	#$10,($FFFFF600).w ; set game mode to Special Stage (10)
 		bra.s	Obj3A_Display2
 ; ===========================================================================
 
-loc_C6EA:				; XREF: Obj3A_ChkSS
+Vint_04A:				; XREF: Obj3A_ChkSS
 		move.w	#1,($FFFFFE02).w ; restart level
 
 Obj3A_Display2:				; XREF: Obj3A_NextLevel, Obj3A_ChkSS
@@ -38279,14 +38296,12 @@ Map_obj21:
 
 AddPoints:
 		move.b	#1,($FFFFFE1F).w ; set score counter to	update
-		lea	($FFFFFFC0).w,a2
 		lea	($FFFFFE26).w,a3
 		add.l	d0,(a3)		; add d0*10 to the score
 		move.l	#999999,d1
 		cmp.l	(a3),d1		; is #999999 higher than the score?
 		bhi.w	loc_1C6AC	; if yes, branch
 		move.l	d1,(a3)		; reset	score to #999999
-		move.l	d1,(a2)
 
 loc_1C6AC:
 		move.l	(a3),d0
@@ -39854,5 +39869,8 @@ mergecode	SECTION	file("AMPS/.z80.dat"), org(0)	; create settings file for stori
 	ds.b Z80_Space					; reserve space for the Z80 driver
 	even
 	opt ae+
+	if safe=1
+		include "error/LevelDebugger.asm"
+	endif
 		include	"error/ErrorHandler.asm"
 EndOfRom:	END

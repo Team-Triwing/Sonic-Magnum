@@ -10,6 +10,11 @@ Level_Music		equ	$FFFFFF90
 r_DMA_Queue		equ	$FFFFC800
 r_DMA_Slot		equ	r_DMA_Queue+$FC
 
+V_Int_jump		equ $FFFFFFC0
+V_int_addr		equ $FFFFFFC2
+H_int_jump		equ $FFFFFFC6
+H_int_addr		equ $FFFFFFC8
+
 invulnerable_time	=	$30
 invincibility_time	=	$31
 speedshoes_time		=	$32

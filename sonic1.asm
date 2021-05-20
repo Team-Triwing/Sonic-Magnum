@@ -6262,13 +6262,13 @@ End_MainLoop:
 		beq.s	loc_52DA	; if yes, branch
 		move.b	#$1C,($FFFFF600).w ; set scene to $1C (credits)
 		music	mus_Credits	; play credits music
-		move.w	#0,($FFFFFFF4).w ; set credits index number to 0
+		clr.w	($FFFFFFF4).w ; set credits index number to 0
 		rts
 ; ===========================================================================
 
 loc_52DA:
 		tst.w	($FFFFFE02).w	; is level set to restart?
-		beq.w	End_MainLoop	; if not, branch
+		beq.s	End_MainLoop	; if not, branch
 
 		clr.w	($FFFFFE02).w
 		move.w	#$3F,($FFFFF626).w
@@ -6337,7 +6337,7 @@ End_MoveSonic2:				; XREF: End_MoveSonic
 		move.w	d0,($FFFFD014).w
 		move.b	#$81,($FFFFF7C8).w
 		move.b	#3,($FFFFD01A).w
-		move.w	#$505,($FFFFD01C).w ; use "standing" animation
+		move.w	#5,($FFFFD01C).w ; use "standing" animation
 		move.b	#3,($FFFFD01E).w
 		rts
 ; ===========================================================================
@@ -6588,8 +6588,6 @@ Obj89_GotoCredits:			; XREF: Obj89_Index
 		subq.w	#1,$30(a0)	; subtract 1 from duration
 		jpl		DisplaySprite
 		move.b	#$1C,($FFFFF600).w ; exit to credits
-
-Obj89_Display:
 		jmp		DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------

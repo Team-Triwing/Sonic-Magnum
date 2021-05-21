@@ -1,6 +1,5 @@
-# collab-sonic-rom-hack
-collab sonic rom hack by repellantmold and valvast, based off of AMPS in sonic 1.
-name hasn't been decided yet
+# Sonic Magnum, formerly UNTITLED S1 COLLAB HACK & collab-sonic-rom-hack
+collab sonic rom hack by team triwing (valvast & repellantmold), based off of AMPS in sonic 1
 
 # Credits
 ## Creator
@@ -8,6 +7,7 @@ name hasn't been decided yet
 ## Level design
 * valvast/valvastVT
 ## Sound
+* RepellantMold
 
 ## Tools
 * Sik - romfix (forked by RepellantMold)

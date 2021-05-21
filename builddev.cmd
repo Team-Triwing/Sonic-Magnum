@@ -6,6 +6,6 @@ type .log
 if not exist s1built.md pause & exit
 "AMPS\Dual PCM Compress.exe" AMPS\.z80 AMPS\.z80.dat s1built.md _dlls\saxcmp.exe
 error\convsym .lst s1built.md -input asm68k_lst -inopt "/localSign=. /localJoin=. /ignoreMacroDefs+ /ignoreMacroExp- /addMacrosAsOpcodes+ /processLocals+" -a
-tools\romfix.exe -t "(DEVELOPER RELEASE - NOT FOR REDISTRIBUTION!)" -s "DEV.REL1" -d -z s1built.md
+tools\romfix.exe -t "(DEVELOPER RELEASE - NOT FOR PUBLIC RELEASE!)" -s "DEV.REL1" -d -z s1built.md
 del AMPS\.Data
 pause

@@ -33,7 +33,7 @@ Vectors:	dc.l $FFFFFE00, EntryPoint, BusError, AddressError
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 MEGADRIVE:	dc.b "SEGA GENESIS    " ; Hardware system ID
-Date:		dc.b "RPMD/VT XXXX.XXX" ; Release date
+Date:		dc.b "TRIWING XXXX.XXX" ; Release date
 Title_Local:dc.b "                                                " ; Domestic name
 Title_Int:	dc.b "                                                " ; International name
 Serial:		dc.b "GM 00001009-00"   ; Serial/version number

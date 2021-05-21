@@ -39159,7 +39159,6 @@ MainLoadBlocks:
 ; ---------------------------------------------------------------------------
 ; Pattern load cues
 ; ---------------------------------------------------------------------------
-ArtLoadCues:
 	include "_inc\Pattern load cues.asm"
 
 Nem_SegaLogo:	incbin	artnem\segalogo.bin	; large Sega logo
@@ -39818,7 +39817,7 @@ DualPCM:
 		PUSHS					; store section information for Main
 Z80Code		SECTION	org(0), file("AMPS/.z80")	; create a new section for Dual PCM
 		z80prog 0				; init z80 program
-zchkoffs = 1
+zchkoffs = 0
 		include "AMPS/code/z80.asm"		; code for Dual PCM
 DualPCM_sz:	z80prog					; end z80 program
 		POPS					; go back to Main section

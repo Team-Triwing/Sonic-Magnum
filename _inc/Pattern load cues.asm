@@ -1,22 +1,39 @@
 ; ---------------------------------------------------------------------------
 ; Pattern load cues - index
 ; ---------------------------------------------------------------------------
-	dc.w PLC_Main-ArtLoadCues, PLC_Main2-ArtLoadCues
-	dc.w PLC_Explode-ArtLoadCues, PLC_GameOver-ArtLoadCues
-	dc.w PLC_GHZ-ArtLoadCues, PLC_GHZ2-ArtLoadCues
-	dc.w PLC_LZ-ArtLoadCues, PLC_LZ2-ArtLoadCues
-	dc.w PLC_MZ-ArtLoadCues, PLC_MZ2-ArtLoadCues
-	dc.w PLC_SLZ-ArtLoadCues, PLC_SLZ2-ArtLoadCues
-	dc.w PLC_SYZ-ArtLoadCues, PLC_SYZ2-ArtLoadCues
-	dc.w PLC_SBZ-ArtLoadCues, PLC_SBZ2-ArtLoadCues
-	dc.w PLC_TitleCard-ArtLoadCues,	PLC_Boss-ArtLoadCues
-	dc.w PLC_Signpost-ArtLoadCues, PLC_Warp-ArtLoadCues
-	dc.w PLC_SpeStage-ArtLoadCues, PLC_GHZAnimals-ArtLoadCues
-	dc.w PLC_LZAnimals-ArtLoadCues,	PLC_MZAnimals-ArtLoadCues
-	dc.w PLC_SLZAnimals-ArtLoadCues, PLC_SYZAnimals-ArtLoadCues
-	dc.w PLC_SBZAnimals-ArtLoadCues, PLC_SpeStResult-ArtLoadCues
-	dc.w PLC_Ending-ArtLoadCues, PLC_TryAgain-ArtLoadCues
-	dc.w PLC_EggmanSBZ2-ArtLoadCues, PLC_FZBoss-ArtLoadCues
+ArtLoadCues:	offsetTable
+	offsetTableEntry PLC_Main
+	offsetTableEntry PLC_Main2
+	offsetTableEntry PLC_Explode
+	offsetTableEntry PLC_GameOver
+	offsetTableEntry PLC_GHZ
+	offsetTableEntry PLC_GHZ2
+	offsetTableEntry PLC_LZ
+	offsetTableEntry PLC_LZ2
+	offsetTableEntry PLC_MZ
+	offsetTableEntry PLC_MZ2
+	offsetTableEntry PLC_SLZ
+	offsetTableEntry PLC_SLZ2
+	offsetTableEntry PLC_SYZ
+	offsetTableEntry PLC_SYZ2
+	offsetTableEntry PLC_SBZ
+	offsetTableEntry PLC_SBZ2
+	offsetTableEntry PLC_TitleCard
+	offsetTableEntry PLC_Boss
+	offsetTableEntry PLC_Signpost
+	offsetTableEntry PLC_Warp
+	offsetTableEntry PLC_SpeStage
+	offsetTableEntry PLC_GHZAnimals
+	offsetTableEntry PLC_LZAnimals
+	offsetTableEntry PLC_MZAnimals
+	offsetTableEntry PLC_SLZAnimals
+	offsetTableEntry PLC_SYZAnimals
+	offsetTableEntry PLC_SBZAnimals
+	offsetTableEntry PLC_SpeStResult
+	offsetTableEntry PLC_Ending
+	offsetTableEntry PLC_TryAgain
+	offsetTableEntry PLC_EggmanSBZ2
+	offsetTableEntry PLC_FZBoss
 ; ---------------------------------------------------------------------------
 ; Pattern load cues - standard block 1
 ; ---------------------------------------------------------------------------
@@ -303,8 +320,6 @@ PLC_Boss:	dc.w (((PLC_Signpost-PLC_Boss-2)/6)-1)
 		dc.w $8D80
 		dc.l Nem_Prison		; prison capsule
 		dc.w $93A0
-		dc.l Nem_Bomb		; bomb enemy (gets overwritten)
-		dc.w $A300
 		dc.l Nem_SlzSpike	; spikeball (SLZ boss)
 		dc.w $A300
 		dc.l Nem_Exhaust	; exhaust flame

@@ -100,6 +100,16 @@ jmi:		macro loc
 		jmp	loc
 	.nojump\@:
 		endm
+
+; macro to declare an offset table
+offsetTable macro
+current_offset_table equ *
+    endm
+
+; macro to declare an entry in an offset table
+offsetTableEntry macro ptr
+	dc.w ptr-current_offset_table
+    endm
 		
 ; ---------------------------------------------------------------------------------------------------------------------------------------------------------
 ; Stop the Z80

@@ -84,7 +84,11 @@ setx	equ		$FA				; set x-position
 RaiseError &
 	macro	string, console_program, opts
 
+	if safe=1
+	pea		ErrorLockupExit(pc)
+	else
 	pea		*(pc)
+	endif
 	RaiseError2 \_
 	endm
 
@@ -136,7 +140,11 @@ Console &
 		jsr		ErrorHandler.__extern__console_only
 		jsr		\1
 		if narg<=1		; HACK
+		if safe=1
+			jmp	ErrorLockupExit
+		else
 			bra.s	*
+		endif
 		endif
 
 	elseif strcmp("\0","setxy")

@@ -58,15 +58,15 @@ EntryPoint:
 
 PortA_Ok:
 		bne.s	PortC_Ok
-		lea	SetupValues(pc),a5
-		movem.w	(a5)+,d5-d7
-		movem.l	(a5)+,a0-a4
 		move.b	-$10FF(a1),d0	; get hardware version
 		andi.b	#$F,d0
 		beq.s	SkipSecurity
 		move.l	MEGADRIVE.w,$2F00(a1)
 
 SkipSecurity:
+		lea	SetupValues(pc),a5
+		movem.w	(a5)+,d5-d7
+		movem.l	(a5)+,a0-a4
 		move.w	(a4),d0		; check	if VDP works
 		moveq	#0,d0
 		movea.l	d0,a6
@@ -121,10 +121,6 @@ PSGInitLoop:
 		move	#$2700,sr	; set the sr
 
 PortC_Ok:
-		move.w	#$4EF9,(V_int_jump).w	; machine code for jmp
-		move.l	#VInt,(V_int_addr).w
-		move.w	#$4EF9,(H_int_jump).w
-		move.l	#HInt,(H_int_addr).w
 		bra.s	GameProgram
 ; ===========================================================================
 SetupValues:	dc.w $8000		; XREF: PortA_Ok
@@ -176,7 +172,12 @@ endinit
 ; ===========================================================================
 
 GameProgram:
+		tst.w	(VDP_CTRL).l
 		waitDMA				; RM: sonic 2 onward does this
+		move.w	#$4EF9,(V_int_jump).w	; machine code for jmp
+		move.l	#VInt,(V_int_addr).w
+		move.w	#$4EF9,(H_int_jump).w
+		move.l	#HInt,(H_int_addr).w
 		btst	#6,(IO_C_CTRL).l
 		beq.s	.skip
 		cmpi.l	#'init',($FFFFFFFC).w ; has checksum routine already run?
@@ -523,8 +524,6 @@ loc_ED8:				; XREF: loc_E7A
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
 		jsr	(ProcessDMA).l
-
-loc_F54:
 		movem.l	($FFFFF700).w,d0-d7
 		movem.l	d0-d7,($FFFFFF10).w
 		movem.l	($FFFFF754).w,d0-d1
@@ -574,8 +573,6 @@ Vint_0B:				; XREF: off_B6E
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
 		jsr	(ProcessDMA).l
-
-loc_1060:
 		tst.w	($FFFFF614).w
 		beq.s	locret_106C
 		subq.w	#1,($FFFFF614).w
@@ -38670,7 +38667,6 @@ loc_1C962:
 ; HUD counter sizes
 ; ---------------------------------------------------------------------------
 Hud_100000:	dc.l 100000		; XREF: Hud_Score
-Hud_10000:	dc.l 10000
 Hud_1000:	dc.l 1000		; XREF: Hud_TimeRingBonus
 Hud_100:	dc.l 100		; XREF: Hud_Rings
 Hud_10:		dc.l 10			; XREF: ContScrCounter; Hud_Secs; Hud_Lives
@@ -39471,6 +39467,75 @@ Nem_Flicky:	incbin	artnem\flicky.bin	; flicky
 Nem_Squirrel:	incbin	artnem\squirrel.bin	; squirrel
 		even
 ; ---------------------------------------------------------------------------
+; Compressed graphics - bosses and ending sequence
+; ---------------------------------------------------------------------------
+Nem_Eggman:	incbin	artnem\bossmain.bin	; boss main patterns
+		even
+Nem_Weapons:	incbin	artnem\bossxtra.bin	; boss add-ons and weapons
+		even
+Nem_Prison:	incbin	artnem\prison.bin	; prison capsule
+		even
+Nem_Sbz2Eggman:	incbin	artnem\sbz2boss.bin	; Eggman in SBZ2 and FZ
+		even
+Nem_FzBoss:	incbin	artnem\fzboss.bin	; FZ boss
+		even
+Nem_FzEggman:	incbin	artnem\fzboss2.bin	; Eggman after the FZ boss
+		even
+Nem_Exhaust:	incbin	artnem\bossflam.bin	; boss exhaust flame
+		even
+Nem_EndEm:	incbin	artnem\endemera.bin	; ending sequence chaos emeralds
+		even
+Nem_EndSonic:	incbin	artnem\endsonic.bin	; ending sequence Sonic
+		even
+Nem_TryAgain:	incbin	artnem\tryagain.bin	; ending "try again" screen
+		even
+Kos_EndFlowers:	incbin	artkos\flowers.bin	; ending sequence animated flowers
+		even
+Nem_EndFlower:	incbin	artnem\endflowe.bin	; ending sequence flowers
+		even
+Nem_CreditText:	incbin	artnem\credits.bin	; credits alphabet
+		even
+Nem_EndStH:	incbin	artnem\endtext.bin	; ending sequence "Sonic the Hedgehog" text
+		even
+; ---------------------------------------------------------------------------
+; Special layouts
+; ---------------------------------------------------------------------------
+SS_1:		incbin	sslayout\1.bin
+		even
+SS_2:		incbin	sslayout\2.bin
+		even
+SS_3:		incbin	sslayout\3.bin
+		even
+SS_4:		incbin	sslayout\4.bin
+		even
+SS_5:		incbin	sslayout\5.bin
+		even
+SS_6:		incbin	sslayout\6.bin
+		even
+; ---------------------------------------------------------------------------
+; Animated uncompressed graphics
+; ---------------------------------------------------------------------------
+Art_GhzWater:	incbin	artunc\ghzwater.bin	; GHZ waterfall
+		even
+Art_GhzFlower1:	incbin	artunc\ghzflowl.bin	; GHZ large flower
+		even
+Art_GhzFlower2:	incbin	artunc\ghzflows.bin	; GHZ small flower
+		even
+Art_MzLava1:	incbin	artunc\mzlava1.bin	; MZ lava surface
+		even
+Art_MzLava2:	incbin	artunc\mzlava2.bin	; MZ lava
+		even
+Art_MzTorch:	incbin	artunc\mztorch.bin	; MZ torch in background
+		even
+Art_SbzSmoke:	incbin	artunc\sbzsmoke.bin	; SBZ smoke in background
+		even
+; ---------------------------------------------------------------------------
+; Animated uncompressed giant ring graphics
+; ---------------------------------------------------------------------------
+Art_BigRing:	incbin	artunc\bigring.bin
+		even
+
+; ---------------------------------------------------------------------------
 ; Compressed graphics - primary patterns and block mappings
 ; ---------------------------------------------------------------------------
 Blk16_GHZ:	incbin	map16\ghz.bin
@@ -39512,37 +39577,6 @@ Comp_SBZ:	incbin	artcomp\8x8sbz.bin	; SBZ primary patterns
 Blk256_SBZ:	incbin	map256\sbz.bin
 		even
 ; ---------------------------------------------------------------------------
-; Compressed graphics - bosses and ending sequence
-; ---------------------------------------------------------------------------
-Nem_Eggman:	incbin	artnem\bossmain.bin	; boss main patterns
-		even
-Nem_Weapons:	incbin	artnem\bossxtra.bin	; boss add-ons and weapons
-		even
-Nem_Prison:	incbin	artnem\prison.bin	; prison capsule
-		even
-Nem_Sbz2Eggman:	incbin	artnem\sbz2boss.bin	; Eggman in SBZ2 and FZ
-		even
-Nem_FzBoss:	incbin	artnem\fzboss.bin	; FZ boss
-		even
-Nem_FzEggman:	incbin	artnem\fzboss2.bin	; Eggman after the FZ boss
-		even
-Nem_Exhaust:	incbin	artnem\bossflam.bin	; boss exhaust flame
-		even
-Nem_EndEm:	incbin	artnem\endemera.bin	; ending sequence chaos emeralds
-		even
-Nem_EndSonic:	incbin	artnem\endsonic.bin	; ending sequence Sonic
-		even
-Nem_TryAgain:	incbin	artnem\tryagain.bin	; ending "try again" screen
-		even
-Kos_EndFlowers:	incbin	artkos\flowers.bin	; ending sequence animated flowers
-		even
-Nem_EndFlower:	incbin	artnem\endflowe.bin	; ending sequence flowers
-		even
-Nem_CreditText:	incbin	artnem\credits.bin	; credits alphabet
-		even
-Nem_EndStH:	incbin	artnem\endtext.bin	; ending sequence "Sonic the Hedgehog" text
-		even
-; ---------------------------------------------------------------------------
 ; Collision data
 ; ---------------------------------------------------------------------------
 AngleMap:	incbin	collide\anglemap.bin	; floor angle map
@@ -39564,65 +39598,32 @@ Col_SYZ:	incbin	collide\syz.bin		; SYZ index
 Col_SBZ:	incbin	collide\sbz.bin		; SBZ index
 		even
 ; ---------------------------------------------------------------------------
-; Special layouts
-; ---------------------------------------------------------------------------
-SS_1:		incbin	sslayout\1.bin
-		even
-SS_2:		incbin	sslayout\2.bin
-		even
-SS_3:		incbin	sslayout\3.bin
-		even
-SS_4:		incbin	sslayout\4.bin
-		even
-SS_5:		incbin	sslayout\5.bin
-		even
-SS_6:		incbin	sslayout\6.bin
-		even
-; ---------------------------------------------------------------------------
-; Animated uncompressed graphics
-; ---------------------------------------------------------------------------
-Art_GhzWater:	incbin	artunc\ghzwater.bin	; GHZ waterfall
-		even
-Art_GhzFlower1:	incbin	artunc\ghzflowl.bin	; GHZ large flower
-		even
-Art_GhzFlower2:	incbin	artunc\ghzflows.bin	; GHZ small flower
-		even
-Art_MzLava1:	incbin	artunc\mzlava1.bin	; MZ lava surface
-		even
-Art_MzLava2:	incbin	artunc\mzlava2.bin	; MZ lava
-		even
-Art_MzTorch:	incbin	artunc\mztorch.bin	; MZ torch in background
-		even
-Art_SbzSmoke:	incbin	artunc\sbzsmoke.bin	; SBZ smoke in background
-		even
-
-; ---------------------------------------------------------------------------
 ; Level	layout index
 ; ---------------------------------------------------------------------------
-Level_Index:	dc.w Level_GHZ1-Level_Index, Level_GHZbg-Level_Index, byte_68D70-Level_Index
-		dc.w Level_GHZ2-Level_Index, Level_GHZbg-Level_Index, byte_68E3C-Level_Index
-		dc.w Level_GHZ3-Level_Index, Level_GHZbg-Level_Index, byte_68F84-Level_Index
-		dc.w byte_68F88-Level_Index, byte_68F88-Level_Index, byte_68F88-Level_Index
-		dc.w Level_LZ1-Level_Index, Level_LZbg-Level_Index, byte_69190-Level_Index
-		dc.w Level_LZ2-Level_Index, Level_LZbg-Level_Index, byte_6922E-Level_Index
-		dc.w Level_LZ3-Level_Index, Level_LZbg-Level_Index, byte_6934C-Level_Index
-		dc.w Level_SBZ3-Level_Index, Level_LZbg-Level_Index, byte_6940A-Level_Index
+Level_Index:	dc.w Level_GHZ1-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_GHZ2-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_GHZ3-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
+		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_LZ1-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_LZ2-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_LZ3-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SBZ3-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_MZ1-Level_Index, Level_MZ1bg-Level_Index, Level_MZ1-Level_Index
-		dc.w Level_MZ2-Level_Index, Level_MZ2bg-Level_Index, byte_6965C-Level_Index
-		dc.w Level_MZ3-Level_Index, Level_MZ3bg-Level_Index, byte_697E6-Level_Index
-		dc.w byte_697EA-Level_Index, byte_697EA-Level_Index, byte_697EA-Level_Index
-		dc.w Level_SLZ1-Level_Index, Level_SLZbg-Level_Index, byte_69B84-Level_Index
-		dc.w Level_SLZ2-Level_Index, Level_SLZbg-Level_Index, byte_69B84-Level_Index
-		dc.w Level_SLZ3-Level_Index, Level_SLZbg-Level_Index, byte_69B84-Level_Index
-		dc.w byte_69B84-Level_Index, byte_69B84-Level_Index, byte_69B84-Level_Index
-		dc.w Level_SYZ1-Level_Index, Level_SYZbg-Level_Index, byte_69C7E-Level_Index
-		dc.w Level_SYZ2-Level_Index, Level_SYZbg-Level_Index, byte_69D86-Level_Index
-		dc.w Level_SYZ3-Level_Index, Level_SYZbg-Level_Index, byte_69EE4-Level_Index
-		dc.w byte_69EE8-Level_Index, byte_69EE8-Level_Index, byte_69EE8-Level_Index
+		dc.w Level_MZ2-Level_Index, Level_MZ2bg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_MZ3-Level_Index, Level_MZ3bg-Level_Index, byte_6A320-Level_Index
+		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SLZ1-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SLZ2-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SLZ3-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
+		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SYZ1-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SYZ2-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SYZ3-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
+		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SBZ1-Level_Index, Level_SBZ1bg-Level_Index, Level_SBZ1bg-Level_Index
 		dc.w Level_SBZ2-Level_Index, Level_SBZ2bg-Level_Index, Level_SBZ2bg-Level_Index
-		dc.w Level_SBZ2-Level_Index, Level_SBZ2bg-Level_Index, byte_6A2F8-Level_Index
-		dc.w byte_6A2FC-Level_Index, byte_6A2FC-Level_Index, byte_6A2FC-Level_Index
+		dc.w Level_SBZ2-Level_Index, Level_SBZ2bg-Level_Index, byte_6A320-Level_Index
+		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
 		dc.w Level_End-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_End-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
@@ -39630,32 +39631,22 @@ Level_Index:	dc.w Level_GHZ1-Level_Index, Level_GHZbg-Level_Index, byte_68D70-Le
 
 Level_GHZ1:	incbin	levels\ghz1.bin
 		even
-byte_68D70:	dc.b 0,	0, 0, 0
 Level_GHZ2:	incbin	levels\ghz2.bin
 		even
-byte_68E3C:	dc.b 0,	0, 0, 0
 Level_GHZ3:	incbin	levels\ghz3.bin
 		even
 Level_GHZbg:	incbin	levels\ghzbg.bin
 		even
-byte_68F84:	dc.b 0,	0, 0, 0
-byte_68F88:	dc.b 0,	0, 0, 0
-
 Level_LZ1:	incbin	levels\lz1.bin
 		even
 Level_LZbg:	incbin	levels\lzbg.bin
 		even
-byte_69190:	dc.b 0,	0, 0, 0
 Level_LZ2:	incbin	levels\lz2.bin
 		even
-byte_6922E:	dc.b 0,	0, 0, 0
 Level_LZ3:	incbin	levels\lz3.bin
 		even
-byte_6934C:	dc.b 0,	0, 0, 0
 Level_SBZ3:	incbin	levels\sbz3.bin
 		even
-byte_6940A:	dc.b 0,	0, 0, 0
-
 Level_MZ1:	incbin	levels\mz1.bin
 		even
 Level_MZ1bg:	incbin	levels\mz1bg.bin
@@ -39664,14 +39655,10 @@ Level_MZ2:	incbin	levels\mz2.bin
 		even
 Level_MZ2bg:	incbin	levels\mz2bg.bin
 		even
-byte_6965C:	dc.b 0,	0, 0, 0
 Level_MZ3:	incbin	levels\mz3.bin
 		even
 Level_MZ3bg:	incbin	levels\mz3bg.bin
 		even
-byte_697E6:	dc.b 0,	0, 0, 0
-byte_697EA:	dc.b 0,	0, 0, 0
-
 Level_SLZ1:	incbin	levels\slz1.bin
 		even
 Level_SLZbg:	incbin	levels\slzbg.bin
@@ -39680,21 +39667,14 @@ Level_SLZ2:	incbin	levels\slz2.bin
 		even
 Level_SLZ3:	incbin	levels\slz3.bin
 		even
-byte_69B84:	dc.b 0,	0, 0, 0
-
 Level_SYZ1:	incbin	levels\syz1.bin
 		even
 Level_SYZbg:	incbin	levels\syzbg.bin
 		even
-byte_69C7E:	dc.b 0,	0, 0, 0
 Level_SYZ2:	incbin	levels\syz2.bin
 		even
-byte_69D86:	dc.b 0,	0, 0, 0
 Level_SYZ3:	incbin	levels\syz3.bin
 		even
-byte_69EE4:	dc.b 0,	0, 0, 0
-byte_69EE8:	dc.b 0,	0, 0, 0
-
 Level_SBZ1:	incbin	levels\sbz1.bin
 		even
 Level_SBZ1bg:	incbin	levels\sbz1bg.bin
@@ -39703,17 +39683,9 @@ Level_SBZ2:	incbin	levels\sbz2.bin
 		even
 Level_SBZ2bg:	incbin	levels\sbz2bg.bin
 		even
-byte_6A2F8:	dc.b 0,	0, 0, 0
-byte_6A2FC:	dc.b 0,	0, 0, 0
 Level_End:	incbin	levels\ending.bin
 		even
 byte_6A320:	dc.b 0,	0, 0, 0
-
-; ---------------------------------------------------------------------------
-; Animated uncompressed giant ring graphics
-; ---------------------------------------------------------------------------
-Art_BigRing:	incbin	artunc\bigring.bin
-		even
 
 ; ---------------------------------------------------------------------------
 ; Sprite locations index
@@ -39821,6 +39793,15 @@ ObjPos_End:	incbin	objpos\ending.bin
 		even
 ObjPos_Null:	dc.b $FF, $FF, 0, 0, 0,	0
 ; ===========================================================================
+
+	if safe=1
+ErrorLockupExit:
+		jsr		ReadJoypads
+		btst	#JbS,($FFFFF605).w ; is Start button pressed?
+		beq.s	ErrorLockupExit	; if not, branch
+		jmp 	(GameProgram).l
+		rts
+	endif
 
 		include "_inc/Twizzler.asm"
 

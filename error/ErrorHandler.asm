@@ -29,8 +29,6 @@ _eh_align_offset	equ	$80
 _eh_default			equ	0 ;_eh_show_sr_usp
 
 Str_ErrorHeader:
-   dc.b   pal0,"Oops, you need to put the cartridge", endl
-   dc.b   "in your Megadrive/Genesis!..haha sry.", endl, endl
    dc.b   pal3,"Send the following information to", endl
    dc.b   pal2,"RepellantMold/valvastVT",pal3,":",pal0,endl,endl
    dc.b   0

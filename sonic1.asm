@@ -1592,13 +1592,19 @@ locret_16DA:				; XREF: sub_1642
 ; ===========================================================================
 
 loc_16DC:				; XREF: sub_165E
-		lea	($FFFFF680).w,a0
-		moveq	#$15,d0
-
-loc_16E2:				; XREF: sub_165E
-		move.l	6(a0),(a0)+
-		dbf	d0,loc_16E2
-		rts
+        lea ($FFFFF680).w,a0
+        lea 6(a0),a1
+        moveq   #$E,d0      ; do $F cues
+ 
+loc_16E2:               ; XREF: sub_165E
+        move.l  (a1)+,(a0)+
+        move.w  (a1)+,(a0)+
+        dbf d0,loc_16E2
+       
+        moveq   #0,d0
+        move.l  d0,(a0)+    ; clear the last cue to avoid overcopying it
+        move.w  d0,(a0)+    ;
+        rts
 ; End of function sub_165E
 
 ; ---------------------------------------------------------------------------

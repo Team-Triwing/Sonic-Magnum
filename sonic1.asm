@@ -26319,8 +26319,8 @@ GameOver:				; XREF: Obj01_Death
 loc_138C2:
 		music	mus_GameOver	; play game over music
         	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-	        lea Art_TitleCard,a0        	; load title card patterns
-        	move.l 	#((Art_GameOver_End-Art_GameOver)/32)-1,d0; the title card art length, in tiles
+	        lea Art_GameOver,a0        	; load patterns
+        	move.l 	#((Art_GameOver_End-Art_GameOver)/32)-1,d0; the art length, in tiles
 	        jmp LoadUncArt          ; load uncompressed art
 ; ===========================================================================
 

@@ -814,7 +814,6 @@ loc_1314:
 loc_133A:
 		move.l	d0,(a1)+
 		dbf	d1,loc_133A
-
 		lea	($FFFFCC00).w,a1
 		moveq	#0,d0
 		move.w	#$100,d1
@@ -3480,7 +3479,7 @@ CalcSine:				; XREF: SS_BGAnimate; et al
 
 ; ===========================================================================
 
-Sine_Data:	incbin	misc\sinewave.bin	; values for a 360º sine wave
+Sine_Data:	incbin	misc\sinewave.bin	; values for a 360Âº sine wave
 
 ; ===========================================================================
 
@@ -8461,10 +8460,10 @@ Draw_FG:
 loc_6CBE:
 		bclr	#1,(a2)
 		beq.s	loc_6CD8
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 		moveq	#-$10,d5
 		bsr.w	Calc_VRAM_Pos
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 		moveq	#-$10,d5
 		bsr.w	DrawTiles_LR
 
@@ -8511,10 +8510,10 @@ sub_6D0A:
 loc_6D26:
 		bclr	#1,(a2)
 		beq.s	loc_6D40
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 		moveq	#-$10,d5
 		bsr.w	Calc_VRAM_Pos
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 		moveq	#-$10,d5
 		bsr.w	DrawTiles_LR
 
@@ -8552,10 +8551,10 @@ loc_6D70:
 loc_6D88:
 		bclr	#5,(a2)
 		beq.s	locret_6DA4
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 		moveq	#0,d5
 		bsr.w	loc_7176
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 		moveq	#0,d5
 		moveq	#$1F,d6
 		bsr.w	DrawTiles_LR3
@@ -8639,7 +8638,7 @@ loc_6E16:
 		bne.s	loc_6E28
 		bclr	#1,(a2)
 		beq.s	loc_6E72
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 
 loc_6E28:
 		lea	(unk_6DF5).l,a0
@@ -8831,7 +8830,7 @@ loc_6F54:
 		bne.s	loc_6F66
 		bclr	#1,(a2)
 		beq.s	loc_6FAE
-		move.w	#$E0,d4	; 'à'
+		move.w	#$E0,d4	; 'Ã '
 
 loc_6F66:
 		lea	(unk_6EF3).l,a0
@@ -9110,7 +9109,7 @@ Calc_VRAM_Pos:
 
 loc_7176:
 		add.w	4(a3),d4
-		andi.w	#$F0,d4	; 'ð'
+		andi.w	#$F0,d4	; 'Ã°'
 		andi.w	#$1F0,d5
 		lsl.w	#4,d4
 		lsr.w	#2,d5
@@ -9179,7 +9178,7 @@ loc_7224:
 		lea	(unk_724A).l,a0
 		move.w	($FFFFF70C).w,d0
 		add.w	d4,d0
-		andi.w	#$F0,d0	; 'ð'
+		andi.w	#$F0,d0	; 'Ã°'
 		bsr.w	sub_72BA
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
@@ -9238,13 +9237,13 @@ loc_728C:
 		dbf	d6,loc_728C
 		rts	
 ; ===========================================================================
-unk_72B2:	dc.b $F7 ; ÷
+unk_72B2:	dc.b $F7 ; Ã·
 		dc.b   8 ;  
-		dc.b $F7 ; ÷
+		dc.b $F7 ; Ã·
 		dc.b   8 ;  
-		dc.b $F7 ; ÷
+		dc.b $F7 ; Ã·
 		dc.b $10 ;  
-		dc.b $F7 ; ÷
+		dc.b $F7 ; Ã·
 		dc.b $18 ;  
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
@@ -17600,8 +17599,6 @@ ObjectsLoad:				; XREF: TitleScreen; et al
 		lea	($FFFFD000).w,a0 ; set address for object RAM
 		moveq	#$7F,d7
 		moveq	#0,d0
-		cmpi.b	#6,($FFFFD024).w
-		bcc.s	loc_D362
 
 loc_D348:
 		move.b	(a0),d0		; load object number from RAM
@@ -23839,7 +23836,7 @@ Obj61_Type01:				; XREF: Obj61_TypeIndex
 		bne.s	loc_120D6	; if yes, branch
 		btst	#3,$22(a0)
 		beq.s	locret_120D4
-		move.w	#30,$36(a0)	; wait for « second
+		move.w	#30,$36(a0)	; wait for Â« second
 
 locret_120D4:
 		rts
@@ -28915,7 +28912,7 @@ loc_15546:
 		move.b	d0,$26(a0)
 
 Obj67_Action:				; XREF: Obj67_Index
-		bsr.w	Obj67_MoveSonic
+		bsr.s	Obj67_MoveSonic
 		bsr.w	Obj67_MoveSpot
 		bra.w	Obj67_ChkDel
 ; ===========================================================================

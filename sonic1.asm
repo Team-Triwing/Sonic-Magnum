@@ -6598,7 +6598,7 @@ Obj89_Move:				; XREF: Obj89_Index
 		cmpi.w	#$C0,8(a0)	; has object reached $C0?
 		beq.s	Obj89_Delay	; if yes, branch
 		addi.w	#$10,8(a0)	; move object to the right
-		jmp		DisplaySprite
+		jmp	DisplaySprite
 ; ===========================================================================
 
 Obj89_Delay:				; XREF: Obj89_Move
@@ -6607,9 +6607,9 @@ Obj89_Delay:				; XREF: Obj89_Move
 
 Obj89_GotoCredits:			; XREF: Obj89_Index
 		subq.w	#1,$30(a0)	; subtract 1 from duration
-		jpl		DisplaySprite
+		jpl	DisplaySprite
 		move.b	#$1C,($FFFFF600).w ; exit to credits
-		jmp		DisplaySprite
+		jmp	DisplaySprite
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - Sonic on the ending	sequence
@@ -8881,7 +8881,7 @@ loc_6FC8:
 		andi.w	#$7F0,d0
 		lsr.w	#4,d0
 		lea	(a0,d0.w),a0
-		bra.w	loc_6FEC
+		bra.s	loc_6FEC
 ; ===========================================================================
 unk_6FE4:	dc.b $FF ;  
 		dc.b $18 ;  
@@ -9276,13 +9276,13 @@ locret_72EE:
 
 LoadZoneTiles:
 		moveq	#0,d0			; Clear d0
-		move.b	($FFFFFE10).w,d0		; Load number of current zone to d0
+		move.b	($FFFFFE10).w,d0	; Load number of current zone to d0
 		lsl.w	#4,d0			; Multiply by $10, converting the zone ID into an offset
 		lea	(MainLoadBlocks).l,a2	; Load LevelHeaders's address into a2
 		lea	(a2,d0.w),a2		; Offset LevelHeaders by the zone-offset, and load the resultant address to a2
 		move.l	(a2)+,d0		; Move the first longword of data that a2 points to to d0, this contains the zone's first PLC ID and its art's address.
-								; The auto increment is pointless as a2 is overwritten later, and nothing reads from a2 before then
-		andi.l	#$FFFFFF,d0    	; Filter out the first byte, which contains the first PLC ID, leaving the address of the zone's art in d0
+						; The auto increment is pointless as a2 is overwritten later, and nothing reads from a2 before then
+		andi.l	#$FFFFFF,d0   	 	; Filter out the first byte, which contains the first PLC ID, leaving the address of the zone's art in d0
 		movea.l	d0,a0			; Load the address of the zone's art into a0 (source)
 		lea	($FF0000).l,a1		; Load v_256x256/StartOfRAM (in this context, an art buffer) into a1 (destination)
 		bsr.w	CompDec			; Decompress a0 to a1 (Comper compression)
@@ -9310,7 +9310,7 @@ LoadZoneTiles:
 		bsr.w	RunPLC_RAM
 		move.w	(sp)+,d7		; Restore d7 from the Stack
 		move.w	#$800,d3		; Force the DMA transfer length to be $1000/2 (the first cycle is dynamic because the art's DMA'd backwards)
-		dbf	d7,@loop			; Loop for each $1000 bytes the decompressed art is
+		dbf	d7,@loop		; Loop for each $1000 bytes the decompressed art is
 
 		rts
 ; End of function LoadZoneTiles
@@ -10020,7 +10020,7 @@ locret_7298:
 
 Resize_SBZ2boss2:
 		cmpi.w	#$1F60,($FFFFF700).w
-		bcs.s	loc_72B6
+		bcs.s	loc_72C2
 		bsr.w	SingleObjLoad
 		bne.s	loc_72B0
 		move.b	#$82,(a1)	; load SBZ2 Eggman object
@@ -10028,8 +10028,6 @@ Resize_SBZ2boss2:
 
 loc_72B0:
 		move.b	#1,($FFFFF7AA).w ; lock	screen
-
-loc_72B6:
 		bra.s	loc_72C2
 ; ===========================================================================
 
@@ -10057,34 +10055,28 @@ off_72D8:	dc.w Resize_FZmain-off_72D8, Resize_FZboss-off_72D8
 
 Resize_FZmain:
 		cmpi.w	#$2148,($FFFFF700).w
-		bcs.s	loc_72F4
+		bcs.s	loc_72C2
 		addq.b	#2,($FFFFF742).w
 		moveq	#$1F,d0
 		bsr.w	LoadPLC		; load FZ boss patterns
-
-loc_72F4:
 		bra.s	loc_72C2
 ; ===========================================================================
 
 Resize_FZboss:
 		cmpi.w	#$2300,($FFFFF700).w
-		bcs.s	loc_7312
+		bcs.s	loc_72C2
 		bsr.w	SingleObjLoad
-		bne.s	loc_7312
+		bne.s	loc_72C2
 		move.b	#$85,(a1)	; load FZ boss object
 		addq.b	#2,($FFFFF742).w
 		move.b	#1,($FFFFF7AA).w ; lock	screen
-
-loc_7312:
 		bra.s	loc_72C2
 ; ===========================================================================
 
 Resize_FZend:
 		cmpi.w	#$2450,($FFFFF700).w
-		bcs.s	loc_7320
+		bcs.s	loc_72C2
 		addq.b	#2,($FFFFF742).w
-
-loc_7320:
 		bra.s	loc_72C2
 ; ===========================================================================
 

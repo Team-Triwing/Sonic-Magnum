@@ -25719,13 +25719,13 @@ return_1ABA4:
 ; loc_1ABA6:
 Sonic_Super:
 		tst.b	($FFFFFE19).w	; Ignore all this code if not Super Sonic
-		beq.w	return_1AC3C
+		beq.s	return_1AC3C
 		cmpi.b	#1,($FFFFF65F).w	; is Super Sonic's transformation sequence finished?
 		beq.s	return_1ABA4			; if not, branch
 		tst.b	($FFFFFE1E).w
 		beq.s	Sonic_RevertToNormal ; ?
 		subq.b	#1,($FFFFF670).w
-		bhi.w	return_1AC3C
+		bhi.s	return_1AC3C
 		move.b	#60,($FFFFF670).w	; Reset frame counter to 60
 		tst.w	($FFFFFE20).w
 		beq.s	Sonic_RevertToNormal
@@ -25777,14 +25777,14 @@ Sonic_SpinDash:
 		sfx	sfx_Spindash
 		addq.l	#4,sp
 		move.b	#1,$39(a0)
-		move.w	#0,$3A(a0)
+		clr.w	$3A(a0)
 		cmpi.b	#$C,$28(a0)
 		bcs.s	loc_1AC84
 		move.b	#2,($FFFFD11C).w
 
 loc_1AC84:
 		bsr.w	Sonic_LevelBound
-		bsr.w	Sonic_AnglePos
+		bra.w	Sonic_AnglePos
 
 locret_1AC8C:
 		rts	
@@ -25798,7 +25798,7 @@ loc_1AC8E:
 		move.b	#7,$17(a0)
 		move.b	#2,$1C(a0)
 		addq.w	#5,$C(a0)
-		move.b	#0,$39(a0)
+		clr.b	$39(a0)
 		moveq	#0,d0
 		move.b	$3A(a0),d0
 		add.w	d0,d0
@@ -25838,7 +25838,7 @@ loc_1AD30:				; If still charging the dash...
 		lsr.w	#5,d0
 		sub.w	d0,$3A(a0)
 		bcc.s	loc_1AD48
-		move.w	#0,$3A(a0)
+		clr.w	$3A(a0)
 
 loc_1AD48:
 		move.b	($FFFFF603).w,d0
@@ -26032,14 +26032,14 @@ Sonic_Floor:				; XREF: Obj01_MdJump; Obj01_MdJump2
 		tst.w	d1
 		bpl.s	loc_135F0
 		sub.w	d1,8(a0)
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 
 loc_135F0:
 		bsr.w	sub_14EB4
 		tst.w	d1
 		bpl.s	loc_13602
 		add.w	d1,8(a0)
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 
 loc_13602:
 		bsr.w	Sonic_HitFloor
@@ -26071,13 +26071,13 @@ loc_1361E:
 ; ===========================================================================
 
 loc_1364E:
-		move.w	#0,$12(a0)
+		clr.w	$12(a0)
 		move.w	$10(a0),$14(a0)
 		rts
 ; ===========================================================================
 
 loc_1365C:
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 		cmpi.w	#$FC0,$12(a0)
 		ble.s	loc_13670
 		move.w	#$FC0,$12(a0)
@@ -26097,7 +26097,7 @@ loc_13680:
 		tst.w	d1
 		bpl.s	loc_1369A
 		sub.w	d1,8(a0)
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 		move.w	$12(a0),$14(a0)
 		rts
 ; ===========================================================================
@@ -26109,7 +26109,7 @@ loc_1369A:
 		sub.w	d1,$C(a0)
 		tst.w	$12(a0)
 		bpl.s	locret_136B2
-		move.w	#0,$12(a0)
+		clr.w	$12(a0)
 
 locret_136B2:
 		rts
@@ -26124,8 +26124,8 @@ loc_136B4:
 		add.w	d1,$C(a0)
 		move.b	d3,$26(a0)
 		bsr.w	Sonic_ResetOnFloor
-		move.b	#0,$1C(a0)
-		move.w	#0,$12(a0)
+		clr.b	$1C(a0)
+		clr.w	$12(a0)
 		move.w	$10(a0),$14(a0)
 
 locret_136E0:
@@ -26137,14 +26137,14 @@ loc_136E2:
 		tst.w	d1
 		bpl.s	loc_136F4
 		sub.w	d1,8(a0)
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 
 loc_136F4:
 		bsr.w	sub_14EB4
 		tst.w	d1
 		bpl.s	loc_13706
 		add.w	d1,8(a0)
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 
 loc_13706:
 		bsr.w	Sonic_DontRunOnWalls
@@ -26155,7 +26155,7 @@ loc_13706:
 		addi.b	#$20,d0
 		andi.b	#$40,d0
 		bne.s	loc_13726
-		move.w	#0,$12(a0)
+		clr.w	$12(a0)
 		rts
 ; ===========================================================================
 
@@ -26176,7 +26176,7 @@ loc_1373E:
 		tst.w	d1
 		bpl.s	loc_13758
 		add.w	d1,8(a0)
-		move.w	#0,$10(a0)
+		clr.w	$10(a0)
 		move.w	$12(a0),$14(a0)
 		rts
 ; ===========================================================================
@@ -26188,7 +26188,7 @@ loc_13758:
 		sub.w	d1,$C(a0)
 		tst.w	$12(a0)
 		bpl.s	locret_13770
-		move.w	#0,$12(a0)
+		clr.w	$12(a0)
 
 locret_13770:
 		rts
@@ -26231,7 +26231,7 @@ Sonic_ResetOnFloor:			; XREF: PlatformObject; et al
 
 loc_137E4:
 		move.b	#0,$3C(a0)
-		move.w	#0,($FFFFF7D0).w
+		clr.w	($FFFFF7D0).w
 		rts
 ; End of function Sonic_ResetOnFloor
 
@@ -26246,10 +26246,9 @@ Obj01_Hurt:				; XREF: Obj01_Index
 		btst	#6,$22(a0)
 		beq.s	loc_1380C
 		subi.w	#$20,$12(a0)
-		subi.w	#$10,$10(a0)
 
 loc_1380C:
-		bsr.w	Sonic_HurtStop
+		bsr.s	Sonic_HurtStop
 		bsr.w	Sonic_LevelBound
 		bsr.w	Sonic_RecordPos
 		bsr.w	Sonic_Animate
@@ -26289,7 +26288,7 @@ locret_13860:
 ; ---------------------------------------------------------------------------
 
 Obj01_Death:				; XREF: Obj01_Index
-		bsr.w	GameOver
+		bsr.s	GameOver
 		jsr	ObjectFall
 		bsr.w	Sonic_RecordPos
 		bsr.w	Sonic_Animate

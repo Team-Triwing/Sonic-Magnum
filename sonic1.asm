@@ -9502,7 +9502,7 @@ locret_6E08:
 
 Resize_GHZ2:
 		move.w	#$300,($FFFFF726).w
-		cmpi.w	#$ED0,($FFFFF700).w
+		cmpi.w	#$FF0,($FFFFF700).w
 		bcs.s	locret_6E3A
 		move.w	#$200,($FFFFF726).w
 		cmpi.w	#$1600,($FFFFF700).w
@@ -17692,8 +17692,10 @@ SpeedToPos:
 
 
 DisplaySprite:
-		lea	($FFFFAC00).w,a1
-		move.w	$18(a0),d0
+		moveq	#0,d0
+		move.b	$18(a0),d0
+		add.w	d0,d0
+		movea.w	Priority2InputAddrTable(pc,d0.w),a1
 		lsr.w	#1,d0
 		andi.w	#$380,d0
 		adda.w	d0,a1
@@ -17715,8 +17717,10 @@ locret_D620:
 
 
 DisplaySprite2:
-		lea	($FFFFAC00).w,a2
-		move.w	$18(a1),d0
+		moveq	#0,d0
+		move.b	$18(a1),d0
+		add.w	d0,d0
+		movea.w	Priority2InputAddrTable(pc,d0.w),a2
 		lsr.w	#1,d0
 		andi.w	#$380,d0
 		adda.w	d0,a2
@@ -17729,6 +17733,18 @@ DisplaySprite2:
 locret_D63E:
 		rts
 ; End of function DisplaySprite2
+
+; ---------------------------------------------------------------------------
+Priority2InputAddrTable:
+   dc.w   $FFFFAC00
+   dc.w   $FFFFAC00+$80
+   dc.w   $FFFFAC00+$100
+   dc.w   $FFFFAC00+$180
+   dc.w   $FFFFAC00+$200
+   dc.w   $FFFFAC00+$280
+   dc.w   $FFFFAC00+$300
+   dc.w   $FFFFAC00+$380
+   even
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	delete an object

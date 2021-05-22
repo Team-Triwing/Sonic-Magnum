@@ -38403,8 +38403,11 @@ AddPoints:
 		add.l	d0,(a3)		; add d0*10 to the score
 		move.l	#999999,d1
 		cmp.l	(a3),d1		; is #999999 higher than the score?
-		bhi.s	locret_1C6B6	; if yes, branch
+		bhi.s	loc_1C6AC	; if yes, branch
 		move.l	d1,(a3)		; reset	score to #999999
+
+loc_1C6AC:
+		move.l	(a3),d0
 
 locret_1C6B6:
 		rts

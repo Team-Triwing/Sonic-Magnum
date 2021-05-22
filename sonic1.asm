@@ -64,6 +64,7 @@ PortA_Ok:
 		move.l	MEGADRIVE.w,$2F00(a1)
 
 SkipSecurity:
+		move	#$2700,sr	; set the sr
 		lea	SetupValues(pc),a5
 		movem.w	(a5)+,d5-d7
 		movem.l	(a5)+,a0-a4
@@ -118,7 +119,6 @@ PSGInitLoop:
 		dbf	d5,PSGInitLoop
 		move.w	d0,(a2)
 		movem.l	(a6),d0-a6	; clear	all registers
-		move	#$2700,sr	; set the sr
 
 PortC_Ok:
 		bra.s	GameProgram
@@ -181,7 +181,7 @@ GameProgram:
 		btst	#6,(IO_C_CTRL).l
 		beq.s	.skip
 		cmpi.l	#'init',($FFFFFFFC).w ; has checksum routine already run?
-		beq.w	GameInit	; if yes, branch
+		beq.s	GameInit	; if yes, branch
 
 .skip
 		move.l	#EndOfHeader,ChecksumAddr.w	; load end of header to checksum check
@@ -268,7 +268,7 @@ Art_Text:	incbin	artunc\menutext.bin	; text used in level select and debug mode
 Vint:				; XREF: Vectors
 		pusha
 		tst.b	($FFFFF62A).w
-		beq.w	Vint_00
+		beq.s	Vint_00
 		move.w	(VDP_CTRL).l,d0
 		move.l	#$40000010,(VDP_CTRL).l
 		move.l	($FFFFF616).w,(VDP_DATA).l
@@ -280,11 +280,11 @@ Vint:				; XREF: Vectors
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: Vint_00
-        move	#$2300,sr           ; enable interrupts (we can accept horizontal interrupts from now on)
-		tst.b	($FFFFF64F).w		; test "AMPS running flag" 
-        bne.s	loc_B64             ; if it was set already, don't call another instance of AMPS
-        jsr UpdateAMPS              ; run AMPS
-        clr.b	($FFFFF64F).w       ; reset "AMPS running flag"
+        	move	#$2300,sr       ; enable interrupts (we can accept horizontal interrupts from now on)
+		tst.b	($FFFFF64F).w 	; test "AMPS running flag" 
+       		bne.s	loc_B64         ; if it was set already, don't call another instance of AMPS
+        	jsr UpdateAMPS          ; run AMPS
+        	clr.b	($FFFFF64F).w   ; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		btst	#6,(ConsoleRegion).w
@@ -340,7 +340,7 @@ loc_BFE:				; XREF: loc_BC8
 
 loc_C22:				; XREF: loc_BC8
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+        	move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	loc_B5E
 ; ===========================================================================
 
@@ -401,7 +401,7 @@ loc_CB0:				; XREF: loc_C76
 
 loc_CD4:				; XREF: loc_C76
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+        	move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -506,7 +506,7 @@ loc_EB4:				; XREF: loc_E7A
 
 loc_ED8:				; XREF: loc_E7A
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+        	move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -543,7 +543,7 @@ Vint_07:				; XREF: off_B6E
 Vint_09:				; XREF: off_B6E
 		bsr.w	sub_106E
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+        	move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	sub_1642
 ; ===========================================================================
 
@@ -630,40 +630,40 @@ loc_10D4:				; XREF: sub_106E
 
 
 Hint:
-        tst.w	($FFFFF644).w
-        beq.s	locret_119C
-        clr.w	($FFFFF644).w
-        movem.l	d0-d1/a0-a2,-(sp)
+        	tst.w	($FFFFF644).w
+        	beq.s	locret_119C
+        	clr.w	($FFFFF644).w
+        	movem.l	d0-d1/a0-a2,-(sp)
  
-        lea		(VDP_DATA).l,a1
-        move.w	#$8ADF,4(a1)        ; Reset HInt timing
+        	lea	(VDP_DATA).l,a1
+        	move.w	#$8ADF,4(a1)        	; Reset HInt timing
 
-        movea.l	($FFFFF610).w,a2
-        moveq	#$F,d0        		; adjust to push artifacts off screen
-        dbf    	d0,*   				; waste a few cycles here
+        	movea.l	($FFFFF610).w,a2
+        	moveq	#$F,d0        		; adjust to push artifacts off screen
+        	dbf    	d0,*   			; waste a few cycles here
 
-        move.w	(a2)+,d1
-        move.b	($FFFFFE07).w,d0
-        subi.b	#200,d0    			; is H-int occuring below line 200?
-        bcs.s	.transferColors    	; if it is, branch
-        sub.b	d0,d1
-        bcs.s	.skipTransfer
+        	move.w	(a2)+,d1
+        	move.b	($FFFFFE07).w,d0
+        	subi.b	#200,d0    		; is H-int occuring below line 200?
+        	bcs.s	.transferColors    	; if it is, branch
+        	sub.b	d0,d1
+        	bcs.s	.skipTransfer
 
 .transferColors:
-        move.w	(a2)+,d0
-        lea		($FFFFFA80).w,a0
-        adda.w	d0,a0
-        addi.w	#$C000,d0
-        swap    d0
-        move.l	d0,4(a1)    		; write to CRAM at appropriate address
-        move.l	(a0)+,(a1)   		; transfer two colors
-        move.w 	(a0)+,(a1)    		; transfer the third color
-        moveq	#$24,d0
-        dbf		d0,*
-        dbf    	d1,.transferColors	; repeat for number of colors
+		move.w	(a2)+,d0
+        	lea	($FFFFFA80).w,a0
+	        adda.w	d0,a0
+        	addi.w	#$C000,d0
+        	swap    d0
+        	move.l	d0,4(a1)    		; write to CRAM at appropriate address
+        	move.l	(a0)+,(a1)   		; transfer two colors
+        	move.w 	(a0)+,(a1)    		; transfer the third color
+        	moveq	#$24,d0
+	        dbf	d0,*
+        	dbf    	d1,.transferColors	; repeat for number of colors
 
 .skipTransfer:
-        movem.l	(sp)+,d0-d1/a0-a2
+        	movem.l	(sp)+,d0-d1/a0-a2
 
 locret_119C:
 		rte
@@ -4309,10 +4309,10 @@ loc_37B6:
         bne.s	Level_ClrStuff
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
-        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Unc_TitleCard,a0        ; load title card patterns
-        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+	        lea Art_TitleCard,a0        	; load title card patterns
+        	move.l 	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+	        jsr LoadUncArt          ; load uncompressed art
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#4,d0
@@ -5536,10 +5536,10 @@ loc_47D4:
 		move.w	#$8407,(a6)
 		move.w	#$9001,(a6)
 		bsr.w	ClearScreen
-        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Unc_TitleCard,a0        ; load title card patterns
-        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        	lea Art_TitleCard,a0        ; load title card patterns
+        	move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+        	jsr LoadUncArt          ; load uncompressed art
 		jsr	Hud_Base
 		resetDMA
 		music	mus_GotThroughSpecial; play end-of-level music
@@ -5895,10 +5895,10 @@ Cont_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cont_ClrObjRam ; clear object RAM
 		clr.b  	($FFFFFFD0).w
-        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Unc_TitleCard,a0        ; load title card patterns
-        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        	lea Art_TitleCard,a0        ; load title card patterns
+        	move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+        	jsr LoadUncArt          ; load uncompressed art
 		move.l	#$60000002,(VDP_CTRL).l
 		lea	(Nem_ContSonic).l,a0 ; load Sonic patterns
 		bsr.w	NemDec
@@ -19565,6 +19565,7 @@ Obj0D_Touch:				; XREF: Obj0D_Index
 		bcs.s	locret_EBBA
 		cmpi.w	#$20,d0		; is Sonic within $20 pixels of	the signpost?
 		bcc.s	locret_EBBA	; if not, branch
+		move.b 	#1,($FFFFF7AA).w; Lock the screen
 		sfx	sfx_Signpost	; play signpost	sound
 		tst.b	($FFFFFE19).w
 		beq.s	.continue
@@ -19648,13 +19649,13 @@ GotThroughAct:				; XREF: Obj3E_EndAct
 		move.w	($FFFFF72A).w,($FFFFF728).w
 		clr.b	($FFFFFE2D).w	; disable invincibility
 		clr.b	($FFFFFE1E).w	; stop time counter
-        clr.b	(Reload_level).w
+        	clr.b	(Reload_level).w
 		move.b	#$3A,($FFFFD5C0).w
 		move.l  a0,-(sp)
-        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Unc_TitleCard,a0        ; load title card patterns
-        move.l  #((Unc_TitleCard_End-Unc_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        	lea Art_TitleCard,a0        ; load title card patterns
+        	move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+        	jsr LoadUncArt          ; load uncompressed art
 		move.l  (sp)+,a0
 		move.b	#1,($FFFFF7D6).w
 		moveq	#0,d0
@@ -25776,7 +25777,7 @@ Sonic_SpinDash:
 		andi.b	#J_B|J_C|J_A,d0
 		beq.w	locret_1AC8C
 		move.b	#9,$1C(a0)
-		sfx		sfx_Spindash
+		sfx	sfx_Spindash
 		addq.l	#4,sp
 		move.b	#1,$39(a0)
 		move.w	#0,$3A(a0)
@@ -25819,7 +25820,7 @@ loc_1AC8E:
 loc_1ACF4:
 		bset	#2,$22(a0)
 		move.b	#0,($FFFFD11C).w
-		sfx		sfx_Dash
+		sfx	sfx_Dash
 		bra.s	loc_1AD78
 ; ===========================================================================
 Dash_Speeds:	dc.w  $800		; 0
@@ -25847,7 +25848,7 @@ loc_1AD48:
 		andi.b	#J_B|J_C|J_A,d0	; 'p'
 		beq.w	loc_1AD78
 		move.w	#$900,$1C(a0)
-		sfx		sfx_Spindash
+		sfx	sfx_Spindash
 		addi.w	#$200,$3A(a0)
 		cmpi.w	#$800,$3A(a0)
 		bcs.s	loc_1AD78
@@ -26248,6 +26249,7 @@ Obj01_Hurt:				; XREF: Obj01_Index
 		btst	#6,$22(a0)
 		beq.s	loc_1380C
 		subi.w	#$20,$12(a0)
+		subi.w	#$10,$10(a0)
 
 loc_1380C:
 		bsr.w	Sonic_HurtStop
@@ -26308,10 +26310,13 @@ GameOver:				; XREF: Obj01_Death
 		move.w	#-$38,$12(a0)
 		addq.b	#2,$24(a0)
 		clr.b	($FFFFFE1E).w	; stop time counter
+		tst.b	($FFFFFE12).w	; are lives at min?
+		bne.s	.skip
 		addq.b	#1,($FFFFFE1C).w ; update lives	counter
 		subq.b	#1,($FFFFFE12).w ; subtract 1 from number of lives
 		bne.s	loc_138D4
-		move.w	#0,$3A(a0)
+.skip:
+		clr.w	$3A(a0)
 		move.b	#$39,($FFFFD080).w ; load GAME object
 		move.b	#$39,($FFFFD0C0).w ; load OVER object
 		move.b	#1,($FFFFD0DA).w ; set OVER object to correct frame
@@ -26319,15 +26324,17 @@ GameOver:				; XREF: Obj01_Death
 
 loc_138C2:
 		music	mus_GameOver	; play game over music
-		moveq	#3,d0
-		jmp	(LoadPLC).l	; load game over patterns
+        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+	        lea Art_TitleCard,a0        	; load title card patterns
+        	move.l 	#((Art_GameOver_End-Art_GameOver)/32)-1,d0; the title card art length, in tiles
+	        jmp LoadUncArt          ; load uncompressed art
 ; ===========================================================================
 
 loc_138D4:
 		move.w	#60,$3A(a0)	; set time delay to 1 second
 		tst.b	($FFFFFE1A).w	; is TIME OVER tag set?
 		beq.s	locret_13900	; if not, branch
-		move.w	#0,$3A(a0)
+		clr.w	$3A(a0)
 		move.b	#$39,($FFFFD080).w ; load TIME object
 		move.b	#$39,($FFFFD0C0).w ; load OVER object
 		move.b	#2,($FFFFD09A).w
@@ -36341,14 +36348,16 @@ Hurt_Reverse:
 
 Hurt_ChkSpikes:
 		move.b	#0,$39(a0)	; clear Spin Dash flag
-		move.w	#0,$14(a0)
+		clr.w	$14(a0)
 		move.b	#$1A,$1C(a0)
 		move.b	#$78,invulnerable_time(a0)
 		moveq	#sfx_Death,d0	; load normal damage sound
 		cmpi.b	#$36,(a2)	; was damage caused by spikes?
+		beq.s	.setspikesound	; if so, branch
+		cmpi.b	#$16,(a2) 	; was damage caused by LZ harpoon?
 		bne.s	Hurt_Sound	; if not, branch
-		cmpi.b	#$16,(a2)	; was damage caused by LZ harpoon?
-		bne.s	Hurt_Sound	; if not, branch
+
+	.setspikesound:
 		moveq	#sfx_SpikeHit,d0; load spikes damage sound
 
 Hurt_Sound:
@@ -38418,7 +38427,7 @@ locret_1C6B6:
 
 
 HudUpdate:
-		tst.b	($FFFFFFFA).w	; is debug mode	on?
+		tst.b	($FFFFFE08).w	; is debug mode	active?
 		bne.w	HudDebug	; if yes, branch
 		tst.b	($FFFFFE1F).w	; does the score need updating?
 		beq.s	Hud_ChkRings	; if not, branch
@@ -39013,6 +39022,8 @@ Debug_Index:	dc.w Debug_Main-Debug_Index
 ; ===========================================================================
 
 Debug_Main:				; XREF: Debug_Index
+		clr.l   ($FFFFD000+$10).w ; Clear X/Y Speed
+        	clr.w   ($FFFFD000+$14).w ; Clear Inertia
 		addq.b	#2,($FFFFFE08).w
 		move.w	($FFFFF72C).w,($FFFFFEF0).w ; buffer level x-boundary
 		move.w	($FFFFF726).w,($FFFFFEF2).w ; buffer level y-boundary
@@ -39176,6 +39187,9 @@ Debug_Exit:
 		beq.s	Debug_DoNothing	; if not, branch
 		moveq	#0,d0
 		move.w	d0,($FFFFFE08).w ; deactivate debug mode
+		bsr.w 	Hud_Base
+        	move.b 	#1,($FFFFFE1D).w
+        	move.b 	#1,($FFFFFE1F).w
 		move.l	#Map_Sonic,($FFFFD004).w
 		move.w	#$780,($FFFFD002).w
 		move.b	d0,($FFFFD01C).w
@@ -39185,6 +39199,7 @@ Debug_Exit:
 		move.w	($FFFFFEF2).w,($FFFFF726).w
 		cmpi.b	#$10,($FFFFF600).w ; are you in	the special stage?
 		bne.s	Debug_DoNothing	; if not, branch
+		clr.b 	($FFFFFC02).w    ; clear 1st entry in object state table
 		clr.w	($FFFFF780).w
 		move.w	#$40,($FFFFF782).w ; set new level rotation speed
 		move.l	#Map_Sonic,($FFFFD004).w
@@ -39544,8 +39559,8 @@ Nem_Cater:	incbin	artnem\caterkil.bin	; caterkiller
 ; ---------------------------------------------------------------------------
 ; Compressed graphics - various
 ; ---------------------------------------------------------------------------
-Unc_TitleCard:	incbin	artunc\ttlcards.bin	; title cards
-Unc_TitleCard_End:	even
+Art_TitleCard:	incbin	artunc\ttlcards.bin	; title cards
+Art_TitleCard_End:	even
 Nem_Hud:	incbin	artnem\hud.bin		; HUD (rings, time, score)
 		even
 Nem_Lives:	incbin	artnem\lifeicon.bin	; life counter icon
@@ -39558,8 +39573,8 @@ Nem_Explode:	incbin	artnem\explosio.bin	; explosion
 		even
 Nem_Points:	incbin	artnem\points.bin	; points from destroyed enemy or object
 		even
-Nem_GameOver:	incbin	artnem\gameover.bin	; game over / time over
-		even
+Art_GameOver:	incbin	artunc\gameover.bin	; game over / time over
+Art_GameOver_End:even
 Nem_HSpring:	incbin	artnem\springh.bin	; horizontal spring
 		even
 Nem_VSpring:	incbin	artnem\springv.bin	; vertical spring

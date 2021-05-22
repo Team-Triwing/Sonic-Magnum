@@ -68,8 +68,8 @@ PLC_Explode:	dc.w (((PLC_GameOver-PLC_Explode-2)/6)-1)
 ; Pattern load cues - game/time	over
 ; ---------------------------------------------------------------------------
 PLC_GameOver:	dc.w (((PLC_GHZ-PLC_GameOver-2)/6)-1)
-		dc.l Nem_GameOver	; game/time over
-		dc.w $ABC0
+		;dc.l Nem_GameOver	; game/time over
+		;dc.w $ABC0
 ; ---------------------------------------------------------------------------
 ; Pattern load cues - Green Hill
 ; ---------------------------------------------------------------------------

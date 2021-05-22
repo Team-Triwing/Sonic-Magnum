@@ -184,13 +184,12 @@ GameProgram:
 		beq.w	GameInit	; if yes, branch
 
 .skip
-		clrRAM	$FFFFFE00,$FFFFFE7F
 		move.l	#EndOfHeader,ChecksumAddr.w	; load end of header to checksum check
 		clr.w	ChecksumValue.w			; initial value of 0
 		move.l	#'init',($FFFFFFFC).w		; set flag so checksum won't be run again
 
 GameInit:
-		clrRAM	$FF0000,$FFFFFDFF
+		clrRAM	$FF0000,$FFFFFE7F
 		jsr	(InitDMA).l
 		bsr.w	VDPSetupGame
 		jsr	LoadDualPCM
@@ -13940,9 +13939,9 @@ Obj2E_ChkShoes:
 		cmpi.b	#3,d0		; does monitor contain speed shoes?
 		bne.s	Obj2E_ChkShield
 		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
-        bne.w 	Obj2E_NoMusic
+        	bne.w 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
-		move.w	#$4B0,($FFFFD034).w ; time limit for the power-up
+		move.b	#$96,($FFFFD000+speedshoes_time).w ; time limit for the power-up
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 		jsr	ApplySpeedSettings	; Fetch Speed settings
 		command	mus_ShoesOn	; Speed	up the music
@@ -13962,9 +13961,9 @@ Obj2E_ChkInvinc:
 		cmpi.b	#5,d0		; does monitor contain invincibility?
 		bne.s	Obj2E_ChkRings
 		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
-        bne.s 	Obj2E_NoMusic
+       	 	bne.s 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
-		move.w	#$4B0,($FFFFD032).w ; time limit for the power-up
+		move.b	#$96,($FFFFD000+invincibility_time).w ; time limit for the power-up
 		move.b	#$38,($FFFFD200).w ; load stars	object ($3801)
 		move.b	#1,($FFFFD21C).w
 		move.b	#$38,($FFFFD240).w ; load stars	object ($3802)
@@ -14005,15 +14004,15 @@ Obj2E_ChkS:
 		cmpi.b	#7,d0		; does monitor contain 'S'
 		bne.s	Obj2E_ChkGoggles
 		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
-        bne.w 	Obj2E_ChkEnd
+        	bne.w 	Obj2E_ChkEnd
 		move.b	#1,($FFFFFE2C).w ; give	Sonic a	shield
-		move.b	#$38,($FFFFD180).w ; load shield object	($38)
+		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
 		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
-		move.w	#$4B0,($FFFFD034).w ; time limit for the power-up
+		move.b	#$38,($FFFFD180).w ; load shield object	($38)
+		move.b	#$96,($FFFFD000+invincibility_time).w ; time limit for the power-up
+		move.b	#$96,($FFFFD000+speedshoes_time).w ; time limit for the power-up
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 		jsr	ApplySpeedSettings	; Fetch Speed settings
-		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
-		move.w	#$4B0,($FFFFD032).w ; time limit for the power-up
 		move.b	#$38,($FFFFD200).w ; load stars	object ($3801)
 		move.b	#1,($FFFFD21C).w
 		move.b	#$38,($FFFFD240).w ; load stars	object ($3802)
@@ -24800,7 +24799,7 @@ Sonic_Display:				; XREF: loc_12C7E
 		move.b	invulnerable_time(a0),d0
 		beq.s	Obj01_Display
 		subq.b	#1,invulnerable_time(a0)
-		lsr.w	#3,d0
+		lsr.w	#1,d0
 		bcc.s	Obj01_ChkInvin
 
 Obj01_Display:
@@ -24811,9 +24810,9 @@ Obj01_ChkInvin:
 		beq.s	Obj01_ChkShoes	; if not, branch
 		tst.b	invincibility_time(a0)		; check	time remaining for invinciblity
 		beq.s	Obj01_ChkShoes	; if no	time remains, branch
-        move.b	($FFFFFE05).w,d0
-        andi.b	#6,d0
-        bne.s	Obj01_ChkShoes
+        	move.b	($FFFFFE05).w,d0
+       		andi.b	#6,d0
+        	bne.s	Obj01_ChkShoes
 		subq.b	#1,invincibility_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ChkShoes
 		tst.b	($FFFFF7AA).w
@@ -24824,8 +24823,8 @@ Obj01_ChkInvin:
 		move.b	d0,mQueue+1.w	; play normal music
 
 Obj01_RmvInvin:
-        subq.b	#2,$24(a0)
-        move.b	#$78,invulnerable_time(a0)
+        	subq.b	#2,$24(a0)
+        	move.b	#$78,invulnerable_time(a0)
 		clr.b	($FFFFFE2D).w ; cancel invincibility
 
 Obj01_ChkShoes:
@@ -24833,9 +24832,9 @@ Obj01_ChkShoes:
 		beq.s	Obj01_ExitChk	; if not, branch
 		tst.b	speedshoes_time(a0)		; check	time remaining
 		beq.s	Obj01_ExitChk
-        move.b	($FFFFFE05).w,d0
-        andi.b	#6,d0
-        bne.s	Obj01_ExitChk
+        	move.b	($FFFFFE05).w,d0
+        	andi.b	#6,d0
+        	bne.s	Obj01_ExitChk
 		subq.b	#1,speedshoes_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ExitChk
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
@@ -25530,9 +25529,9 @@ Boundary_Bottom_locret:
 
 Boundary_Sides:
 		move.w	d0,8(a0)
-		move.w	#0,$A(a0)
-		move.w	#0,$10(a0)	; stop Sonic moving
-		move.w	#0,$14(a0)
+		clr.w	$A(a0)
+		clr.w	$10(a0)	; stop Sonic moving
+		clr.w	$14(a0)
 		bra.s	loc_13336
 ; End of function Sonic_LevelBound
 
@@ -25551,17 +25550,17 @@ Sonic_Roll:				; XREF: Obj01_MdNormal
 		neg.w	d0
 
 loc_13392:
-        btst	#JbD,($FFFFF602).w    ; is down being pressed?
-        beq.s	Obj01_NoRoll    	; if not, branch
-        move.b	($FFFFF602).w,d0
-        andi.b	#J_L|J_R,d0    			; is left/right being pressed?
-        bne.s	Obj01_NoRoll    	; if yes, branch
-        move.w	$14(a0),d0
-        bpl.s	.cont 				; If ground speed is positive, continue
-        neg.w	d0 					; If not, negate it to get the absolute value
-.cont: 	cmpi.w	#$100,d0    		; is Sonic moving at $100 speed or faster?
-        bhi.s	Obj01_ChkRoll    	; if yes, branch
-        move.b	#8,$1C(a0)    		; use "ducking" animation
+        	btst	#JbD,($FFFFF602).w    	; is down being pressed?
+        	beq.s	Obj01_NoRoll    	; if not, branch
+        	move.b	($FFFFF602).w,d0
+        	andi.b	#J_L|J_R,d0    		; is left/right being pressed?
+        	bne.s	Obj01_NoRoll    	; if yes, branch
+        	move.w	$14(a0),d0
+        	bpl.s	.cont 			; If ground speed is positive, continue
+        	neg.w	d0 			; If not, negate it to get the absolute value
+.cont: 		cmpi.w	#$100,d0    		; is Sonic moving at $100 speed or faster?
+        	bhi.s	Obj01_ChkRoll    	; if yes, branch
+        	move.b	#8,$1C(a0)    		; use "ducking" animation
 
 Obj01_NoRoll:
 		rts
@@ -25660,9 +25659,9 @@ loc_134AE:
 		move.w	d1,$12(a0)
 
 locret_134C2:
-        move.b  ($FFFFF603).w,d0
-        andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
-        bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
+        	move.b  ($FFFFF603).w,d0
+        	andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
+        	bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
 		rts
 ; ===========================================================================
 
@@ -25684,32 +25683,32 @@ locret_134D2:
 
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
-	tst.b	($FFFFFE19).w	; is Sonic already Super?
-	bne.w	Sonic_RevertToNormal		; if yes, branch
+		tst.b	($FFFFFE19).w	; is Sonic already Super?
+		bne.w	Sonic_RevertToNormal		; if yes, branch
 	if safe=0
-	cmpi.b	#6,($FFFFFFB1).w	; does Sonic have exactly 6 emeralds?
-	bne.s	return_1ABA4		; if not, branch
-	cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
-	bcs.s	return_1ABA4		; if not, branch
+		cmpi.b	#6,($FFFFFFB1).w	; does Sonic have exactly 6 emeralds?
+		bne.s	return_1ABA4		; if not, branch
+		cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
+		bcs.s	return_1ABA4		; if not, branch
 	endif
-	tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
-	beq.s	return_1ABA4		; if yes, branch
-	move.b	#1,($FFFFF65F).w
-	move.b	#$F,($FFFFF65E).w
-	move.b	#1,($FFFFFE19).w
-	move.b	#$81,$2A(a0)
-	move.b	#$A,$1C(a0)			; use transformation animation
-;	move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
-	sfx		sfx_Transform
-	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
-	bsr.w	ApplySpeedSettings	; Fetch Speed settings
-	clr.b	invincibility_time(a0)
-	move.b 	#1,($FFFFFE2D).w ; make Sonic invincible
-	music	mus_SuperSonic
+		tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
+		beq.s	return_1ABA4		; if yes, branch
+		move.b	#1,($FFFFF65F).w
+		move.b	#$F,($FFFFF65E).w
+		move.b	#1,($FFFFFE19).w
+		move.b	#$81,$2A(a0)
+		move.b	#$A,$1C(a0)			; use transformation animation
+;		move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
+		sfx	sfx_Transform
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings	; Fetch Speed settings
+		clr.b	invincibility_time(a0)
+		move.b 	#1,($FFFFFE2D).w ; make Sonic invincible
+		music	mus_SuperSonic
 
 ; ---------------------------------------------------------------------------
 return_1ABA4:
-	rts
+		rts
 ; End of subroutine Sonic_CheckGoSuper
 
 
@@ -25721,44 +25720,44 @@ return_1ABA4:
 
 ; loc_1ABA6:
 Sonic_Super:
-	tst.b	($FFFFFE19).w	; Ignore all this code if not Super Sonic
-	beq.w	return_1AC3C
-	cmpi.b	#1,($FFFFF65F).w	; is Super Sonic's transformation sequence finished?
-	beq.s	return_1ABA4			; if not, branch
-	tst.b	($FFFFFE1E).w
-	beq.s	Sonic_RevertToNormal ; ?
-	subq.b	#1,($FFFFF670).w
-	bhi.w	return_1AC3C
-	move.b	#60,($FFFFF670).w	; Reset frame counter to 60
-	tst.w	($FFFFFE20).w
-	beq.s	Sonic_RevertToNormal
-	ori.b	#1,($FFFFFE1D).w
-	cmpi.w	#1,($FFFFFE20).w
-	beq.s	.update
-	cmpi.w	#10,($FFFFFE20).w
-	beq.s	.update
-	cmpi.w	#100,($FFFFFE20).w
-	bne.s	.update2
+		tst.b	($FFFFFE19).w	; Ignore all this code if not Super Sonic
+		beq.w	return_1AC3C
+		cmpi.b	#1,($FFFFF65F).w	; is Super Sonic's transformation sequence finished?
+		beq.s	return_1ABA4			; if not, branch
+		tst.b	($FFFFFE1E).w
+		beq.s	Sonic_RevertToNormal ; ?
+		subq.b	#1,($FFFFF670).w
+		bhi.w	return_1AC3C
+		move.b	#60,($FFFFF670).w	; Reset frame counter to 60
+		tst.w	($FFFFFE20).w
+		beq.s	Sonic_RevertToNormal
+		ori.b	#1,($FFFFFE1D).w
+		cmpi.w	#1,($FFFFFE20).w
+		beq.s	.update
+		cmpi.w	#10,($FFFFFE20).w
+		beq.s	.update
+		cmpi.w	#100,($FFFFFE20).w
+		bne.s	.update2
 .update
-	ori.b	#$80,($FFFFFE1D).w
+		ori.b	#$80,($FFFFFE1D).w
 .update2
-	subq.w	#1,($FFFFFE20).w
-	bne.s	return_1AC3C
+		subq.w	#1,($FFFFFE20).w
+		bne.s	return_1AC3C
 ; loc_1ABF2:
 Sonic_RevertToNormal:
-	move.b	#2,($FFFFF65F).w	; Remove rotating palette
-	move.w	#$28,($FFFFF65C).w	; Unknown
-	clr.b	($FFFFFE19).w
-	move.b	#1,$1D(a0)	; Change animation back to normal ?
-	move.b	#1,invincibility_time(a0)	; Remove invincibility
-	clr.b 	($FFFFFE2D).w ; Remove invincibility
-	lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
-	bsr.w	ApplySpeedSettings	; Fetch Speed settings
-	move.w	(Level_Music).w,d0	; restore level music
-	move.b	d0,mQueue+1.w
+		move.b	#2,($FFFFF65F).w	; Remove rotating palette
+		move.w	#$28,($FFFFF65C).w	; Unknown
+		clr.b	($FFFFFE19).w
+		move.b	#1,$1D(a0)	; Change animation back to normal ?
+		move.b	#1,invincibility_time(a0)	; Remove invincibility
+		clr.b 	($FFFFFE2D).w ; Remove invincibility
+		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
+		bsr.w	ApplySpeedSettings	; Fetch Speed settings
+		move.w	(Level_Music).w,d0	; restore level music
+		move.b	d0,mQueue+1.w
 
 return_1AC3C:
-	rts
+		rts
 ; End of subroutine Sonic_Super
 
 ; ---------------------------------------------------------------------------
@@ -39365,6 +39364,21 @@ Nem_SSGlass:	incbin	artnem\ssglass.bin	; special stage destroyable glass block
 Nem_ResultEm:	incbin	artnem\ssresems.bin	; chaos emeralds on special stage results screen
 		even
 ; ---------------------------------------------------------------------------
+; Special layouts
+; ---------------------------------------------------------------------------
+SS_1:		incbin	sslayout\1.bin
+		even
+SS_2:		incbin	sslayout\2.bin
+		even
+SS_3:		incbin	sslayout\3.bin
+		even
+SS_4:		incbin	sslayout\4.bin
+		even
+SS_5:		incbin	sslayout\5.bin
+		even
+SS_6:		incbin	sslayout\6.bin
+		even
+; ---------------------------------------------------------------------------
 ; Compressed graphics - GHZ stuff
 ; ---------------------------------------------------------------------------
 Nem_Stalk:	incbin	artnem\ghzstalk.bin	; GHZ flower stalk
@@ -39612,21 +39626,6 @@ Nem_EndFlower:	incbin	artnem\endflowe.bin	; ending sequence flowers
 Nem_CreditText:	incbin	artnem\credits.bin	; credits alphabet
 		even
 Nem_EndStH:	incbin	artnem\endtext.bin	; ending sequence "Sonic the Hedgehog" text
-		even
-; ---------------------------------------------------------------------------
-; Special layouts
-; ---------------------------------------------------------------------------
-SS_1:		incbin	sslayout\1.bin
-		even
-SS_2:		incbin	sslayout\2.bin
-		even
-SS_3:		incbin	sslayout\3.bin
-		even
-SS_4:		incbin	sslayout\4.bin
-		even
-SS_5:		incbin	sslayout\5.bin
-		even
-SS_6:		incbin	sslayout\6.bin
 		even
 ; ---------------------------------------------------------------------------
 ; Animated uncompressed graphics

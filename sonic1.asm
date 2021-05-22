@@ -173,20 +173,20 @@ endinit
 
 GameProgram:
 		tst.w	(VDP_CTRL).l
-		waitDMA				; RM: sonic 2 onward does this
+		waitDMA							; RM: sonic 2 onward does this
 		move.w	#$4EF9,(V_int_jump).w	; machine code for jmp
 		move.w	#$4EF9,(H_int_jump).w
 		move.l	#VInt,(V_int_addr).w
 		move.l	#HInt,(H_int_addr).w
 		btst	#6,(IO_C_CTRL).l
 		beq.s	.skip
-		cmpi.l	#'init',($FFFFFFFC).w ; has checksum routine already run?
-		beq.s	GameInit	; if yes, branch
+		tst.b	($FFFFFFFF).w 	; has checksum routine already run?
+		bne.s	GameInit				; if yes, branch
 
 .skip
 		move.l	#EndOfHeader,ChecksumAddr.w	; load end of header to checksum check
 		clr.w	ChecksumValue.w			; initial value of 0
-		move.l	#'init',($FFFFFFFC).w		; set flag so checksum won't be run again
+		move.b	#-1,($FFFFFFFF).w		; set flag so checksum won't be run again
 
 GameInit:
 		clrRAM	$FF0000,V_int_jump
@@ -280,11 +280,11 @@ Vint:				; XREF: Vectors
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: Vint_00
-        	move	#$2300,sr       ; enable interrupts (we can accept horizontal interrupts from now on)
+        move	#$2300,sr       ; enable interrupts (we can accept horizontal interrupts from now on)
 		tst.b	($FFFFF64F).w 	; test "AMPS running flag" 
-       		bne.s	loc_B64         ; if it was set already, don't call another instance of AMPS
-        	jsr UpdateAMPS          ; run AMPS
-        	clr.b	($FFFFF64F).w   ; reset "AMPS running flag"
+       	bne.s	loc_B64         ; if it was set already, don't call another instance of AMPS
+       	jsr UpdateAMPS          ; run AMPS
+       	clr.b	($FFFFF64F).w   ; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		btst	#6,(ConsoleRegion).w
@@ -340,7 +340,7 @@ loc_BFE:				; XREF: loc_BC8
 
 loc_C22:				; XREF: loc_BC8
 		move.w	($FFFFF624).w,(a5)
-        	move.b	($FFFFF625).w,($FFFFFE07).w
+       	move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	loc_B5E
 ; ===========================================================================
 
@@ -401,7 +401,7 @@ loc_CB0:				; XREF: loc_C76
 
 loc_CD4:				; XREF: loc_C76
 		move.w	($FFFFF624).w,(a5)
-        	move.b	($FFFFF625).w,($FFFFFE07).w
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -506,7 +506,7 @@ loc_EB4:				; XREF: loc_E7A
 
 loc_ED8:				; XREF: loc_E7A
 		move.w	($FFFFF624).w,(a5)
-        	move.b	($FFFFF625).w,($FFFFFE07).w
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -543,7 +543,7 @@ Vint_07:				; XREF: off_B6E
 Vint_09:				; XREF: off_B6E
 		bsr.w	sub_106E
 		move.w	($FFFFF624).w,(a5)
-        	move.b	($FFFFF625).w,($FFFFFE07).w
+        move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	sub_1642
 ; ===========================================================================
 

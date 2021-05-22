@@ -189,7 +189,7 @@ GameProgram:
 		move.l	#'init',($FFFFFFFC).w		; set flag so checksum won't be run again
 
 GameInit:
-		clrRAM	$FF0000,$FFFFFE7F
+		clrRAM	$FF0000,V_int_jump
 		jsr	(InitDMA).l
 		bsr.w	VDPSetupGame
 		jsr	LoadDualPCM
@@ -26307,12 +26307,9 @@ GameOver:				; XREF: Obj01_Death
 		move.w	#-$38,$12(a0)
 		addq.b	#2,$24(a0)
 		clr.b	($FFFFFE1E).w	; stop time counter
-		tst.b	($FFFFFE12).w	; are lives at min?
-		bne.s	.skip
 		addq.b	#1,($FFFFFE1C).w ; update lives	counter
 		subq.b	#1,($FFFFFE12).w ; subtract 1 from number of lives
 		bne.s	loc_138D4
-.skip:
 		clr.w	$3A(a0)
 		move.b	#$39,($FFFFD080).w ; load GAME object
 		move.b	#$39,($FFFFD0C0).w ; load OVER object

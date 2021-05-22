@@ -8056,10 +8056,6 @@ Left_NoMax:
 
 ; ===========================================================================
 
-loc_6610:
-		move.w	#2,d0
-		bra.s	SH_AheadOfMid
-
 ; ---------------------------------------------------------------------------
 ; Subroutine to	scroll the level vertically as Sonic moves
 ; ---------------------------------------------------------------------------
@@ -9378,7 +9374,7 @@ LevelLayoutLoad:			; XREF: TitleScreen; MainLoadBlockLoad
 
 		lea	($FFFFA400).w,a3 ; RAM address for level layout
 		moveq	#0,d1
-		bsr.w	LevelLayoutLoad2 ; load	level layout into RAM
+		bsr.s	LevelLayoutLoad2 ; load	level layout into RAM
 		lea	($FFFFA440).w,a3 ; RAM address for background layout
 		moveq	#2,d1
 ; End of function LevelLayoutLoad
@@ -9492,8 +9488,8 @@ Resize_GHZx:	dc.w Resize_GHZ1-Resize_GHZx
 
 Resize_GHZ1:
 		move.w	#$300,($FFFFF726).w ; set lower	y-boundary
-		cmpi.w	#$14F0,($FFFFF700).w ; has the camera reached $1780 on x-axis?
-		bcs.s	locret_6E08	; if not, branch
+		cmpi.w	#$14F0,($FFFFF700).w ; has the camera reached $14F0 on x-axis?
+		blt.s	locret_6E08	; if not, branch
 		move.w	#$400,($FFFFF726).w ; set lower	y-boundary
 
 locret_6E08:
@@ -13426,10 +13422,6 @@ Obj37_CountRings:			; XREF: Obj37_Index
 		moveq	#0,d5
 		lea     SpillRingData,a3        ; load the address of the array in a3
 		move.w	($FFFFFE20).w,d5 ; check number	of rings you have
-		moveq	#32,d0
-		cmp.w	d0,d5		; do you have 32 or more?
-		bcs.s	loc_9CDE	; if not, branch
-		move.w	d0,d5		; if yes, set d5 to 32
 
 loc_9CDE:
 		subq.w	#1,d5
@@ -13459,9 +13451,9 @@ Obj37_ResetCounter:			; XREF: Obj37_Loop
 		clr.w	($FFFFFE20).w ; reset number	of rings to zero
 		move.b	#$80,($FFFFFE1D).w ; update ring counter
 		clr.b	($FFFFFE1B).w
-		moveq	#-1,d0				; Move #-1 to d0
-		move.b	d0,$1F(a0)			; Move d0 to new timer
-		move.b	d0,($FFFFFEC6).w	; Move d0 to old timer (for animated purposes)
+		moveq	#-1,d0		; Move #-1 to d0
+		move.b	d0,$1F(a0)	; Move d0 to new timer
+		move.b	d0,($FFFFFEC6).w; Move d0 to old timer (for animated purposes)
 		sfx	sfx_RingLoss	; play ring loss sound
 
 Obj37_Bounce:				; XREF: Obj37_Index
@@ -13483,13 +13475,13 @@ Obj37_Bounce:				; XREF: Obj37_Index
 		neg.w	$12(a0)
 
 Obj37_ChkDel:				; XREF: Obj37_Bounce
-		subq.b	#1,$1F(a0)		; Subtract 1
+		subq.b	#1,$1F(a0)	; Subtract 1
 		beq.s	Obj37_Delete	; If 0, delete
 		move.w	($FFFFF72E).w,d0
 		addi.w	#$E0,d0
-		cmp.w	$C(a0),d0		; has object moved below level boundary?
+		cmp.w	$C(a0),d0	; has object moved below level boundary?
 		bcs.s	Obj37_Delete	; if yes, branch
-		btst	#0,$1F(a0) 		; Test the first bit of the timer, so rings flash every other frame.
+		btst	#0,$1F(a0) 	; Test the first bit of the timer, so rings flash every other frame.
 		beq.w	DisplaySprite   ; If the bit is 0, the ring will appear.
 		cmpi.b	#80,$1F(a0) 	; Rings will flash during last 80 steps of their life.
 		bhi.w	DisplaySprite   ; If the timer is higher than 80, obviously the rings will STAY visible.
@@ -16362,15 +16354,13 @@ locret_C412:
 
 Obj34_ChangeArt:			; XREF: Obj34_ChkPos2
 		cmpi.b	#4,$24(a0)
-		bne.s	Obj34_Delete
+		bne.w	DeleteObject
 		moveq	#2,d0
 		jsr	(LoadPLC).l	; load explosion patterns
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		addi.w	#$15,d0
 		jsr	(LoadPLC).l	; load animal patterns
-
-Obj34_Delete:
 		bra.w	DeleteObject
 ; ===========================================================================
 Obj34_ItemData:	dc.w $D0	; y-axis position
@@ -17252,7 +17242,7 @@ Obj36_Upright:				; XREF: Obj36_Solid
 Obj36_Hurt:				; XREF: Obj36_SideWays; Obj36_Upright
 		tst.b	($FFFFFE2D).w	; is Sonic invincible?
 		bne.s	Obj36_Display	; if yes, branch
-		tst.w	($FFFFD030).w	; is Sonic invulnerable?
+		tst.b	($FFFFD000+invulnerable_time).w	; is Sonic invulnerable?
 		bne.s	Obj36_Display	; if yes, branch
 		move.l	a0,-(sp)
 		movea.l	a0,a2
@@ -17773,10 +17763,10 @@ BldSpr_ScrPos:	dc.l 0			; blank
 BuildSprites:				; XREF: TitleScreen; et al
 		lea	($FFFFF800).w,a2 ; set address for sprite table
 		moveq	#0,d5
-        moveq	#0,d4
-        tst.b	($FFFFFFD0).w ; this was level_started_flag
-        beq.s	BuildSprites_2
-        jsr	loc_40804
+        	moveq	#0,d4
+        	tst.b	($FFFFFFD0).w ; this was level_started_flag
+        	beq.s	BuildSprites_2
+        	jsr	loc_40804.l
 BuildSprites_2:
 		lea	($FFFFAC00).w,a4
 		moveq	#7,d7
@@ -19359,7 +19349,7 @@ Obj46_Type03:				; XREF: Obj46_TypeIndex
 		andi.w	#$3FF,d0
 		cmpi.w	#$2E8,d0
 		bcc.s	locret_E8EE
-		move.b	#0,$28(a0)
+		clr.b	$28(a0)
 
 locret_E8EE:
 		rts

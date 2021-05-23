@@ -62,7 +62,7 @@ __mus =		MusOff
 
 MusicIndex:
 	ptrMusic GHZ, $30, LZ, $26, MZ, $1A, SLZ, $20, SYZ, $49, SBZ, $13, FZ, $18
-	ptrMusic Boss, $12, Boss2, $1F, SS, $20, Invincibility, $20, SuperSonic, $20, Drowning, $00
+	ptrMusic Boss, $12, SS, $20, Invincibility, $20, SuperSonic, $20, Drowning, $00
 	ptrMusic Title, $00, GotThroughAct, $00, GotThroughSpecial, $00, ExtraLife, $00
 	ptrMusic GameOver, $00, Continue, $00, Ending, $00, Credits, $00, SEGA, $00
 

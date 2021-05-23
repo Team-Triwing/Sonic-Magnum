@@ -1,4 +1,5 @@
 *.log
 *.lst
-*.md
+SonicMagnum.gen
 *.undo
+AMPS/.Data

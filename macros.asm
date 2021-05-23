@@ -101,6 +101,19 @@ jmi:		macro loc
 	.nojump\@:
 		endm
 
+; ---------------------------------------------------------------------------
+; Copy a tilemap from 68K (ROM/RAM) to the VRAM without using DMA
+; input: source, destination, width [cells], height [cells]
+; ---------------------------------------------------------------------------
+
+copyTilemap:	macro source,loc,width,height
+		lea	(source).l,a1
+		move.l	#$40000000+((loc&$3FFF)<<16)+((loc&$C000)>>14),d0
+		moveq	#width,d1
+		moveq	#height,d2
+		bsr.w	ShowVDPGraphics
+		endm
+
 ; macro to declare an offset table
 offsetTable macro
 current_offset_table equ *

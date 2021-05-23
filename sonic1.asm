@@ -3570,23 +3570,22 @@ SegaScreen:				; XREF: GameModeArray
 		andi.b	#$BF,d0
 		move.w	d0,(VDP_CTRL).l
 		bsr.w	ClearScreen
-		move.l	#$40000000,(VDP_CTRL).l
-		lea	(Nem_SegaLogo).l,a0 ; load Sega	logo patterns
-		bsr.w	NemDec
+		lea	(Twim_SegaLogo).l,a0 ; load Sega	logo patterns
+		move.w	#0,d0
+		jsr	TwimDec
 		lea	($FF0000).l,a1
 		lea	(Eni_SegaLogo).l,a0 ; load Sega	logo mappings
 		move.w	#0,d0
 		bsr.w	EniDec
-		lea	($FF0000).l,a1
-		move.l	#$65100003,d0
-		moveq	#$17,d1
-		moveq	#7,d2
-		bsr.w	ShowVDPGraphics
-		lea	($FF0180).l,a1
-		move.l	#$40000003,d0
-		moveq	#$27,d1
-		moveq	#$1B,d2
-		bsr.w	ShowVDPGraphics
+
+		copyTilemap	$FF0000,$E510,$17,7
+		copyTilemap	$FF0180,$C000,$27,$1B
+
+		tst.b   (ConsoleRegion).w	; is console Japanese?
+		bmi.s   @loadpal
+		copyTilemap	$FF0A40,$C53A,2,1 ; hide "TM" with a white rectangle
+@loadpal:
+
 		bsr.w	Pal_MakeFlash
 		move.w	#-$A,($FFFFF632).w
 		clr.w	($FFFFF634).w
@@ -3745,11 +3744,9 @@ TitleScreen:				; XREF: GameModeArray
 		lea	(Eni_JapNames).l,a0 ; load mappings for	Japanese credits
 		move.w	#0,d0
 		bsr.w	EniDec
-		lea	($FF0000).l,a1
-		move.l	#$40000003,d0
-		moveq	#$27,d1
-		moveq	#$1B,d2
-		bsr.w	ShowVDPGraphics
+
+		copyTilemap	$FF0000,$C000,$27,$1B
+
 		clr.b  	($FFFFFFD0).w
 		moveq	#$14,d0		; load Sonic's pallet
 		bsr.w	PalLoad1
@@ -3792,11 +3789,9 @@ TitleScreen:				; XREF: GameModeArray
 		lea	(Eni_Title).l,a0 ; load	title screen mappings
 		move.w	#0,d0
 		bsr.w	EniDec
-		lea	($FF0000).l,a1
-		move.l	#$42080003,d0
-		moveq	#$21,d1
-		moveq	#$15,d2
-		bsr.w	ShowVDPGraphics
+
+		copyTilemap	$FF0000,$C206,$21,$15
+
 		move.l	#$40000000,(VDP_CTRL).l
 		lea	(Nem_Title).l,a0 ; load GHZ patterns
 		bsr.w	NemDec
@@ -3814,8 +3809,11 @@ Title_ClrObjRam2:
 
 		move.b	#$E,($FFFFD040).w ; load big Sonic object
 		move.b	#$F,($FFFFD080).w ; load "PRESS	START BUTTON" object
+		tst.b   (ConsoleRegion).w	; is console Japanese?
+		bpl.s   @isjapanese		; if yes, branch
 		move.b	#$F,($FFFFD0C0).w ; load "TM" object
 		move.b	#3,($FFFFD0DA).w
+@isjapanese:
 		move.b	#$F,($FFFFD100).w
 		move.b	#2,($FFFFD11A).w
 
@@ -3827,8 +3825,7 @@ Title_ClrObjRam2:
 		jsr	BuildSprites
 		moveq	#0,d0
 		bsr.w	LoadPLC2
-		clr.w	($FFFFFFE4).w
-		clr.w	($FFFFFFE6).w
+		clr.l	($FFFFFFE4).w
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
 		move.w	d0,(VDP_CTRL).l
@@ -3989,7 +3986,7 @@ LevSelStartPress:				; XREF: LevelSelect
 LevSel_Level_SS:			; XREF: LevelSelect
 		add.w	d0,d0
 		move.w	LSelectPointers(pc,d0.w),d0 ; load level number
-		bmi.w	LevelSelect
+		bmi.s	LevelSelect
 		cmpi.w	#$700,d0	; check	if level is 0700 (Special Stage)
 		bne.s	LevSel_Level	; if not, branch
 		move.b	#$10,($FFFFF600).w ; set screen	mode to	$10 (Special Stage)
@@ -39280,7 +39277,7 @@ MainLoadBlocks:
 ; ---------------------------------------------------------------------------
 	include "_inc\Pattern load cues.asm"
 
-Nem_SegaLogo:	incbin	artnem\segalogo.bin	; large Sega logo
+Twim_SegaLogo:	incbin	arttwim\segalogo.twim	; large Sega logo
 		even
 Eni_SegaLogo:	incbin	mapeni\segalogo.bin	; large Sega logo (mappings)
 		even

@@ -14,5 +14,5 @@ tools\slz.exe "map256/slz.unc" "map256/slz.bin"
 tools\slz.exe "map256/syz.unc" "map256/syz.bin"
 tools\slz.exe "map256/sbz.unc" "map256/sbz.bin"
 
-rem ## title screen graphics
-tools\TwizMod.exe "arttwim/titlefor.unc" "arttwim/titleson.unc" "arttwim/titletm.unc" 
+rem ## graphics
+tools\TwizMod.exe "arttwim/titlefor.unc" "arttwim/titleson.unc" "arttwim/titletm.unc" "arttwim/segalogo.unc"

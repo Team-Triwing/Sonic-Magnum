@@ -62,7 +62,7 @@ __mus =		MusOff
 
 MusicIndex:
 	ptrMusic GHZ, $30, LZ, $26, MZ, $1A, SLZ, $20, SYZ, $49, SBZ, $13, FZ, $18
-	ptrMusic Boss, $12, SS, $20, Invincibility, $20, SuperSonic, $20, Drowning, $00
+	ptrMusic Boss, $12, Boss2, $1F, SS, $20, Invincibility, $20, SuperSonic, $20, Drowning, $00
 	ptrMusic Title, $00, GotThroughAct, $00, GotThroughSpecial, $00, ExtraLife, $00
 	ptrMusic GameOver, $00, Continue, $00, Ending, $00, Credits, $00, SEGA, $00
 
@@ -99,13 +99,28 @@ SFXlast =	__sfx
 __samp =	$80
 SampleList:
 	sample $0000, Stop, Stop		; 80 - Stop sample (DO NOT EDIT)
-	sample $0100, Kick, Stop		; 81 - Kick
+	sample $0140, Kick, Stop		; 81 - Kick
 	sample $0100, Snare, Stop		; 82 - Snare
-	sample $0100, Timpani, Stop, HiTimpani	; 83 - Hi Timpani
-	sample $00E6, Timpani, Stop, MidTimpani	; 84 - Timpani
-	sample $00C2, Timpani, Stop, LowTimpani	; 85 - Low Timpani
-	sample $00B6, Timpani, Stop, FloorTimpani; 86 - Floor Timpani
-	sample $0100, Sega, Stop		; 87 - SEGA screen
+	sample $0100, Clap, Stop		; 83 - Clap
+	sample $00CC, Scratch, Stop		; 84 - Scratch
+
+	sample $0100, Timpani, Stop, HiTimpani	; 85 - High Timpani
+	sample $00EE, Timpani, Stop, MidTimpani	; 86 - Mid Timpani
+	sample $00D4, Timpani, Stop		; 87 - Mid Timpani
+	sample $00D0, Timpani, Stop, LowTimpani	; 88 - Low Timpani
+	sample $00CC, Timpani, Stop, FloorTimpani; 89 - Floor Timpani
+
+	sample $0200, HiTom, Stop		; 8A - High Tom
+	sample $0200, MidTom, Stop		; 8B - Mid Tom
+	sample $0200, LowTom, Stop		; 8C - Low Tom
+	sample $0200, FloorTom, Stop	; 8D - Floor Tom
+
+	sample $0100, Bongo, Stop, HiBongo	; 8E - High Bongo
+	sample $00D0, Bongo, Stop, MidBongo	; 8F - Mid Bongo
+	sample $00A0, Bongo, Stop, LowBongo	; 90 - Low Bongo
+	sample $0080, Bongo, Stop, FloorBongo	; 91 - Floor Bongo
+
+	sample $0100, SEGA, Stop		; 92 - SEGA
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Define volume envelopes and their data
@@ -116,7 +131,7 @@ __venv =	$01
 
 VolEnvs:
 	volenv 01, 02, 03, 04, 05, 06, 07, 08
-	volenv 09
+	volenv 09, 0A, 0B, 0C, 0D
 VolEnvs_End:
 ; ---------------------------------------------------------------------------
 
@@ -157,6 +172,40 @@ vd08:		dc.b $00, $00, $00, $00, $00, $08, $08, $08
 vd09:		dc.b $00, $08, $10, $18, $20, $28, $30, $38
 		dc.b $40, $48, $50, $58, $60, $68, $70, $78
 		dc.b eHold
+
+vd0A:		dc.b $00, $00, $00, $00, $00, $00, $00, $00
+		dc.b $00, $00, $08, $08, $08, $08, $08, $08
+		dc.b $08, $08, $08, $08, $08, $08, $08, $08
+		dc.b $08, $08, $08, $08, $08, $08, $08, $08
+		dc.b $08, $08, $08, $08, $08, $08, $08, $08
+		dc.b $10, $10, $10, $10, $10, $10, $10, $10
+		dc.b $10, $10, $18, $18, $18, $18, $18, $18
+		dc.b $18, $18, $18, $18, $20, eHold
+
+vd0B:		dc.b $20, $20, $20, $18, $18, $18, $10, $10
+		dc.b $10, $08, $08, $08, $08, $08, $08, $08
+		dc.b $10, $10, $10, $10, $10, $18, $18, $18
+		dc.b $18, $18, $20, eHold
+
+vd0C:		dc.b $20, $20, $18, $18, $10, $10, $08, $08
+		dc.b $08, $08, $08, $08, $08, $08, $08, $08
+		dc.b $08, $08, $08, $08, $08, $08, $08, $08
+		dc.b $08, $08, $10, $10, $10, $10, $10, $10
+		dc.b $10, $10, $10, $10, $10, $10, $10, $10
+		dc.b $10, $10, $10, $10, $10, $10, $18, $18
+		dc.b $18, $18, $18, $18, $18, $18, $18, $18
+		dc.b $18, $18, $18, $18, $18, $18, $18, $18
+		dc.b $18, $18, $20, $20, $20, $20, $20, $20
+		dc.b $20, $20, $20, $20, $20, $20, $20, $20
+		dc.b $20, $20, $20, $20, $20, $20, $28, $28
+		dc.b $28, $28, $28, $28, $28, $28, $28, $28
+		dc.b $28, $28, $28, $28, $28, $28, $28, $28
+		dc.b $28, $28, $30, $30, $30, $30, $30, $30
+		dc.b $30, $30, $30, $30, $30, $30, $30, $30
+		dc.b $30, $30, $30, $30, $30, $30, $38, eHold
+
+vd0D:		dc.b $70, $68, $60, $58, $50, $48, $40, $38
+		dc.b $30, $28, $20, $18, $10, $08, $00, eHold
 		even
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
@@ -201,7 +250,8 @@ SWF_Stop:	dcb.b $8000-(2*Z80E_Read*(MaxPitch/$100)),$80
 SWFR_Stop:	dcb.b Z80E_Read*(MaxPitch/$100),$00
 ; ---------------------------------------------------------------------------
 
-	incSWF	Kick, Timpani, Snare, Sega
+	incSWF	Kick, Snare, Clap, Timpani, Bongo
+	incSWF	Scratch, SEGA, HiTom, MidTom, LowTom, FloorTom
 	opt ae+				; enable automatic evens
 	list				; continue source listing
 ; ---------------------------------------------------------------------------

@@ -4305,10 +4305,10 @@ loc_37B6:
         bne.s	Level_ClrStuff
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
-        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-	        lea Art_TitleCard,a0        	; load title card patterns
-        	move.l 	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-	        jsr LoadUncArt          ; load uncompressed art
+       	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+      	lea Art_TitleCard,a0        	; load title card patterns
+       	move.l 	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+	    jsr LoadUncArt          ; load uncompressed art
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#4,d0
@@ -5532,10 +5532,10 @@ loc_47D4:
 		move.w	#$8407,(a6)
 		move.w	#$9001,(a6)
 		bsr.w	ClearScreen
-        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        	lea Art_TitleCard,a0        ; load title card patterns
-        	move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-        	jsr LoadUncArt          ; load uncompressed art
+       	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Art_TitleCard,a0        ; load title card patterns
+        move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
 		jsr	Hud_Base
 		resetDMA
 		music	mus_GotThroughSpecial; play end-of-level music
@@ -5891,10 +5891,10 @@ Cont_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cont_ClrObjRam ; clear object RAM
 		clr.b  	($FFFFFFD0).w
-        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        	lea Art_TitleCard,a0        ; load title card patterns
-        	move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-        	jsr LoadUncArt          ; load uncompressed art
+        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Art_TitleCard,a0        ; load title card patterns
+        move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
 		move.l	#$60000002,(VDP_CTRL).l
 		lea	(Nem_ContSonic).l,a0 ; load Sonic patterns
 		bsr.w	NemDec
@@ -19644,10 +19644,10 @@ GotThroughAct:				; XREF: Obj3E_EndAct
         	clr.b	(Reload_level).w
 		move.b	#$3A,($FFFFD5C0).w
 		move.l  a0,-(sp)
-        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        	lea Art_TitleCard,a0        ; load title card patterns
-        	move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-        	jsr LoadUncArt          ; load uncompressed art
+        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+        lea Art_TitleCard,a0        ; load title card patterns
+        move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+        jsr LoadUncArt          ; load uncompressed art
 		move.l  (sp)+,a0
 		move.b	#1,($FFFFF7D6).w
 		moveq	#0,d0

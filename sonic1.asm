@@ -38783,6 +38783,7 @@ loc_1C962:
 ; HUD counter sizes
 ; ---------------------------------------------------------------------------
 Hud_100000:	dc.l 100000		; XREF: Hud_Score
+		dc.l 10000
 Hud_1000:	dc.l 1000		; XREF: Hud_TimeRingBonus
 Hud_100:	dc.l 100		; XREF: Hud_Rings
 Hud_10:		dc.l 10			; XREF: ContScrCounter; Hud_Secs; Hud_Lives

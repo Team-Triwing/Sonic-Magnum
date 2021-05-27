@@ -3589,7 +3589,7 @@ SegaScreen:				; XREF: GameModeArray
 		bsr.w	Pal_MakeFlash
 		move.w	#-$A,($FFFFF632).w
 		clr.w	($FFFFF634).w
-        clr.b  	($FFFFFFD0).w
+        	clr.b  	($FFFFFFD0).w
 		clr.b	ChecksumStart.w			; clear start button check
 		clr.b	mComm.w				; make sure playback wont be marked as ended
 		move.w	($FFFFF60C).w,d0
@@ -3710,11 +3710,46 @@ ChecksumEndChk:
 
 ; loc_395E:
 Sega_GotoTitle:
-		move.b	#4,($FFFFF600).w		; go to title screen
+		bsr.s 	SplashScreen2
 		addq.l	#4,sp				; do not return
 
 Sega_Locret:
 		rts
+
+; ============================================================================================
+; Splash screen crap
+; ============================================================================================
+SplashScreen2:
+		command	mus_FadeOut             ; set music ID to "stop music"
+		jsr     Pal_FadeFrom.w          ; fade palettes out
+		jsr     ClearScreen.w           ; clear the plane mappings
+		; load art, mappings and the palette
+		lea     ($FF0000).l,a1          ; load dump location
+		lea     Eni_SplashScreen.l,a0   ; load compressed mappings address
+		move.w  #320,d0             	; prepare pattern index value to patch to mappings
+		jsr     EniDec.w            	; decompress and dump
+		copyTilemap $FF0000,$C000,39,30 ; flush mappings to VRAM
+		move.l  #$68000000,($C00004).l 	; set vdp loc
+		lea     Nem_SplashScreen.l,a0   ; load background art
+		jsr     NemDec              	; run NemDec to decompress art for display
+		moveq	#$14,d0			; load pallet
+		bsr.w	PalLoad1
+		jsr Pal_FadeTo          	; fade palette in
+		music 	mus_GotThroughAct
+		move.w  #3*60,($FFFFF614).w     ; set delay time (3 seconds on a 60hz system)
+ 
+Splash_MainLoop:
+		move.b  #2,($FFFFF62A).w        ; set V-blank routine to run
+		jsr DelayProgram.w          	; wait for V-blank (decreases "Demo_Time_left")
+		tst.b   ($FFFFF605).w           ; has player 1 pressed start button?
+		bmi.s   Splash_GotoTitle        ; if so, branch
+		tst.w   ($FFFFF614).w           ; has the delay time finished?
+		bne.s   Splash_MainLoop         ; if not, branch
+ 
+Splash_GotoTitle:
+		move.b  #$04,($FFFFF600).w      ; set the screen mode to Title Screen
+		rts                     	; return
+
 ; ===========================================================================
 
 ; ---------------------------------------------------------------------------
@@ -3737,15 +3772,6 @@ TitleScreen:				; XREF: GameModeArray
 		bsr.w	ClearScreen
 		clrRAM	$FF0000,$FFFFEFFF	; fill RAM ($0000-$EFFF) with	$0
 		jsr	InitDMA
-		move.l	#$40000000,(VDP_CTRL).l
-		lea	(Nem_JapNames).l,a0 ; load Japanese credits
-		bsr.w	NemDec
-		lea	($FF0000).l,a1
-		lea	(Eni_JapNames).l,a0 ; load mappings for	Japanese credits
-		move.w	#0,d0
-		bsr.w	EniDec
-
-		copyTilemap	$FF0000,$C000,$27,$1B
 
 		clr.b  	($FFFFFFD0).w
 		moveq	#$14,d0		; load Sonic's pallet
@@ -39290,9 +39316,11 @@ Twim_TitleSonic:	incbin	arttwim\titleson.twim	; Sonic on title screen
 		even
 Twim_TitleTM:	incbin	arttwim\titletm.twim	; TM on title screen
 		even
-Eni_JapNames:	incbin	mapeni\japcreds.bin	; Japanese credits (mappings)
+Eni_SplashScreen:	incbin	Splash\SEGAMAPSE.bin	; Splash screen (mappings)
 		even
-Nem_JapNames:	incbin	artnem\japcreds.bin	; Japanese credits
+Nem_SplashScreen:	incbin	Splash\SEGAARTNEM.bin	; Splash screen
+		even
+Pal_SplashScreen:	incbin	Splash\SEGAPAL.bin	; Splash screen (palette)
 		even
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - Sonic

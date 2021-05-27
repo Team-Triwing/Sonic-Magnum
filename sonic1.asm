@@ -3736,7 +3736,7 @@ TitleScreen:				; XREF: GameModeArray
 		clr.b	($FFFFF64E).w
 		bsr.w	ClearScreen
 		clrRAM	$FF0000,$FFFFEFFF	; fill RAM ($0000-$EFFF) with	$0
-		jsr		InitDMA
+		jsr	InitDMA
 		move.l	#$40000000,(VDP_CTRL).l
 		lea	(Nem_JapNames).l,a0 ; load Japanese credits
 		bsr.w	NemDec
@@ -3790,7 +3790,7 @@ TitleScreen:				; XREF: GameModeArray
 		move.w	#0,d0
 		bsr.w	EniDec
 
-		copyTilemap	$FF0000,$C206,$21,$15
+		copyTilemap	$FF0000,$C208,$21,$15
 
 		move.l	#$40000000,(VDP_CTRL).l
 		lea	(Nem_Title).l,a0 ; load GHZ patterns

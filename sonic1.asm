@@ -3710,7 +3710,7 @@ ChecksumEndChk:
 
 ; loc_395E:
 Sega_GotoTitle:
-		bsr.s 	SplashScreen2
+		bsr.s 	SplashScreen
 		addq.l	#4,sp				; do not return
 
 Sega_Locret:
@@ -3719,7 +3719,7 @@ Sega_Locret:
 ; ============================================================================================
 ; Splash screen crap
 ; ============================================================================================
-SplashScreen2:
+SplashScreen:
 		command	mus_FadeOut             ; set music ID to "stop music"
 		jsr     Pal_FadeFrom.w          ; fade palettes out
 		jsr     ClearScreen.w           ; clear the plane mappings
@@ -3770,7 +3770,7 @@ TitleScreen:				; XREF: GameModeArray
 		move.w	#$8720,(a6)
 		clr.b	($FFFFF64E).w
 		bsr.w	ClearScreen
-		clrRAM	$FF0000,$FFFFEFFF	; fill RAM ($0000-$EFFF) with	$0
+		clrRAM	$FFFF0000,$FFFFEFFF	; fill RAM ($0000-$EFFF) with	$0
 		jsr	InitDMA
 
 		clr.b  	($FFFFFFD0).w
@@ -39316,11 +39316,11 @@ Twim_TitleSonic:	incbin	arttwim\titleson.twim	; Sonic on title screen
 		even
 Twim_TitleTM:	incbin	arttwim\titletm.twim	; TM on title screen
 		even
-Eni_SplashScreen:	incbin	Splash\SEGAMAPSE.bin	; Splash screen (mappings)
+Eni_SplashScreen:	incbin	Splash\SPLASHMAP.bin	; Splash screen (mappings)
 		even
-Nem_SplashScreen:	incbin	Splash\SEGAARTNEM.bin	; Splash screen
+Nem_SplashScreen:	incbin	Splash\SPLASHART.bin	; Splash screen
 		even
-Pal_SplashScreen:	incbin	Splash\SEGAPAL.bin	; Splash screen (palette)
+Pal_SplashScreen:	incbin	Splash\SPLASHPAL.bin	; Splash screen (palette)
 		even
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - Sonic

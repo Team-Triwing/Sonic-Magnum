@@ -1,21 +1,22 @@
-align		macro pos
+align		macro pos,num
+	if narg=1
 		dcb.b ((\pos)-(offset(*)%(\pos)))%(\pos),$FF
+	else
+		dcb.b ((\pos)-(offset(*)%(\pos)))%(\pos),num
+	endif
 	endm
 
 ; Macro for playing a command
-command		macro id
-	move.b #id,mQueue.w
-    endm
+command		macros id
+	move.b #\id,mQueue.w
 
 ; Macro for playing music
-music		macro id
-	move.b #id,mQueue+1.w
-    endm
+music		macros id
+	move.b #\id,mQueue+1.w
 
 ; Macro for playing sound effect
-sfx		macro id
-	move.b #id,mQueue+2.w
-    endm
+sfx		macros id
+	move.b #\id,mQueue+2.w
 	
 ; ---------------------------------------------------------------------------
 ; long conditional jumps
@@ -23,81 +24,81 @@ sfx		macro id
 
 jhi:		macro loc
 		bls.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jcc:		macro loc
 		bcs.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jhs:		macro loc
-		jcc	loc
+		jcc	\loc
 		endm
 
 jls:		macro loc
 		bhi.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jcs:		macro loc
 		bcc.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jlo:		macro loc
-		jcs	loc
+		jcs	\loc
 		endm
 
 jeq:		macro loc
 		bne.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jne:		macro loc
 		beq.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jgt:		macro loc
 		ble.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jge:		macro loc
 		blt.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jle:		macro loc
 		bgt.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jlt:		macro loc
 		bge.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jpl:		macro loc
 		bmi.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
 jmi:		macro loc
 		bpl.s	.nojump\@
-		jmp	loc
+		jmp	\loc
 	.nojump\@:
 		endm
 
@@ -107,23 +108,23 @@ jmi:		macro loc
 ; ---------------------------------------------------------------------------
 
 copyTilemap:	macro source,loc,width,height
-		lea	(source).l,a1
-		move.l	#$40000000+((loc&$3FFF)<<16)+((loc&$C000)>>14),d0
-		moveq	#width,d1
-		moveq	#height,d2
+		lea	(\source).l,a1
+		move.l	#$40000000+((\loc&$3FFF)<<16)+((\loc&$C000)>>14),d0
+		moveq	#\width,d1
+		moveq	#\height,d2
 		bsr.w	ShowVDPGraphics
 		endm
 
 ; macro to declare an offset table
 offsetTable macro
 current_offset_table equ *
-    endm
+		endm
 
 ; macro to declare an entry in an offset table
 offsetTableEntry macro ptr
 	dc.w ptr-current_offset_table
-    endm
-		
+		endm
+
 ; ---------------------------------------------------------------------------------------------------------------------------------------------------------
 ; Stop the Z80
 ; ---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -213,7 +214,6 @@ resetZ80	macros
 ; -------------------------------------------------------------------------
 
 pusha macros
-
 	movem.l	d0-a6,-(sp)			; Push registers
 
 ; -------------------------------------------------------------------------
@@ -221,7 +221,6 @@ pusha macros
 ; -------------------------------------------------------------------------
 
 popa macros
-
 	movem.l	(sp)+,d0-a6			; Pop registers
 
 ; -------------------------------------------------------------------------
@@ -229,7 +228,6 @@ popa macros
 ; -------------------------------------------------------------------------
 
 rsEven macros
-	
 	rs.b	__rs&1				; Align RS
 	
 ; -------------------------------------------------------------------------
@@ -241,9 +239,7 @@ rsEven macros
 ;		  (not required if [saddr]_end exists)
 ; -------------------------------------------------------------------------
 	
-clrRAM macro &
-	saddr, eaddr
-	
+clrRAM macro saddr, eaddr
 	local	endaddr
 	if narg<2
 endaddr		EQUS	"\saddr\_end"		; Use [saddr]_end
@@ -271,7 +267,6 @@ clrsize		=	(\endaddr-\saddr)&$FFFFFF
 	elseif clrsize&1
 		move.b	d0,(a1)+		; Clear remaining byte of data
 	endif
-
 	endm
 	
 ; -------------------------------------------------------------------------
@@ -282,9 +277,7 @@ clrsize		=	(\endaddr-\saddr)&$FFFFFF
 ;		  (If left blank, this just uses VDP_CTRL instead)
 ; -------------------------------------------------------------------------
 
-waitDMA macro &
-	ctrl
-
+waitDMA macro ctrl
 .Wait\@:
 	if narg>0
 		move.w	(\ctrl),-(sp)	; Get VDP status
@@ -293,7 +286,6 @@ waitDMA macro &
 	endif
 	andi.w	#2,(sp)+		; Is DMA active?
 	bne.s	.Wait\@			; If so, wait
-
 	endm
 
 ; -------------------------------------------------------------------------
@@ -307,16 +299,14 @@ waitDMA macro &
 
 VVRAM		EQU	%100001			; VRAM
 VCRAM		EQU	%101011			; CRAM
-VVSRAM		EQU	%100101			; VSRAM
+VVSRAM	EQU	%100101			; VSRAM
 VREAD		EQU	%001100			; VDP read
 VWRITE		EQU	%000111			; VDP write
 VDMA		EQU	%100111			; VDP DMA
 
 ; -------------------------------------------------------------------------
 
-vdpCmd macro &
-	ins, addr, type, rwd, end, end2
-	
+vdpCmd macro ins, addr, type, rwd, end, end2
 	if narg=5
 		\ins	#((((V\type&V\rwd)&3)<<30)|((\addr&$3FFF)<<16)|(((V\type&V\rwd)&$FC)<<2)|((\addr&$C000)>>14)), \end
 	elseif narg>=6
@@ -324,7 +314,6 @@ vdpCmd macro &
 	else
 		\ins	((((V\type&V\rwd)&3)<<30)|((\addr&$3FFF)<<16)|(((V\type&V\rwd)&$FC)<<2)|((\addr&$C000)>>14))
 	endif
-
 	endm
 
 
@@ -340,9 +329,7 @@ vdpCmd macro &
 ;		  (If left blank, this just uses VDP_CTRL instead)
 ; -------------------------------------------------------------------------
 
-dma68k macro &
-	src, dest, len, type, ctrl
-
+dma68k macro src, dest, len, type, ctrl
 	if narg>4
 		move.l	#$94009300|((((\len)/2)&$FF00)<<8)|(((\len)/2)&$FF),(\ctrl)
 		move.l	#$96009500|((((\src)/2)&$FF00)<<8)|(((\src)/2)&$FF),(\ctrl)
@@ -358,7 +345,6 @@ dma68k macro &
 		vdpCmd	move.w,\dest,\type,DMA,&$FFFF,-(sp)
 		move.w	(sp)+,VDP_CTRL
 	endif
-
 	endm
 
 ; -------------------------------------------------------------------------
@@ -373,9 +359,7 @@ dma68k macro &
 ;		  (If left blank, this just uses VDP_CTRL instead)
 ; -------------------------------------------------------------------------
 
-dmaFill macro &
-	byte, addr, len, ctrl
-
+dmaFill macro byte, addr, len, ctrl
 	if narg>3
 		move.l	#$94009300|((((\len)-1)&$FF00)<<8)|(((\len)-1)&$FF),(\ctrl)
 		move.w	#$9780,(\ctrl)
@@ -389,7 +373,6 @@ dmaFill macro &
 		move.w	#(\byte)<<8,VDP_DATA
 		waitDMA
 	endif
-
 	endm
 
 ; -------------------------------------------------------------------------
@@ -404,9 +387,7 @@ dmaFill macro &
 ;		  (If left blank, this just uses the address instead)
 ; -------------------------------------------------------------------------
 
-dmaCopy macro &
-	src, dest, len, ctrl
-	
+dmaCopy macro src, dest, len, ctrl
 	if narg>3
 		move.l	#$94009300|((((\len)-1)&$FF00)<<8)|(((\len)-1)&$FF),(\ctrl)
 		move.l	#$96009500|(((\src)&$FF00)<<8)|((\src)&$FF),(\ctrl)
@@ -420,5 +401,4 @@ dmaCopy macro &
 		move.l	#$000000C0|(((\dest)&$3FFF)<<16)|(((\dest)&$C000)>>14),VDP_CTRL
 		waitDMA
 	endif
-
 	endm

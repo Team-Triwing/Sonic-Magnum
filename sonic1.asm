@@ -33,21 +33,21 @@ Vectors:	dc.l $FFFFFE00, EntryPoint, BusError, AddressError
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 		dc.l ErrorTrap,	ErrorTrap, ErrorTrap, ErrorTrap
 MEGADRIVE:	dc.b "SEGA GENESIS    " ; Hardware system ID
-Date:		dc.b "TRIWING XXXX.XXX" ; Release date
-Title_Local:dc.b "                                                " ; Domestic name
-Title_Int:	dc.b "                                                " ; International name
-Serial:		dc.b "GM 00001009-00"   ; Serial/version number
+		dc.b "TRIWING         " ; Release date
+		dc.b "                                                " ; Domestic name
+		dc.b "                                                " ; International name
+		dc.b "GM 00001009-00"   ; Serial/version number
 Checksum:	dc.w 0
 		dc.b 'J               ' ; I/O support
 RomStartLoc:	dc.l StartOfRom		; ROM start
-RomEndLoc:	dc.l EndOfRom-1		; ROM end
+RomEndLoc:		dc.l EndOfRom-1		; ROM end
 RamStartLoc:	dc.l $FF0000		; RAM start
-RamEndLoc:	dc.l $FFFFFF		; RAM end
+RamEndLoc:		dc.l $FFFFFF		; RAM end
 SRAMSupport:	dc.l $20202020		; change to $5241E020 to create	SRAM
-		dc.l $20202020		; SRAM start
-		dc.l $20202020		; SRAM end
-Notes:		dc.b "                                                    "
-		dc.b 'JUE             ' ; Region
+				dc.l $20202020		; SRAM start
+				dc.l $20202020		; SRAM end
+				dc.b "                                                    "
+				dc.b 'JUE             ' ; Region
 EndOfHeader:
 ; ===========================================================================
 
@@ -186,7 +186,7 @@ GameProgram:
 .skip
 		move.l	#EndOfHeader,ChecksumAddr.w	; load end of header to checksum check
 		clr.w	ChecksumValue.w			; initial value of 0
-		move.b	#-1,($FFFFFFFF).w		; set flag so checksum won't be run again
+		st.b	($FFFFFFFF).w		; set flag so checksum won't be run again
 
 GameInit:
 		clrRAM	$FF0000,V_int_jump
@@ -201,7 +201,6 @@ MainGameLoop:
 		andi.b	#$C0,d0
 		move.b	d0,(ConsoleRegion).w
 		move.b	($FFFFF600).w,d0 ; load	Game Mode
-		;blt.s	InvalidGameMode
 		andi.w	#$7C,d0
 		movea.l	GameModeArray(pc,d0.w),a0
 		jsr	(a0)
@@ -212,25 +211,21 @@ MainGameLoop:
 ; ---------------------------------------------------------------------------
 
 GameModeArray:
-		dc.l	SegaScreen	; Sega Screen ($00)
+				dc.l	SegaScreen	; Sega Screen ($00)
 ; ===========================================================================
-		dc.l	TitleScreen	; Title	Screen ($04)
+				dc.l	TitleScreen	; Title	Screen ($04)
 ; ===========================================================================
-		dc.l	Level		; Demo Mode ($08)
+				dc.l	Level		; Demo Mode ($08)
 ; ===========================================================================
-		dc.l	Level		; Normal Level ($0C)
+				dc.l	Level		; Normal Level ($0C)
 ; ===========================================================================
-		dc.l	SpecialStage	; Special Stage	($10)
+				dc.l	SpecialStage	; Special Stage	($10)
 ; ===========================================================================
-		dc.l	ContinueScreen	; Continue Screen ($14)
+				dc.l	ContinueScreen	; Continue Screen ($14)
 ; ===========================================================================
-		dc.l	EndingSequence	; End of game sequence ($18)
+				dc.l	EndingSequence	; End of game sequence ($18)
 ; ===========================================================================
-		dc.l	Credits		; Credits ($1C)
-; ===========================================================================
-;InvalidGameMode:
-;				__ErrorMessage "%<.l #Str_ErrorHeader str>Invalid game mode!%<endl>Game mode = $%<.b $FFFFF600>", _eh_default
-;				even
+				dc.l	Credits		; Credits ($1C)
 ; ===========================================================================
 
 CheckSumError:	if safe=0
@@ -280,11 +275,11 @@ Vint:				; XREF: Vectors
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: Vint_00
-        move	#$2300,sr       ; enable interrupts (we can accept horizontal interrupts from now on)
+		move	#$2300,sr       ; enable interrupts (we can accept horizontal interrupts from now on)
 		tst.b	($FFFFF64F).w 	; test "AMPS running flag" 
-       	bne.s	loc_B64         ; if it was set already, don't call another instance of AMPS
-       	jsr UpdateAMPS          ; run AMPS
-       	clr.b	($FFFFF64F).w   ; reset "AMPS running flag"
+		bne.s	loc_B64         ; if it was set already, don't call another instance of AMPS
+		jsr UpdateAMPS          ; run AMPS
+		clr.b	($FFFFF64F).w   ; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		btst	#6,(ConsoleRegion).w
@@ -340,7 +335,7 @@ loc_BFE:				; XREF: loc_BC8
 
 loc_C22:				; XREF: loc_BC8
 		move.w	($FFFFF624).w,(a5)
-       	move.b	($FFFFF625).w,($FFFFFE07).w
+		move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	loc_B5E
 ; ===========================================================================
 
@@ -401,7 +396,7 @@ loc_CB0:				; XREF: loc_C76
 
 loc_CD4:				; XREF: loc_C76
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+		move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -506,7 +501,7 @@ loc_EB4:				; XREF: loc_E7A
 
 loc_ED8:				; XREF: loc_E7A
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+		move.b	($FFFFF625).w,($FFFFFE07).w
 		lea	(VDP_CTRL).l,a5
 		move.l	#$940193C0,(a5)
 		move.l	#$96E69500,(a5)
@@ -543,7 +538,7 @@ Vint_07:				; XREF: off_B6E
 Vint_09:				; XREF: off_B6E
 		bsr.w	sub_106E
 		move.w	($FFFFF624).w,(a5)
-        move.b	($FFFFF625).w,($FFFFFE07).w
+		move.b	($FFFFF625).w,($FFFFFE07).w
 		bra.w	sub_1642
 ; ===========================================================================
 
@@ -630,40 +625,40 @@ loc_10D4:				; XREF: sub_106E
 
 
 Hint:
-        	tst.w	($FFFFF644).w
-        	beq.s	locret_119C
-        	clr.w	($FFFFF644).w
-        	movem.l	d0-d1/a0-a2,-(sp)
- 
-        	lea	(VDP_DATA).l,a1
-        	move.w	#$8ADF,4(a1)        	; Reset HInt timing
+		tst.w	($FFFFF644).w
+		beq.s	locret_119C
+		clr.w	($FFFFF644).w
+		movem.l	d0-d1/a0-a2,-(sp)
 
-        	movea.l	($FFFFF610).w,a2
-        	moveq	#$F,d0        		; adjust to push artifacts off screen
-        	dbf    	d0,*   			; waste a few cycles here
+		lea	(VDP_DATA).l,a1
+		move.w	#$8ADF,4(a1)        	; Reset HInt timing
 
-        	move.w	(a2)+,d1
-        	move.b	($FFFFFE07).w,d0
-        	subi.b	#200,d0    		; is H-int occuring below line 200?
-        	bcs.s	.transferColors    	; if it is, branch
-        	sub.b	d0,d1
-        	bcs.s	.skipTransfer
+		movea.l	($FFFFF610).w,a2
+		moveq	#$F,d0        		; adjust to push artifacts off screen
+		dbf    	d0,*   			; waste a few cycles here
+
+		move.w	(a2)+,d1
+		move.b	($FFFFFE07).w,d0
+		subi.b	#200,d0    		; is H-int occuring below line 200?
+		bcs.s	.transferColors    	; if it is, branch
+		sub.b	d0,d1
+		bcs.s	.skipTransfer
 
 .transferColors:
 		move.w	(a2)+,d0
-        	lea	($FFFFFA80).w,a0
-	        adda.w	d0,a0
-        	addi.w	#$C000,d0
-        	swap    d0
-        	move.l	d0,4(a1)    		; write to CRAM at appropriate address
-        	move.l	(a0)+,(a1)   		; transfer two colors
-        	move.w 	(a0)+,(a1)    		; transfer the third color
-        	moveq	#$24,d0
-	        dbf	d0,*
-        	dbf    	d1,.transferColors	; repeat for number of colors
+		lea	($FFFFFA80).w,a0
+		adda.w	d0,a0
+		addi.w	#$C000,d0
+		swap    d0
+		move.l	d0,4(a1)    		; write to CRAM at appropriate address
+		move.l	(a0)+,(a1)   		; transfer two colors
+		move.w 	(a0)+,(a1)    		; transfer the third color
+		moveq	#$24,d0
+		dbf	d0,*
+		dbf    	d1,.transferColors	; repeat for number of colors
 
 .skipTransfer:
-        	movem.l	(sp)+,d0-d1/a0-a2
+		movem.l	(sp)+,d0-d1/a0-a2
 
 locret_119C:
 		rte
@@ -846,10 +841,10 @@ loc_13BE:
 loc_13CA:
 		move.b	#$10,($FFFFF62A).w
 		bsr.w	DelayProgram
-		if safe=0	
+	    if safe=0
 		tst.b	($FFFFFFE1).w	; is slow-motion cheat on?
 		beq.s	Pause_ChkStart	; if not, branch
-		endif
+	    endif
 		btst	#JbA,($FFFFF605).w ; is button A pressed?
 		beq.s	Pause_ChkBC	; if not, branch
 		move.b	#4,($FFFFF600).w ; set game mode to 4 (title screen)
@@ -890,7 +885,7 @@ Pause_SlowMo:				; XREF: PauseGame
 		move.b	#1,($FFFFF63A).w
 	AMPS_MUSUNPAUSE			; unpause music
 	else
-   		Console.Run SampleLevelDebugger
+		Console.Run SampleLevelDebugger
 	endif
 		rts
 ; End of function PauseGame
@@ -1203,188 +1198,188 @@ c = c+DMAEntry.len
 ; ------------------------------------------------------------------------------
 ; Optimized by vladikcomper
 ; ------------------------------------------------------------------------------
- 
+
 NemDec_RAM:
-    movem.l d0-a1/a3-a6,-(sp)
-    lea NemDec_WriteRowToRAM(pc),a3
-    bra.s   NemDec_Main
- 
+		movem.l d0-a1/a3-a6,-(sp)
+		lea NemDec_WriteRowToRAM(pc),a3
+		bra.s   NemDec_Main
+
 ; ------------------------------------------------------------------------------
 NemDec:
-    movem.l d0-a1/a3-a6,-(sp)
-    lea VDP_DATA,a4      ; load VDP Data Port     
-    lea NemDec_WriteRowToVDP(pc),a3
- 
+		movem.l d0-a1/a3-a6,-(sp)
+		lea VDP_DATA,a4      ; load VDP Data Port
+		lea NemDec_WriteRowToVDP(pc),a3
+
 NemDec_Main:
-    lea $FFFFAA00,a1        ; load Nemesis decompression buffer
-    move.w  (a0)+,d2        ; get number of patterns
-    bpl.s   .0          ; are we in Mode 0?
-    lea $A(a3),a3       ; if not, use Mode 1
-.0  lsl.w   #3,d2
-    movea.w d2,a5
-    moveq   #7,d3
-    moveq   #0,d2
-    moveq   #0,d4
-    bsr.w   NemDec4
-    move.b  (a0)+,d5        ; get first byte of compressed data
-    asl.w   #8,d5           ; shift up by a byte
-    move.b  (a0)+,d5        ; get second byte of compressed data
-    move.w  #$10,d6         ; set initial shift value
-    bsr.s   NemDec2
-    movem.l (sp)+,d0-a1/a3-a6
-    rts
- 
+		lea $FFFFAA00,a1        ; load Nemesis decompression buffer
+		move.w  (a0)+,d2        ; get number of patterns
+		bpl.s   .0          ; are we in Mode 0?
+		lea $A(a3),a3       ; if not, use Mode 1
+.0:  		lsl.w   #3,d2
+		movea.w d2,a5
+		moveq   #7,d3
+		moveq   #0,d2
+		moveq   #0,d4
+		bsr.w   NemDec4
+		move.b  (a0)+,d5        ; get first byte of compressed data
+		asl.w   #8,d5           ; shift up by a byte
+		move.b  (a0)+,d5        ; get second byte of compressed data
+		move.w  #$10,d6         ; set initial shift value
+		bsr.s   NemDec2
+		movem.l (sp)+,d0-a1/a3-a6
+		rts
+
 ; ---------------------------------------------------------------------------
 ; Part of the Nemesis decompressor, processes the actual compressed data
 ; ---------------------------------------------------------------------------
- 
+
 NemDec2:
-    move.w  d6,d7
-    subq.w  #8,d7           ; get shift value
-    move.w  d5,d1
-    lsr.w   d7,d1           ; shift so that high bit of the code is in bit position 7
-    cmpi.b  #%11111100,d1       ; are the high 6 bits set?
-    bcc.s   NemDec_InlineData   ; if they are, it signifies inline data
-    andi.w  #$FF,d1
-    add.w   d1,d1
-    sub.b   (a1,d1.w),d6        ; ~~ subtract from shift value so that the next code is read next time around
-    cmpi.w  #9,d6           ; does a new byte need to be read?
-    bcc.s   .0          ; if not, branch
-    addq.w  #8,d6
-    asl.w   #8,d5
-    move.b  (a0)+,d5        ; read next byte
-.0  move.b  1(a1,d1.w),d1
-    move.w  d1,d0
-    andi.w  #$F,d1          ; get palette index for pixel
-    andi.w  #$F0,d0
- 
+		move.w  d6,d7
+		subq.w  #8,d7           ; get shift value
+		move.w  d5,d1
+		lsr.w   d7,d1           ; shift so that high bit of the code is in bit position 7
+		cmpi.b  #%11111100,d1       ; are the high 6 bits set?
+		bcc.s   NemDec_InlineData   ; if they are, it signifies inline data
+		andi.w  #$FF,d1
+		add.w   d1,d1
+		sub.b   (a1,d1.w),d6        ; ~~ subtract from shift value so that the next code is read next time around
+		cmpi.w  #9,d6           ; does a new byte need to be read?
+		bcc.s   .0          ; if not, branch
+		addq.w  #8,d6
+		asl.w   #8,d5
+		move.b  (a0)+,d5        ; read next byte
+.0:		 move.b  1(a1,d1.w),d1
+		move.w  d1,d0
+		andi.w  #$F,d1          ; get palette index for pixel
+		andi.w  #$F0,d0
+
 NemDec_GetRepeatCount:
-    lsr.w   #4,d0           ; get repeat count
- 
+		lsr.w   #4,d0           ; get repeat count
+
 NemDec_WritePixel:
-    lsl.l   #4,d4           ; shift up by a nybble
-    or.b    d1,d4           ; write pixel
-    dbf d3,NemDec_WritePixelLoop; ~~
-    jmp (a3)            ; otherwise, write the row to its destination
+		lsl.l   #4,d4           ; shift up by a nybble
+		or.b    d1,d4           ; write pixel
+		dbf d3,NemDec_WritePixelLoop; ~~
+		jmp (a3)            ; otherwise, write the row to its destination
 ; ---------------------------------------------------------------------------
- 
+
 NemDec3:
-    moveq   #0,d4           ; reset row
-    moveq   #7,d3           ; reset nybble counter
- 
+		moveq   #0,d4           ; reset row
+		moveq   #7,d3           ; reset nybble counter
+
 NemDec_WritePixelLoop:
-    dbf d0,NemDec_WritePixel
-    bra.s   NemDec2
+		dbf d0,NemDec_WritePixel
+		bra.s   NemDec2
 ; ---------------------------------------------------------------------------
- 
+
 NemDec_InlineData:
-    subq.w  #6,d6           ; 6 bits needed to signal inline data
-    cmpi.w  #9,d6
-    bcc.s   .0
-    addq.w  #8,d6
-    asl.w   #8,d5
-    move.b  (a0)+,d5
-.0  subq.w  #7,d6           ; and 7 bits needed for the inline data itself
-    move.w  d5,d1
-    lsr.w   d6,d1           ; shift so that low bit of the code is in bit position 0
-    move.w  d1,d0
-    andi.w  #$F,d1          ; get palette index for pixel
-    andi.w  #$70,d0         ; high nybble is repeat count for pixel
-    cmpi.w  #9,d6
-    bcc.s   NemDec_GetRepeatCount
-    addq.w  #8,d6
-    asl.w   #8,d5
-    move.b  (a0)+,d5
-    bra.s   NemDec_GetRepeatCount
- 
+		subq.w  #6,d6           ; 6 bits needed to signal inline data
+		cmpi.w  #9,d6
+		bcc.s   .0
+		addq.w  #8,d6
+		asl.w   #8,d5
+		move.b  (a0)+,d5
+.0: 		subq.w  #7,d6           ; and 7 bits needed for the inline data itself
+		move.w  d5,d1
+		lsr.w   d6,d1           ; shift so that low bit of the code is in bit position 0
+		move.w  d1,d0
+		andi.w  #$F,d1          ; get palette index for pixel
+		andi.w  #$70,d0         ; high nybble is repeat count for pixel
+		cmpi.w  #9,d6
+		bcc.s   NemDec_GetRepeatCount
+		addq.w  #8,d6
+		asl.w   #8,d5
+		move.b  (a0)+,d5
+		bra.s   NemDec_GetRepeatCount
+
 ; ---------------------------------------------------------------------------
 ; Subroutines to output decompressed entry
 ; Selected depending on current decompression mode
 ; ---------------------------------------------------------------------------
- 
+
 NemDec_WriteRowToVDP:
 loc_1502:
-    move.l  d4,(a4)         ; write 8-pixel row
-    subq.w  #1,a5
-    move.w  a5,d4           ; have all the 8-pixel rows been written?
-    bne.s   NemDec3         ; if not, branch
-    rts
+		move.l  d4,(a4)         ; write 8-pixel row
+		subq.w  #1,a5
+		move.w  a5,d4           ; have all the 8-pixel rows been written?
+		bne.s   NemDec3         ; if not, branch
+		rts
 ; ---------------------------------------------------------------------------
- 
+
 NemDec_WriteRowToVDP_XOR:
-    eor.l   d4,d2           ; XOR the previous row by the current row
-    move.l  d2,(a4)         ; and write the result
-    subq.w  #1,a5
-    move.w  a5,d4
-    bne.s   NemDec3
-    rts
+		eor.l   d4,d2           ; XOR the previous row by the current row
+		move.l  d2,(a4)         ; and write the result
+		subq.w  #1,a5
+		move.w  a5,d4
+		bne.s   NemDec3
+		rts
 ; ---------------------------------------------------------------------------
- 
+
 NemDec_WriteRowToRAM:
-    move.l  d4,(a4)+        ; write 8-pixel row
-    subq.w  #1,a5
-    move.w  a5,d4           ; have all the 8-pixel rows been written?
-    bne.s   NemDec3         ; if not, branch
-    rts
+		move.l  d4,(a4)+        ; write 8-pixel row
+		subq.w  #1,a5
+		move.w  a5,d4           ; have all the 8-pixel rows been written?
+		bne.s   NemDec3         ; if not, branch
+		rts
 ; ---------------------------------------------------------------------------
- 
+
 NemDec_WriteRowToRAM_XOR:
-    eor.l   d4,d2           ; XOR the previous row by the current row
-    move.l  d2,(a4)+        ; and write the result
-    subq.w  #1,a5
-    move.w  a5,d4
-    bne.s   NemDec3
-    rts
- 
+		eor.l   d4,d2           ; XOR the previous row by the current row
+		move.l  d2,(a4)+        ; and write the result
+		subq.w  #1,a5
+		move.w  a5,d4
+		bne.s   NemDec3
+		rts
+
 ; ---------------------------------------------------------------------------
 ; Part of the Nemesis decompressor, builds the code table (in RAM)
 ; ---------------------------------------------------------------------------
- 
+
 NemDec4:
-    move.b  (a0)+,d0        ; read first byte
- 
+		move.b  (a0)+,d0        ; read first byte
+
 .ChkEnd:
-    cmpi.b  #$FF,d0         ; has the end of the code table description been reached?
-    bne.s   .NewPalIndex        ; if not, branch
-    rts
+		cmpi.b  #$FF,d0         ; has the end of the code table description been reached?
+		bne.s   .NewPalIndex        ; if not, branch
+		rts
 ; ---------------------------------------------------------------------------
- 
+
 .NewPalIndex:
-    move.w  d0,d7
- 
+		move.w  d0,d7
+
 .ItemLoop:
-    move.b  (a0)+,d0        ; read next byte
-    bmi.s   .ChkEnd         ; ~~
-    move.b  d0,d1
-    andi.w  #$F,d7          ; get palette index
-    andi.w  #$70,d1         ; get repeat count for palette index
-    or.w    d1,d7           ; combine the two
-    andi.w  #$F,d0          ; get the length of the code in bits
-    move.b  d0,d1
-    lsl.w   #8,d1
-    or.w    d1,d7           ; combine with palette index and repeat count to form code table entry
-    moveq   #8,d1
-    sub.w   d0,d1           ; is the code 8 bits long?
-    bne.s   .ItemShortCode      ; if not, a bit of extra processing is needed
-    move.b  (a0)+,d0        ; get code
-    add.w   d0,d0           ; each code gets a word-sized entry in the table
-    move.w  d7,(a1,d0.w)        ; store the entry for the code
-    bra.s   .ItemLoop       ; repeat
+		move.b  (a0)+,d0        ; read next byte
+		bmi.s   .ChkEnd         ; ~~
+		move.b  d0,d1
+		andi.w  #$F,d7          ; get palette index
+		andi.w  #$70,d1         ; get repeat count for palette index
+		or.w    d1,d7           ; combine the two
+		andi.w  #$F,d0          ; get the length of the code in bits
+		move.b  d0,d1
+		lsl.w   #8,d1
+		or.w    d1,d7           ; combine with palette index and repeat count to form code table entry
+		moveq   #8,d1
+		sub.w   d0,d1           ; is the code 8 bits long?
+		bne.s   .ItemShortCode      ; if not, a bit of extra processing is needed
+		move.b  (a0)+,d0        ; get code
+		add.w   d0,d0           ; each code gets a word-sized entry in the table
+		move.w  d7,(a1,d0.w)        ; store the entry for the code
+		bra.s   .ItemLoop       ; repeat
 ; ---------------------------------------------------------------------------
- 
+
 .ItemShortCode:
-    move.b  (a0)+,d0        ; get code
-    lsl.w   d1,d0           ; shift so that high bit is in bit position 7
-    add.w   d0,d0           ; get index into code table
-    moveq   #1,d5
-    lsl.w   d1,d5
-    subq.w  #1,d5           ; d5 = 2^d1 - 1
-    lea (a1,d0.w),a6        ; ~~
- 
+		move.b  (a0)+,d0        ; get code
+		lsl.w   d1,d0           ; shift so that high bit is in bit position 7
+		add.w   d0,d0           ; get index into code table
+		moveq   #1,d5
+		lsl.w   d1,d5
+		subq.w  #1,d5           ; d5 = 2^d1 - 1
+		lea (a1,d0.w),a6        ; ~~
+
 .ItemShortCodeLoop:
-    move.w  d7,(a6)+        ; ~~ store entry
-    dbf d5,.ItemShortCodeLoop   ; repeat for required number of entries
-    bra.s   .ItemLoop
+		move.w  d7,(a6)+        ; ~~ store entry
+		dbf d5,.ItemShortCodeLoop   ; repeat for required number of entries
+		bra.s   .ItemLoop
 ; End of function NemDec4
 
 ; ===============================================================
@@ -1396,17 +1391,17 @@ NemDec4:
 ;   d0  - length in tiles
 ; ---------------------------------------------------------------
 LoadUncArt:
-        move    #$2700,sr   ; disable interrupts
-        lea VDP_DATA.l,a6    ; get VDP data port
- 
+		move    #$2700,sr   ; disable interrupts
+		lea VDP_DATA.l,a6    ; get VDP data port
+
 LoadArt_Loop:
-		rept 8
-        move.l  (a0)+,(a6)  ; transfer 4 bytes
-		endr
- 
-        dbf d0, LoadArt_Loop; loop until d0 = 0
-        move    #$2300,sr   ; enable interrupts
-        rts
+	rept 8
+		move.l  (a0)+,(a6)  ; transfer 4 bytes
+	endr
+
+		dbf d0, LoadArt_Loop; loop until d0 = 0
+		move    #$2300,sr   ; enable interrupts
+		rts
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	load pattern load cues
@@ -1507,7 +1502,6 @@ RunPLC_RAM:				; XREF: Pal_FadeTo
 
 loc_160E:
 		andi.w	#$7FFF,d2
-		move.w	d2,($FFFFF6F8).w
 		bsr.w	NemDec4
 		move.b	(a0)+,d5
 		asl.w	#8,d5
@@ -1521,6 +1515,7 @@ loc_160E:
 		move.l	d0,($FFFFF6EC).w
 		move.l	d5,($FFFFF6F0).w
 		move.l	d6,($FFFFF6F4).w
+		move.w	d2,($FFFFF6F8).w
 
 locret_1640:
 		rts
@@ -1589,19 +1584,19 @@ locret_16DA:				; XREF: sub_1642
 ; ===========================================================================
 
 loc_16DC:				; XREF: sub_165E
-        lea ($FFFFF680).w,a0
-        lea 6(a0),a1
-        moveq   #$E,d0      ; do $F cues
- 
+		lea ($FFFFF680).w,a0
+		lea 6(a0),a1
+		moveq   #$E,d0      ; do $F cues
+
 loc_16E2:               ; XREF: sub_165E
-        move.l  (a1)+,(a0)+
-        move.w  (a1)+,(a0)+
-        dbf d0,loc_16E2
-       
-        moveq   #0,d0
-        move.l  d0,(a0)+    ; clear the last cue to avoid overcopying it
-        move.w  d0,(a0)+    ;
-        rts
+		move.l  (a1)+,(a0)+
+		move.w  (a1)+,(a0)+
+		dbf d0,loc_16E2
+
+		moveq   #0,d0
+		move.l  d0,(a0)+    ; clear the last cue to avoid overcopying it
+		move.w  d0,(a0)+    ;
+		rts
 ; End of function sub_165E
 
 ; ---------------------------------------------------------------------------
@@ -1971,370 +1966,370 @@ KosDec_ByteMap:
 ; ===========================================================================
 
 SaxmanDec:
-                move.w  (a0)+,d6
-                rol.w   #8,d6
+		move.w  (a0)+,d6
+		rol.w   #8,d6
 SaxDec2:
-                moveq   #0,d2
-                lea     (a1),a4
-                moveq   #0,d0
-                lea     byte_1AD4(pc),a2
-                move.w  #$F000,d3
-                moveq   #$F,d7
+		moveq   #0,d2
+		lea     (a1),a4
+		moveq   #0,d0
+		lea     byte_1AD4(pc),a2
+		move.w  #$F000,d3
+		moveq   #$F,d7
 
 loc_1A38:                               ; CODE XREF: ROM:00001A56?j
-                                        ; ROM:00001A7C?j ...
-                dbf     d2,loc_1A4A
-                moveq   #7,d2
-                subq.w  #1,d6
-                bne.s   loc_1A44
-                rts
+					; ROM:00001A7C?j ...
+		dbf     d2,loc_1A4A
+		moveq   #7,d2
+		subq.w  #1,d6
+		bne.s   loc_1A44
+		rts
 ; ---------------------------------------------------------------------------
 
 loc_1A44:                               ; CODE XREF: ROM:00001A40?j
-                move.b  (a0)+,d0
-                move.b  (a2,d0.w),d0
+		move.b  (a0)+,d0
+		move.b  (a2,d0.w),d0
 
 loc_1A4A:                               ; CODE XREF: ROM:loc_1A38?j
-                add.b   d0,d0
-                bcc.s   loc_1AA4
-                subq.w  #1,d6
-                bne.s   loc_1A54
-                rts
+		add.b   d0,d0
+		bcc.s   loc_1AA4
+		subq.w  #1,d6
+		bne.s   loc_1A54
+		rts
 ; ---------------------------------------------------------------------------
 
 loc_1A54:                               ; CODE XREF: ROM:00001A50?j
-                move.b  (a0)+,(a1)+
-                bra.s   loc_1A38
+		move.b  (a0)+,(a1)+
+		bra.s   loc_1A38
 ; ---------------------------------------------------------------------------
 
 loc_1A58:
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                move.b  (a5)+,(a1)+
-                bra.s   loc_1A38
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		move.b  (a5)+,(a1)+
+		bra.s   loc_1A38
 ; ---------------------------------------------------------------------------
 
 loc_1A7E:
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                move.b  d3,(a1)+
-                bra.s   loc_1A38
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		move.b  d3,(a1)+
+		bra.s   loc_1A38
 ; ---------------------------------------------------------------------------
 
 loc_1AA4:                               ; CODE XREF: ROM:00001A4C?j
-                subq.w  #2,d6
-                bhi.s   loc_1AAA
-                rts
+		subq.w  #2,d6
+		bhi.s   loc_1AAA
+		rts
 ; ---------------------------------------------------------------------------
 
 loc_1AAA:                               ; CODE XREF: ROM:00001AA6?j
-                move.b  (a0)+,d1
-                move.b  (a0)+,d5
-                move.b  d5,d4
-                not.w   d4
-                and.w   d7,d4
-                add.w   d4,d4
-                lsl.w   #4,d5
-                move.b  d1,d5
-                addi.w  #$12,d5
-                sub.w   a1,d5
-                add.w   a4,d5
-                or.w    d3,d5
-                lea     (a1,d5.w),a5
-                cmpa.l  a4,a5
-                bcs.s   loc_1AD0
-                jmp     loc_1A58(pc,d4.w)
+		move.b  (a0)+,d1
+		move.b  (a0)+,d5
+		move.b  d5,d4
+		not.w   d4
+		and.w   d7,d4
+		add.w   d4,d4
+		lsl.w   #4,d5
+		move.b  d1,d5
+		addi.w  #$12,d5
+		sub.w   a1,d5
+		add.w   a4,d5
+		or.w    d3,d5
+		lea     (a1,d5.w),a5
+		cmpa.l  a4,a5
+		bcs.s   loc_1AD0
+		jmp     loc_1A58(pc,d4.w)
 ; ---------------------------------------------------------------------------
 
 loc_1AD0:                               ; CODE XREF: ROM:00001ACA?j
-                jmp     loc_1A7E(pc,d4.w)
+		jmp     loc_1A7E(pc,d4.w)
 ; ---------------------------------------------------------------------------
 byte_1AD4:      dc.b 0                  ; DATA XREF: ROM:00001A2E?o
-                dc.b $80
-                dc.b $40 ; @
-                dc.b $C0
-                dc.b $20
-                dc.b $A0
-                dc.b $60 ; `
-                dc.b $E0
-                dc.b $10
-                dc.b $90
-                dc.b $50 ; P
-                dc.b $D0
-                dc.b $30 ; 0
-                dc.b $B0
-                dc.b $70 ; p
-                dc.b $F0
-                dc.b   8
-                dc.b $88
-                dc.b $48 ; H
-                dc.b $C8
-                dc.b $28 ; (
-                dc.b $A8
-                dc.b $68 ; h
-                dc.b $E8
-                dc.b $18
-                dc.b $98
-                dc.b $58 ; X
-                dc.b $D8
-                dc.b $38 ; 8
-                dc.b $B8
-                dc.b $78 ; x
-                dc.b $F8
-                dc.b   4
-                dc.b $84
-                dc.b $44 ; D
-                dc.b $C4
-                dc.b $24 ; $
-                dc.b $A4
-                dc.b $64 ; d
-                dc.b $E4
-                dc.b $14
-                dc.b $94
-                dc.b $54 ; T
-                dc.b $D4
-                dc.b $34 ; 4
-                dc.b $B4
-                dc.b $74 ; t
-                dc.b $F4
-                dc.b  $C
-                dc.b $8C
-                dc.b $4C ; L
-                dc.b $CC
-                dc.b $2C ; ,
-                dc.b $AC
-                dc.b $6C ; l
-                dc.b $EC
-                dc.b $1C
-                dc.b $9C
-                dc.b $5C ; \
-                dc.b $DC
-                dc.b $3C ; <
-                dc.b $BC
-                dc.b $7C ; |
-                dc.b $FC
-                dc.b   2
-                dc.b $82
-                dc.b $42 ; B
-                dc.b $C2
-                dc.b $22 ; "
-                dc.b $A2
-                dc.b $62 ; b
-                dc.b $E2
-                dc.b $12
-                dc.b $92
-                dc.b $52 ; R
-                dc.b $D2
-                dc.b $32 ; 2
-                dc.b $B2
-                dc.b $72 ; r
-                dc.b $F2
-                dc.b  $A
-                dc.b $8A
-                dc.b $4A ; J
-                dc.b $CA
-                dc.b $2A ; *
-                dc.b $AA
-                dc.b $6A ; j
-                dc.b $EA
-                dc.b $1A
-                dc.b $9A
-                dc.b $5A ; Z
-                dc.b $DA
-                dc.b $3A ; :
-                dc.b $BA
-                dc.b $7A ; z
-                dc.b $FA
-                dc.b   6
-                dc.b $86
-                dc.b $46 ; F
-                dc.b $C6
-                dc.b $26 ; &
-                dc.b $A6
-                dc.b $66 ; f
-                dc.b $E6
-                dc.b $16
-                dc.b $96
-                dc.b $56 ; V
-                dc.b $D6
-                dc.b $36 ; 6
-                dc.b $B6
-                dc.b $76 ; v
-                dc.b $F6
-                dc.b  $E
-                dc.b $8E
-                dc.b $4E ; N
-                dc.b $CE
-                dc.b $2E ; .
-                dc.b $AE
-                dc.b $6E ; n
-                dc.b $EE
-                dc.b $1E
-                dc.b $9E
-                dc.b $5E ; ^
-                dc.b $DE
-                dc.b $3E ; >
-                dc.b $BE
-                dc.b $7E ; ~
-                dc.b $FE
-                dc.b   1
-                dc.b $81
-                dc.b $41 ; A
-                dc.b $C1
-                dc.b $21 ; !
-                dc.b $A1
-                dc.b $61 ; a
-                dc.b $E1
-                dc.b $11
-                dc.b $91
-                dc.b $51 ; Q
-                dc.b $D1
-                dc.b $31 ; 1
-                dc.b $B1
-                dc.b $71 ; q
-                dc.b $F1
-                dc.b   9
-                dc.b $89
-                dc.b $49 ; I
-                dc.b $C9
-                dc.b $29 ; )
-                dc.b $A9
-                dc.b $69 ; i
-                dc.b $E9
-                dc.b $19
-                dc.b $99
-                dc.b $59 ; Y
-                dc.b $D9
-                dc.b $39 ; 9
-                dc.b $B9
-                dc.b $79 ; y
-                dc.b $F9
-                dc.b   5
-                dc.b $85
-                dc.b $45 ; E
-                dc.b $C5
-                dc.b $25 ; %
-                dc.b $A5
-                dc.b $65 ; e
-                dc.b $E5
-                dc.b $15
-                dc.b $95
-                dc.b $55 ; U
-                dc.b $D5
-                dc.b $35 ; 5
-                dc.b $B5
-                dc.b $75 ; u
-                dc.b $F5
-                dc.b  $D
-                dc.b $8D
-                dc.b $4D ; M
-                dc.b $CD
-                dc.b $2D ; -
-                dc.b $AD
-                dc.b $6D ; m
-                dc.b $ED
-                dc.b $1D
-                dc.b $9D
-                dc.b $5D ; ]
-                dc.b $DD
-                dc.b $3D ; =
-                dc.b $BD
-                dc.b $7D ; }
-                dc.b $FD
-                dc.b   3
-                dc.b $83
-                dc.b $43 ; C
-                dc.b $C3
-                dc.b $23 ; #
-                dc.b $A3
-                dc.b $63 ; c
-                dc.b $E3
-                dc.b $13
-                dc.b $93
-                dc.b $53 ; S
-                dc.b $D3
-                dc.b $33 ; 3
-                dc.b $B3
-                dc.b $73 ; s
-                dc.b $F3
-                dc.b  $B
-                dc.b $8B
-                dc.b $4B ; K
-                dc.b $CB
-                dc.b $2B ; +
-                dc.b $AB
-                dc.b $6B ; k
-                dc.b $EB
-                dc.b $1B
-                dc.b $9B
-                dc.b $5B ; [
-                dc.b $DB
-                dc.b $3B ; ;
-                dc.b $BB
-                dc.b $7B ; {
-                dc.b $FB
-                dc.b   7
-                dc.b $87
-                dc.b $47 ; G
-                dc.b $C7
-                dc.b $27 ; '
-                dc.b $A7
-                dc.b $67 ; g
-                dc.b $E7
-                dc.b $17
-                dc.b $97
-                dc.b $57 ; W
-                dc.b $D7
-                dc.b $37 ; 7
-                dc.b $B7
-                dc.b $77 ; w
-                dc.b $F7
-                dc.b  $F
-                dc.b $8F
-                dc.b $4F ; O
-                dc.b $CF
-                dc.b $2F ; /
-                dc.b $AF
-                dc.b $6F ; o
-                dc.b $EF
-                dc.b $1F
-                dc.b $9F
-                dc.b $5F ; _
-                dc.b $DF
-                dc.b $3F ; ?
-                dc.b $BF
-                dc.b $7F ; 
-                dc.b $FF
+		dc.b $80
+		dc.b $40 ; @
+		dc.b $C0
+		dc.b $20
+		dc.b $A0
+		dc.b $60 ; `
+		dc.b $E0
+		dc.b $10
+		dc.b $90
+		dc.b $50 ; P
+		dc.b $D0
+		dc.b $30 ; 0
+		dc.b $B0
+		dc.b $70 ; p
+		dc.b $F0
+		dc.b   8
+		dc.b $88
+		dc.b $48 ; H
+		dc.b $C8
+		dc.b $28 ; (
+		dc.b $A8
+		dc.b $68 ; h
+		dc.b $E8
+		dc.b $18
+		dc.b $98
+		dc.b $58 ; X
+		dc.b $D8
+		dc.b $38 ; 8
+		dc.b $B8
+		dc.b $78 ; x
+		dc.b $F8
+		dc.b   4
+		dc.b $84
+		dc.b $44 ; D
+		dc.b $C4
+		dc.b $24 ; $
+		dc.b $A4
+		dc.b $64 ; d
+		dc.b $E4
+		dc.b $14
+		dc.b $94
+		dc.b $54 ; T
+		dc.b $D4
+		dc.b $34 ; 4
+		dc.b $B4
+		dc.b $74 ; t
+		dc.b $F4
+		dc.b  $C
+		dc.b $8C
+		dc.b $4C ; L
+		dc.b $CC
+		dc.b $2C ; ,
+		dc.b $AC
+		dc.b $6C ; l
+		dc.b $EC
+		dc.b $1C
+		dc.b $9C
+		dc.b $5C ; \
+		dc.b $DC
+		dc.b $3C ; <
+		dc.b $BC
+		dc.b $7C ; |
+		dc.b $FC
+		dc.b   2
+		dc.b $82
+		dc.b $42 ; B
+		dc.b $C2
+		dc.b $22 ; "
+		dc.b $A2
+		dc.b $62 ; b
+		dc.b $E2
+		dc.b $12
+		dc.b $92
+		dc.b $52 ; R
+		dc.b $D2
+		dc.b $32 ; 2
+		dc.b $B2
+		dc.b $72 ; r
+		dc.b $F2
+		dc.b  $A
+		dc.b $8A
+		dc.b $4A ; J
+		dc.b $CA
+		dc.b $2A ; *
+		dc.b $AA
+		dc.b $6A ; j
+		dc.b $EA
+		dc.b $1A
+		dc.b $9A
+		dc.b $5A ; Z
+		dc.b $DA
+		dc.b $3A ; :
+		dc.b $BA
+		dc.b $7A ; z
+		dc.b $FA
+		dc.b   6
+		dc.b $86
+		dc.b $46 ; F
+		dc.b $C6
+		dc.b $26 ; &
+		dc.b $A6
+		dc.b $66 ; f
+		dc.b $E6
+		dc.b $16
+		dc.b $96
+		dc.b $56 ; V
+		dc.b $D6
+		dc.b $36 ; 6
+		dc.b $B6
+		dc.b $76 ; v
+		dc.b $F6
+		dc.b  $E
+		dc.b $8E
+		dc.b $4E ; N
+		dc.b $CE
+		dc.b $2E ; .
+		dc.b $AE
+		dc.b $6E ; n
+		dc.b $EE
+		dc.b $1E
+		dc.b $9E
+		dc.b $5E ; ^
+		dc.b $DE
+		dc.b $3E ; >
+		dc.b $BE
+		dc.b $7E ; ~
+		dc.b $FE
+		dc.b   1
+		dc.b $81
+		dc.b $41 ; A
+		dc.b $C1
+		dc.b $21 ; !
+		dc.b $A1
+		dc.b $61 ; a
+		dc.b $E1
+		dc.b $11
+		dc.b $91
+		dc.b $51 ; Q
+		dc.b $D1
+		dc.b $31 ; 1
+		dc.b $B1
+		dc.b $71 ; q
+		dc.b $F1
+		dc.b   9
+		dc.b $89
+		dc.b $49 ; I
+		dc.b $C9
+		dc.b $29 ; )
+		dc.b $A9
+		dc.b $69 ; i
+		dc.b $E9
+		dc.b $19
+		dc.b $99
+		dc.b $59 ; Y
+		dc.b $D9
+		dc.b $39 ; 9
+		dc.b $B9
+		dc.b $79 ; y
+		dc.b $F9
+		dc.b   5
+		dc.b $85
+		dc.b $45 ; E
+		dc.b $C5
+		dc.b $25 ; %
+		dc.b $A5
+		dc.b $65 ; e
+		dc.b $E5
+		dc.b $15
+		dc.b $95
+		dc.b $55 ; U
+		dc.b $D5
+		dc.b $35 ; 5
+		dc.b $B5
+		dc.b $75 ; u
+		dc.b $F5
+		dc.b  $D
+		dc.b $8D
+		dc.b $4D ; M
+		dc.b $CD
+		dc.b $2D ; -
+		dc.b $AD
+		dc.b $6D ; m
+		dc.b $ED
+		dc.b $1D
+		dc.b $9D
+		dc.b $5D ; ]
+		dc.b $DD
+		dc.b $3D ; =
+		dc.b $BD
+		dc.b $7D ; }
+		dc.b $FD
+		dc.b   3
+		dc.b $83
+		dc.b $43 ; C
+		dc.b $C3
+		dc.b $23 ; #
+		dc.b $A3
+		dc.b $63 ; c
+		dc.b $E3
+		dc.b $13
+		dc.b $93
+		dc.b $53 ; S
+		dc.b $D3
+		dc.b $33 ; 3
+		dc.b $B3
+		dc.b $73 ; s
+		dc.b $F3
+		dc.b  $B
+		dc.b $8B
+		dc.b $4B ; K
+		dc.b $CB
+		dc.b $2B ; +
+		dc.b $AB
+		dc.b $6B ; k
+		dc.b $EB
+		dc.b $1B
+		dc.b $9B
+		dc.b $5B ; [
+		dc.b $DB
+		dc.b $3B ; ;
+		dc.b $BB
+		dc.b $7B ; {
+		dc.b $FB
+		dc.b   7
+		dc.b $87
+		dc.b $47 ; G
+		dc.b $C7
+		dc.b $27 ; '
+		dc.b $A7
+		dc.b $67 ; g
+		dc.b $E7
+		dc.b $17
+		dc.b $97
+		dc.b $57 ; W
+		dc.b $D7
+		dc.b $37 ; 7
+		dc.b $B7
+		dc.b $77 ; w
+		dc.b $F7
+		dc.b  $F
+		dc.b $8F
+		dc.b $4F ; O
+		dc.b $CF
+		dc.b $2F ; /
+		dc.b $AF
+		dc.b $6F ; o
+		dc.b $EF
+		dc.b $1F
+		dc.b $9F
+		dc.b $5F ; _
+		dc.b $DF
+		dc.b $3F ; ?
+		dc.b $BF
+		dc.b $7F ; 
+		dc.b $FF
 				
 ;****************************************************************************
 ; DecompressSlz
@@ -2379,8 +2374,8 @@ SLZDec:
 
 	subq.w	#3, d7					; Length is offset by 3
 	sub.w	d4, d7					; Now that we know the string length,
-									  ; discount it from the amount of data
-									  ; to be read
+									; discount it from the amount of data
+									; to be read
 
 	addq.w	#3, d3					; Distance is offset by 3
 	neg.w	d3						; Make distance go backwards
@@ -2774,70 +2769,71 @@ Pal_SBZCyc9:	incbin	pallet\c_sbz_9.bin
 Pal_SBZCyc10:	incbin	pallet\c_sbz_10.bin
 
 PalCycle_SuperSonic:
-        tst.b   ($FFFFF65F).w
-        beq.s   loc_24DE
-        bmi.s   loc_24E0
-		cmpi.b	#1,($FFFFF65F).w
-		bgt.s	PalCycle_SuperSonic_revert	; branch for values greater than 1
-        subq.b  #1,($FFFFF65E).w 
-        bpl.s   loc_24DE
-        move.b  #3,($FFFFF65E).w
-        lea     (loc_2516), a0
-        move.w  ($FFFFF65C).w,d0
-        addq.w  #8,($FFFFF65C).w
-        cmpi.w  #$30,($FFFFF65C).w
-        bcs.s   loc_24D2
-        move.b  #$FF,($FFFFF65F).w
+	    tst.b   ($FFFFF65F).w
+	    beq.s   loc_24DE
+	    bmi.s   loc_24E0
+	    cmpi.b	#1,($FFFFF65F).w
+	    bgt.s	PalCycle_SuperSonic_revert	; branch for values greater than 1
+	    subq.b  #1,($FFFFF65E).w
+	    bpl.s   loc_24DE
+	    move.b  #3,($FFFFF65E).w
+	    lea     (loc_2516), a0
+	    move.w  ($FFFFF65C).w,d0
+	    addq.w  #8,($FFFFF65C).w
+	    cmpi.w  #$30,($FFFFF65C).w
+	    bcs.s   loc_24D2
+	    st.b  ($FFFFF65F).w
 loc_24D2:
-        lea     ($FFFFFB04).w,a1
-        move.l  0(a0,d0),(a1)+
-        move.l  4(a0,d0),(a1)
+	    lea     ($FFFFFB04).w,a1
+	    move.l  0(a0,d0),(a1)+
+	    move.l  4(a0,d0),(a1)
 loc_24DE:
-        rts
+	    rts
 loc_24E0:
-        subq.b  #1,($FFFFF65E).w
-        bpl.s   loc_24DE
-        move.b  #7,($FFFFF65E).w
-        lea     (loc_2516), a0
-        move.w  ($FFFFF65C).w,d0
-        addq.w  #8,($FFFFF65C).w
-        cmpi.w  #$78,($FFFFF65C).w
-        bcs.s   loc_2508
-        move.w  #$30,($FFFFF65C).w
+	    subq.b  #1,($FFFFF65E).w
+	    bpl.s   loc_24DE
+	    move.b  #7,($FFFFF65E).w
+	    lea     (loc_2516), a0
+	    move.w  ($FFFFF65C).w,d0
+	    addq.w  #8,($FFFFF65C).w
+	    cmpi.w  #$78,($FFFFF65C).w
+	    bcs.s   loc_2508
+	    move.w  #$30,($FFFFF65C).w
 loc_2508:
-        lea     ($FFFFFB04).w,a1
-        move.l  $00(a0,d0),(a1)+
-        move.l  $4(a0,d0),(a1)
-        rts
-		
-PalCycle_SuperSonic_revert:	; runs the fade in transition backwards
-	; run frame timer
-	subq.b	#1,($FFFFF65E).w
-	bpl.s	.return	; rts
-	move.b	#3,($FFFFF65E).w
+	    lea     ($FFFFFB04).w,a1
+	    move.l  $00(a0,d0),(a1)+
+	    move.l  $4(a0,d0),(a1)
+	    rts
 
-	; decrement palette frame and update Sonic's palette
-	lea	(loc_2516).l,a0
-	move.w	($FFFFF65C).w,d0
-	subq.w	#8,($FFFFF65C).w	; previous frame
-	bcc.s	.notfirstframe			; branch, if it isn't the first frame
-	clr.w	($FFFFF65C).w
-	clr.b	($FFFFF65F).w	; stop palette cycle
+PalCycle_SuperSonic_revert:	; runs the fade in transition backwards
+	    ; run frame timer
+	    subq.b	#1,($FFFFF65E).w
+	    bpl.s	.return	; rts
+	    move.b	#3,($FFFFF65E).w
+
+	    ; decrement palette frame and update Sonic's palette
+	    lea	(loc_2516).l,a0
+	    move.w	($FFFFF65C).w,d0
+	    subq.w	#8,($FFFFF65C).w	; previous frame
+	    bcc.s	.notfirstframe			; branch, if it isn't the first frame
+	    clr.w	($FFFFF65C).w
+	    clr.b	($FFFFF65F).w	; stop palette cycle
 .notfirstframe
-	lea	($FFFFFB04).w,a1
-	move.l	(a0,d0.w),(a1)+
-	move.l	4(a0,d0.w),(a1)
-.return	rts
+	    lea	($FFFFFB04).w,a1
+	    move.l	(a0,d0.w),(a1)+
+	    move.l	4(a0,d0.w),(a1)
+.return
+	    rts
 	
 loc_2516:              
-        dc.w    $A22, $C42, $E44, $E66, $844, $A64, $E66, $E88
-        dc.w    $666, $A86, $E88, $EAA, $488, $AA8, $EAA, $ECC
-        dc.w    $4AA, $ACA, $ECC, $EEE, $4CC, $AEC, $EEE, $EEE
-        dc.w    $4EE, $AEE, $EEE, $EEE, $6EE, $EEE, $EEE, $EEE
-        dc.w    $8EE, $EEE, $EEE, $EEE, $6EE, $CEE, $EEE, $EEE
-        dc.w    $4EE, $AEE, $EEE, $EEE, $2EE, $8EE, $CEE, $EEE
-        dc.w    $EE, $6EE, $AEE, $EEE, $EE, $4EE, $8EE, $CEE
-        dc.w    $EE, $6EE, $AEE, $EEE, $EE, $8EE, $CEE, $EEE
+	    dc.w    $A22, $C42, $E44, $E66, $844, $A64, $E66, $E88
+	    dc.w    $666, $A86, $E88, $EAA, $488, $AA8, $EAA, $ECC
+	    dc.w    $4AA, $ACA, $ECC, $EEE, $4CC, $AEC, $EEE, $EEE
+	    dc.w    $4EE, $AEE, $EEE, $EEE, $6EE, $EEE, $EEE, $EEE
+	    dc.w    $8EE, $EEE, $EEE, $EEE, $6EE, $CEE, $EEE, $EEE
+	    dc.w    $4EE, $AEE, $EEE, $EEE, $2EE, $8EE, $CEE, $EEE
+	    dc.w    $EE, $6EE, $AEE, $EEE, $EE, $4EE, $8EE, $CEE
+	    dc.w    $EE, $6EE, $AEE, $EEE, $EE, $8EE, $CEE, $EEE
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	fade out and fade in
@@ -2860,17 +2856,17 @@ Pal_FadeTo2:
 Pal_ToBlack:
 		move.w	d1,(a0)+
 		dbf	d0,Pal_ToBlack	; fill pallet with $000	(black)
-		moveq	#$0E,d4					; MJ: prepare maximum colour check
-		moveq	#$00,d6					; MJ: clear d6
+		moveq	#$E,d4					; MJ: prepare maximum colour check
+		moveq	#0,d6					; MJ: clear d6
 
 loc_1DCE:
 		bsr.w	RunPLC_RAM
 		move.b	#$12,($FFFFF62A).w
 		bsr.w	DelayProgram
-		bchg	#$00,d6					; MJ: change delay counter
+		bchg	#0,d6					; MJ: change delay counter
 		beq.s	loc_1DCE				; MJ: if null, delay a frame
 		bsr.s	Pal_FadeIn
-		subq.b	#$02,d4					; MJ: decrease colour check
+		subq.b	#2,d4					; MJ: decrease colour check
 		bne.s	loc_1DCE				; MJ: if it has not reached null, branch
 		move.b	#$12,($FFFFF62A).w			; MJ: wait for V-blank again (so colours transfer)
 		bra	DelayProgram				; MJ: ''
@@ -2951,14 +2947,14 @@ FCI_NoRed:
 
 Pal_FadeFrom:
 		move.w	#$3F,($FFFFF626).w
-		moveq	#$07,d4					; MJ: set repeat times
-		moveq	#$00,d6					; MJ: clear d6
+		moveq	#7,d4					; MJ: set repeat times
+		moveq	#0,d6					; MJ: clear d6
 
 loc_1E5C:
 		bsr.w	RunPLC_RAM
 		move.b	#$12,($FFFFF62A).w
 		bsr.w	DelayProgram
-		bchg	#$00,d6					; MJ: change delay counter
+		bchg	#0,d6					; MJ: change delay counter
 		beq.s	loc_1E5C				; MJ: if null, delay a frame
 		bsr.s	Pal_FadeOut
 		dbf	d4,loc_1E5C
@@ -3004,19 +3000,19 @@ Pal_DecColor:				; XREF: Pal_FadeOut
 		move.w	d5,d1					; MJ: copy to d1
 		move.b	d1,d2					; MJ: load green and red
 		move.b	d1,d3					; MJ: load red
-		andi.w	#$0E00,d1				; MJ: get only blue
+		andi.w	#$E00,d1				; MJ: get only blue
 		beq.s	FCO_NoBlue				; MJ: if blue is finished, branch
-		subi.w	#$0200,d5				; MJ: decrease blue
+		subi.w	#$200,d5				; MJ: decrease blue
 
 FCO_NoBlue:
-		andi.w	#$00E0,d2				; MJ: get only green (needs to be word)
+		andi.w	#$E0,d2				; MJ: get only green (needs to be word)
 		beq.s	FCO_NoGreen				; MJ: if green is finished, branch
 		subi.b	#$20,d5					; MJ: decrease green
 
 FCO_NoGreen:
-		andi.b	#$0E,d3					; MJ: get only red
+		andi.b	#$E,d3					; MJ: get only red
 		beq.s	FCO_NoRed				; MJ: if red is finished, branch
-		subq.b	#$02,d5					; MJ: decrease red
+		subq.b	#2,d5					; MJ: decrease red
 
 FCO_NoRed:
 		move.w	d5,(a0)+				; MJ: save new colour
@@ -3032,31 +3028,31 @@ FCO_NoRed:
 
 
 Pal_MakeWhite: ; XREF: SpecialStage
-        move.w #$3F,($FFFFF626).w
-        moveq #0,d0
-        lea ($FFFFFB00).w,a0
-        move.b ($FFFFF626).w,d0
-        adda.w d0,a0
-        move.w #$EEE,d1
-        move.b ($FFFFF627).w,d0
+	    move.w #$3F,($FFFFF626).w
+	    moveq #0,d0
+	    lea ($FFFFFB00).w,a0
+	    move.b ($FFFFF626).w,d0
+	    adda.w d0,a0
+	    move.w #$EEE,d1
+	    move.b ($FFFFF627).w,d0
 
 PalWhite_Loop:
-        move.w d1,(a0)+
-        dbf d0,PalWhite_Loop ; fill pallet with $000 (black)
-        moveq #$0E,d4 ; MJ: prepare maximum colour check
-        moveq #$00,d6 ; MJ: clear d6
+	    move.w d1,(a0)+
+	    dbf d0,PalWhite_Loop ; fill pallet with $000 (black)
+	    moveq #$0E,d4 ; MJ: prepare maximum colour check
+	    moveq #$00,d6 ; MJ: clear d6
 
 loc_1EF4:
-        bsr.w RunPLC_RAM
-        move.b #$12,($FFFFF62A).w
-        bsr.w DelayProgram
-        bchg #$00,d6 ; MJ: change delay counter
-        beq.s loc_1EF4 ; MJ: if null, delay a frame
-        bsr.s Pal_WhiteToBlack
-        subq.b #$02,d4 ; MJ: decrease colour check
-        bne.s loc_1EF4 ; MJ: if it has not reached null, branch
-        move.b #$12,($FFFFF62A).w ; MJ: wait for V-blank again (so colours transfer)
-        bra.w DelayProgram ; MJ: ''
+	    bsr.w RunPLC_RAM
+	    move.b #$12,($FFFFF62A).w
+	    bsr.w DelayProgram
+	    bchg #$00,d6 ; MJ: change delay counter
+	    beq.s loc_1EF4 ; MJ: if null, delay a frame
+	    bsr.s Pal_WhiteToBlack
+	    subq.b #$02,d4 ; MJ: decrease colour check
+	    bne.s loc_1EF4 ; MJ: if it has not reached null, branch
+	    move.b #$12,($FFFFF62A).w ; MJ: wait for V-blank again (so colours transfer)
+	    bra.w DelayProgram ; MJ: ''
 ; End of function Pal_MakeWhite
 
 
@@ -3064,33 +3060,33 @@ loc_1EF4:
 
 
 Pal_WhiteToBlack: ; XREF: Pal_MakeWhite
-        moveq #0,d0
-        lea ($FFFFFB00).w,a0
-        lea ($FFFFFB80).w,a1
-        move.b ($FFFFF626).w,d0
-        adda.w d0,a0
-        adda.w d0,a1
-        move.b ($FFFFF627).w,d0
+		moveq #0,d0
+		lea ($FFFFFB00).w,a0
+		lea ($FFFFFB80).w,a1
+		move.b ($FFFFF626).w,d0
+		adda.w d0,a0
+		adda.w d0,a1
+		move.b ($FFFFF627).w,d0
 
 loc_1F20:
-        bsr.s Pal_DecColor2
-        dbf d0,loc_1F20
-        cmpi.b #1,($FFFFFE10).w
-        bne.s locret_1F4A
-        moveq #0,d0
-        lea ($FFFFFA80).w,a0
-        lea ($FFFFFA00).w,a1
-        move.b ($FFFFF626).w,d0
-        adda.w d0,a0
-        adda.w d0,a1
-        move.b ($FFFFF627).w,d0
+		bsr.s Pal_DecColor2
+		dbf d0,loc_1F20
+		cmpi.b #1,($FFFFFE10).w
+		bne.s locret_1F4A
+		moveq #0,d0
+		lea ($FFFFFA80).w,a0
+		lea ($FFFFFA00).w,a1
+		move.b ($FFFFF626).w,d0
+		adda.w d0,a0
+		adda.w d0,a1
+		move.b ($FFFFF627).w,d0
 
 loc_1F44:
-        bsr.s Pal_DecColor2
-        dbf d0,loc_1F44
+		bsr.s	Pal_DecColor2
+		dbf	d0,loc_1F44
 
 locret_1F4A:
-        rts
+		rts
 ; End of function Pal_WhiteToBlack
 
 
@@ -3098,29 +3094,29 @@ locret_1F4A:
 
 
 Pal_DecColor2: ; XREF: Pal_WhiteToBlack
-        move.b (a1),d5 ; MJ: load blue
-        move.w (a1)+,d1 ; MJ: load green and red
-        move.b d1,d2 ; MJ: load red
-        lsr.b #$04,d1 ; MJ: get only green
-        andi.b #$0E,d2 ; MJ: get only red
-        move.w (a0),d3 ; MJ: load current colour in buffer
-        cmp.b d5,d4 ; MJ: is it time for blue to fade?
-        bls.s FCI2_NoBlue ; MJ: if not, branch
-        subi.w #$0200,d3 ; MJ: dencrease blue
+		move.b (a1),d5 ; MJ: load blue
+		move.w (a1)+,d1 ; MJ: load green and red
+		move.b d1,d2 ; MJ: load red
+		lsr.b #4,d1 ; MJ: get only green
+		andi.b #$E,d2 ; MJ: get only red
+		move.w (a0),d3 ; MJ: load current colour in buffer
+		cmp.b d5,d4 ; MJ: is it time for blue to fade?
+		bls.s FCI2_NoBlue ; MJ: if not, branch
+		subi.w #$200,d3 ; MJ: dencrease blue
 
 FCI2_NoBlue:
-        cmp.b d1,d4 ; MJ: is it time for green to fade?
-        bls.s FCI2_NoGreen ; MJ: if not, branch
-        subi.b #$20,d3 ; MJ: dencrease green
+		cmp.b d1,d4 ; MJ: is it time for green to fade?
+		bls.s FCI2_NoGreen ; MJ: if not, branch
+		subi.b #$20,d3 ; MJ: dencrease green
 
 FCI2_NoGreen:
-        cmp.b d2,d4 ; MJ: is it time for red to fade?
-        bls.s FCI2_NoRed ; MJ: if not, branch
-        subq.b #$02,d3 ; MJ: dencrease red
+		cmp.b d2,d4 ; MJ: is it time for red to fade?
+		bls.s FCI2_NoRed ; MJ: if not, branch
+		subq.b #2,d3 ; MJ: dencrease red
 
 FCI2_NoRed:
-        move.w d3,(a0)+ ; MJ: save colour
-        rts ; MJ: return
+		move.w d3,(a0)+ ; MJ: save colour
+		rts ; MJ: return
 ; End of function Pal_DecColor2
 
 ; ---------------------------------------------------------------------------
@@ -3131,19 +3127,19 @@ FCI2_NoRed:
 
 
 Pal_MakeFlash: ; XREF: SpecialStage
-        move.w #$3F,($FFFFF626).w
-        moveq #$07,d4 ; MJ: set repeat times
-        moveq #$00,d6 ; MJ: clear d6
+		move.w #$3F,($FFFFF626).w
+		moveq #7,d4 ; MJ: set repeat times
+		moveq #0,d6 ; MJ: clear d6
 
 loc_1F86:
-        bsr.w RunPLC_RAM
-        move.b #$12,($FFFFF62A).w
-        bsr.w DelayProgram
-        bchg #$00,d6 ; MJ: change delay counter
-        beq.s loc_1F86 ; MJ: if null, delay a frame
-        bsr.s Pal_ToWhite
-        dbf d4,loc_1F86
-        rts
+		bsr.w RunPLC_RAM
+		move.b #$12,($FFFFF62A).w
+		bsr.w DelayProgram
+		bchg #0,d6 ; MJ: change delay counter
+		beq.s loc_1F86 ; MJ: if null, delay a frame
+		bsr.s Pal_ToWhite
+		dbf d4,loc_1F86
+		rts
 ; End of function Pal_MakeFlash
 
 
@@ -3151,26 +3147,26 @@ loc_1F86:
 
 
 Pal_ToWhite: ; XREF: Pal_MakeFlash
-        moveq #0,d0
-        lea ($FFFFFB00).w,a0
-        move.b ($FFFFF626).w,d0
-        adda.w d0,a0
-        move.b ($FFFFF627).w,d0
+		moveq #0,d0
+		lea ($FFFFFB00).w,a0
+		move.b ($FFFFF626).w,d0
+		adda.w d0,a0
+		move.b ($FFFFF627).w,d0
 
 loc_1FAC:
-        bsr.s Pal_AddColor2
-        dbf d0,loc_1FAC
+		bsr.s Pal_AddColor2
+		dbf d0,loc_1FAC
 
-        moveq #0,d0
-        lea ($FFFFFA80).w,a0
-        move.b ($FFFFF626).w,d0
-        adda.w d0,a0
-        move.b ($FFFFF627).w,d0
+		moveq #0,d0
+		lea ($FFFFFA80).w,a0
+		move.b ($FFFFF626).w,d0
+		adda.w d0,a0
+		move.b ($FFFFF627).w,d0
 
 loc_1FC2:
-        bsr.s Pal_AddColor2
-        dbf d0,loc_1FC2
-        rts
+		bsr.s Pal_AddColor2
+		dbf d0,loc_1FC2
+		rts
 ; End of function Pal_ToWhite
 
 
@@ -3178,32 +3174,32 @@ loc_1FC2:
 
 
 Pal_AddColor2: ; XREF: Pal_ToWhite
-        move.w (a0),d5 ; MJ: load colour
-        cmpi.w #$EEE,d5
-        beq.s FCO2_NoRed
-        move.w d5,d1 ; MJ: copy to d1
-        move.b d1,d2 ; MJ: load green and red
-        move.b d1,d3 ; MJ: load red
-        andi.w #$0E00,d1 ; MJ: get only blue
-        cmpi.w #$0E00,d1
-        beq.s FCO2_NoBlue ; MJ: if blue is finished, branch
-        addi.w #$0200,d5 ; MJ: increase blue
+		move.w (a0),d5 ; MJ: load colour
+		cmpi.w #$EEE,d5
+		beq.s FCO2_NoRed
+		move.w d5,d1 ; MJ: copy to d1
+		move.b d1,d2 ; MJ: load green and red
+		move.b d1,d3 ; MJ: load red
+		andi.w #$E00,d1 ; MJ: get only blue
+		cmpi.w #$E00,d1
+		beq.s FCO2_NoBlue ; MJ: if blue is finished, branch
+		addi.w #$200,d5 ; MJ: increase blue
 
 FCO2_NoBlue:
-        andi.w #$00E0,d2 ; MJ: get only green (needs to be word)
-        cmpi.w #$00E0,d2
-        beq.s FCO2_NoGreen ; MJ: if green is finished, branch
-        addi.b #$20,d5 ; MJ: increase green
+		andi.w #$E0,d2 ; MJ: get only green (needs to be word)
+		cmpi.w #$E0,d2
+		beq.s FCO2_NoGreen ; MJ: if green is finished, branch
+		addi.b #$20,d5 ; MJ: increase green
 
 FCO2_NoGreen:
-        andi.b #$0E,d3 ; MJ: get only red
-        cmpi.b #$0E,d3
-        beq.s FCO2_NoRed ; MJ: if red is finished, branch
-        addq.b #$02,d5 ; MJ: increase red
+		andi.b #$E,d3 ; MJ: get only red
+		cmpi.b #$E,d3
+		beq.s FCO2_NoRed ; MJ: if red is finished, branch
+		addq.b #2,d5 ; MJ: increase red
 
 FCO2_NoRed:
-        move.w d5,(a0)+ ; MJ: save new colour
-        rts ; MJ: return
+		move.w d5,(a0)+ ; MJ: save new colour
+		rts ; MJ: return
 ; End of function Pal_AddColor2
 
 ; ---------------------------------------------------------------------------
@@ -3589,7 +3585,7 @@ SegaScreen:				; XREF: GameModeArray
 		bsr.w	Pal_MakeFlash
 		move.w	#-$A,($FFFFF632).w
 		clr.w	($FFFFF634).w
-        	clr.b  	($FFFFFFD0).w
+		clr.b  	($FFFFFFD0).w
 		clr.b	ChecksumStart.w			; clear start button check
 		clr.b	mComm.w				; make sure playback wont be marked as ended
 		move.w	($FFFFF60C).w,d0
@@ -3737,7 +3733,7 @@ SplashScreen:
 		jsr Pal_FadeTo          	; fade palette in
 		music 	mus_GotThroughAct
 		move.w  #3*60,($FFFFF614).w     ; set delay time (3 seconds on a 60hz system)
- 
+
 Splash_MainLoop:
 		move.b  #2,($FFFFF62A).w        ; set V-blank routine to run
 		jsr DelayProgram.w          	; wait for V-blank (decreases "Demo_Time_left")
@@ -3745,7 +3741,7 @@ Splash_MainLoop:
 		bmi.s   Splash_GotoTitle        ; if so, branch
 		tst.w   ($FFFFF614).w           ; has the delay time finished?
 		bne.s   Splash_MainLoop         ; if not, branch
- 
+
 Splash_GotoTitle:
 		move.b  #$04,($FFFFF600).w      ; set the screen mode to Title Screen
 		rts                     	; return
@@ -3769,13 +3765,10 @@ TitleScreen:				; XREF: GameModeArray
 		move.w	#$8B03,(a6)
 		move.w	#$8720,(a6)
 		clr.b	($FFFFF64E).w
+		clr.b  	($FFFFFFD0).w
 		bsr.w	ClearScreen
 		clrRAM	$FFFF0000,$FFFFEFFF	; fill RAM ($0000-$EFFF) with	$0
 		jsr	InitDMA
-
-		clr.b  	($FFFFFFD0).w
-		moveq	#$14,d0		; load Sonic's pallet
-		bsr.w	PalLoad1
 		bsr.w	Pal_FadeTo
 		lea	(Twim_TitleFg).l,a0 ; load title	screen patterns
 		move.w	#$4000,d0
@@ -3875,6 +3868,7 @@ loc_317C:
 ; ===========================================================================
 
 Title_ChkRegion:
+	if safe=0
 		tst.b	(ConsoleRegion).w	; check	if the machine is US or	Japanese
 		bpl.s	Title_RegionJ	; if Japanese, branch
 		lea	(LevelSelectCode_US).l,a0 ; load US code
@@ -3924,6 +3918,7 @@ Title_CountC:
 		addq.w	#1,($FFFFFFE6).w ; increment C button counter
 
 loc_3230:
+	endif
 		tst.w	($FFFFF614).w
 		beq.w	Demo
 		andi.b	#J_S,($FFFFF605).w ; check if Start is pressed
@@ -3984,12 +3979,12 @@ LevelSelect:
 		move.w	($FFFFFF82).w,d0
 		cmpi.w	#$14,d0		; have you selected item $14 (sound test)?
 		bne.s	LevSelLevCheckStart; if not, go to	Level/SS subroutine
-		cmpi.b	#J_S,($FFFFF605).w ; is	Start pressed?
-		beq.s	LevSelStartPress	; if true, branch
-		cmpi.b	#J_B,($FFFFF605).w ; is	B pressed?
-		beq.s	LevSelBCPress	; if not, branch
-		cmpi.b	#J_C,($FFFFF605).w ; is	C pressed?
-		beq.s	LevSelBCPress	; if not, branch
+		btst	#JbS,($FFFFF605).w ; is	Start pressed?
+		bne.s	LevSelStartPress	; if true, branch
+		btst	#JbB,($FFFFF605).w ; is	B pressed?
+		bne.s	LevSelBCPress	; if not, branch
+		btst	#JbC,($FFFFF605).w ; is	C pressed?
+		bne.s	LevSelBCPress	; if not, branch
 		bra.s	LevelSelect
 ; ===========================================================================
 LevSelLevCheckStart:				; XREF: LevelSelect
@@ -4249,8 +4244,8 @@ loc_3550:
 		lsr.b	#4,d0
 		bsr.s	LevSel_ChgSnd
 		move.b	d2,d0
-		bsr.s	LevSel_ChgSnd
-		rts
+		;bsr.s	LevSel_ChgSnd
+		;rts
 ; End of function LevSelTextLoad
 
 
@@ -4306,10 +4301,10 @@ MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ, mus_FZ
 ; ===========================================================================
 
 Level_ClrStuff:
-        clr.w	($FFFFFE20).w
-        clr.w	($FFFFFE22).w
-        jsr	(Hud_Base).l
-        bra.s	Level_ClrRam
+	clr.w	($FFFFFE20).w
+	clr.w	($FFFFFE22).w
+	jsr	(Hud_Base).l
+	bra.s	Level_ClrRam
 
 ; ---------------------------------------------------------------------------
 ; Level
@@ -4319,22 +4314,22 @@ Level:					; XREF: GameModeArray
 		bset	#7,($FFFFF600).w ; add $80 to screen mode (for pre level sequence)
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_37B6
-        tst.b	(Reload_level).w
-        bne.s	loc_37B6
+	tst.b	(Reload_level).w
+	bne.s	loc_37B6
 		command	mus_FadeOut	; fade out music
 
 loc_37B6:
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
 		clr.b  	($FFFFFFD0).w
-        tst.b	(Reload_level).w
-        bne.s	Level_ClrStuff
+	tst.b	(Reload_level).w
+	bne.s	Level_ClrStuff
 		tst.w	($FFFFFFF0).w
 		bmi.s	Level_ClrRam
-       	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-      	lea Art_TitleCard,a0        	; load title card patterns
-       	move.l 	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-	    jsr LoadUncArt          ; load uncompressed art
+		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+		lea Art_TitleCard,a0        	; load title card patterns
+		move.l 	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+		jsr LoadUncArt          ; load uncompressed art
 		moveq	#0,d0
 		move.b	($FFFFFE10).w,d0
 		lsl.w	#4,d0
@@ -4396,7 +4391,7 @@ Level_ClrVars3:
 		resetDMA
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
 		bne.s	Level_LoadPal	; if not, branch
-        move.l	#WaterTransition_LZ,($FFFFF610).w
+	move.l	#WaterTransition_LZ,($FFFFF610).w
 		move.w	#$8014,(a6)
 		moveq	#0,d0
 		move.b	($FFFFFE11).w,d0
@@ -4429,8 +4424,8 @@ Level_WaterPal:
 
 Level_GetBgm:
 		command	mus_OutWater	; get out of water(tm)
-        tst.b	(Reload_level).w
-        bne.s	loc_3946
+	tst.b	(Reload_level).w
+	bne.s	loc_3946
 		command	mus_Reset	; fade reset music
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_3946
@@ -4456,7 +4451,7 @@ Level_TtlCard:
 		jsr	Hud_Base
 
 loc_3946:
-        move.b	#1,(Reload_level).w
+	move.b	#1,(Reload_level).w
 		moveq	#3,d0
 		bsr.w	PalLoad1	; load Sonic's pallet line
 		bsr.w	LevelSizeLoad
@@ -4654,26 +4649,26 @@ loc_3BC8:
 		rts
 		
 WaterTransition_LZ:    dc.w $13    ; # of entries - 1
-        dc.w $62
-        dc.w $68
-        dc.w $7A
-        dc.w $6E
-        dc.w $74
-        dc.w $42
-        dc.w $48
-        dc.w $4E
-        dc.w $54
-        dc.w $5A
-        dc.w 2
-        dc.w 8
-        dc.w $E
-        dc.w $14
-        dc.w $1A
-        dc.w $34
-        dc.w $22
-        dc.w $3A
-        dc.w $2E
-        dc.w $28
+	dc.w $62
+	dc.w $68
+	dc.w $7A
+	dc.w $6E
+	dc.w $74
+	dc.w $42
+	dc.w $48
+	dc.w $4E
+	dc.w $54
+	dc.w $5A
+	dc.w 2
+	dc.w 8
+	dc.w $E
+	dc.w $14
+	dc.w $1A
+	dc.w $34
+	dc.w $22
+	dc.w $3A
+	dc.w $2E
+	dc.w $28
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Subroutine to	do special water effects in Labyrinth Zone
@@ -5558,10 +5553,10 @@ loc_47D4:
 		move.w	#$8407,(a6)
 		move.w	#$9001,(a6)
 		bsr.w	ClearScreen
-       	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Art_TitleCard,a0        ; load title card patterns
-        move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+		lea Art_TitleCard,a0        ; load title card patterns
+		move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+		jsr LoadUncArt          ; load uncompressed art
 		jsr	Hud_Base
 		resetDMA
 		music	mus_GotThroughSpecial; play end-of-level music
@@ -5917,10 +5912,10 @@ Cont_ClrObjRam:
 		move.l	d0,(a1)+
 		dbf	d1,Cont_ClrObjRam ; clear object RAM
 		clr.b  	($FFFFFFD0).w
-        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Art_TitleCard,a0        ; load title card patterns
-        move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+		lea Art_TitleCard,a0        ; load title card patterns
+		move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+		jsr LoadUncArt          ; load uncompressed art
 		move.l	#$60000002,(VDP_CTRL).l
 		lea	(Nem_ContSonic).l,a0 ; load Sonic patterns
 		bsr.w	NemDec
@@ -13531,11 +13526,11 @@ Obj37_Delete:				; XREF: Obj37_Index
 ; ---------------------------------------------------------------------------
 
 SpillRingData:  dc.w    $00C4,$FC14, $FF3C,$FC14, $0238,$FCB0, $FDC8,$FCB0 ; 4
-                dc.w    $0350,$FDC8, $FCB0,$FDC8, $03EC,$FF3C, $FC14,$FF3C ; 8
-                dc.w    $03EC,$00C4, $FC14,$00C4, $0350,$0238, $FCB0,$0238 ; 12
-                dc.w    $0238,$0350, $FDC8,$0350, $00C4,$03EC, $FF3C,$03EC ; 16
-                dc.w    $0062,$FE0A, $FF9E,$FE0A, $011C,$FE58, $FEE4,$FE58 ; 20
-                even
+		dc.w    $0350,$FDC8, $FCB0,$FDC8, $03EC,$FF3C, $FC14,$FF3C ; 8
+		dc.w    $03EC,$00C4, $FC14,$00C4, $0350,$0238, $FCB0,$0238 ; 12
+		dc.w    $0238,$0350, $FDC8,$0350, $00C4,$03EC, $FF3C,$03EC ; 16
+		dc.w    $0062,$FE0A, $FF9E,$FE0A, $011C,$FE58, $FEE4,$FE58 ; 20
+		even
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Object 4B - giant ring for entry to special stage
@@ -13922,11 +13917,11 @@ Obj2E_ChkEggman:			; XREF: Obj2E_Move
 		move.b	$1C(a0),d0
 		cmpi.b	#1,d0		; does monitor contain Eggman?
 		bne.s	Obj2E_ChkSonic
-        move.l	a0,a1 				; move a0 to a1, because Touch_ChkHurt wants the damaging object to be in a1
-        move.l	a0,-(sp) 			; push a0 on the stack, and decrement stack pointer
-        lea		($FFFFD000).w,a0 	; put Sonic's ram address in a0, because Touch_ChkHurt wants the damaged object to be in a0
-        jsr	Touch_ChkHurt 			; run the Touch_ChkHurt routine
-        move.l	(sp)+,a0 			; pop the previous value of a0 from the stack, and increment stack pointer
+	move.l	a0,a1 				; move a0 to a1, because Touch_ChkHurt wants the damaging object to be in a1
+	move.l	a0,-(sp) 			; push a0 on the stack, and decrement stack pointer
+	lea		($FFFFD000).w,a0 	; put Sonic's ram address in a0, because Touch_ChkHurt wants the damaged object to be in a0
+	jsr	Touch_ChkHurt 			; run the Touch_ChkHurt routine
+	move.l	(sp)+,a0 			; pop the previous value of a0 from the stack, and increment stack pointer
 		rts
 ; ===========================================================================
 
@@ -13945,7 +13940,7 @@ Obj2E_ChkShoes:
 		cmpi.b	#3,d0		; does monitor contain speed shoes?
 		bne.s	Obj2E_ChkShield
 		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
-        	bne.w 	Obj2E_NoMusic
+		bne.w 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
 		move.b	#$96,($FFFFD000+speedshoes_time).w ; time limit for the power-up
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
@@ -13967,7 +13962,7 @@ Obj2E_ChkInvinc:
 		cmpi.b	#5,d0		; does monitor contain invincibility?
 		bne.s	Obj2E_ChkRings
 		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
-       	 	bne.s 	Obj2E_NoMusic
+		bne.s 	Obj2E_NoMusic
 		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
 		move.b	#$96,($FFFFD000+invincibility_time).w ; time limit for the power-up
 		move.b	#$38,($FFFFD200).w ; load stars	object ($3801)
@@ -14010,7 +14005,7 @@ Obj2E_ChkS:
 		cmpi.b	#7,d0		; does monitor contain 'S'
 		bne.s	Obj2E_ChkGoggles
 		tst.b	($FFFFFE19).w 	; Prevent Sonic from getting (invincibility, shoes) if Super
-        	bne.w 	Obj2E_ChkEnd
+		bne.w 	Obj2E_ChkEnd
 		move.b	#1,($FFFFFE2C).w ; give	Sonic a	shield
 		move.b	#1,($FFFFFE2D).w ; make	Sonic invincible
 		move.b	#1,($FFFFFE2E).w ; speed up the	BG music
@@ -17741,15 +17736,15 @@ locret_D63E:
 
 ; ---------------------------------------------------------------------------
 Priority2InputAddrTable:
-   dc.w   $FFFFAC00
-   dc.w   $FFFFAC00+$80
-   dc.w   $FFFFAC00+$100
-   dc.w   $FFFFAC00+$180
-   dc.w   $FFFFAC00+$200
-   dc.w   $FFFFAC00+$280
-   dc.w   $FFFFAC00+$300
-   dc.w   $FFFFAC00+$380
-   even
+		dc.w   $FFFFAC00
+		dc.w   $FFFFAC00+$80
+		dc.w   $FFFFAC00+$100
+		dc.w   $FFFFAC00+$180
+		dc.w   $FFFFAC00+$200
+		dc.w   $FFFFAC00+$280
+		dc.w   $FFFFAC00+$300
+		dc.w   $FFFFAC00+$380
+		even
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	delete an object
@@ -17786,10 +17781,10 @@ BldSpr_ScrPos:	dc.l 0			; blank
 BuildSprites:				; XREF: TitleScreen; et al
 		lea	($FFFFF800).w,a2 ; set address for sprite table
 		moveq	#0,d5
-        	moveq	#0,d4
-        	tst.b	($FFFFFFD0).w ; this was level_started_flag
-        	beq.s	BuildSprites_2
-        	jsr	loc_40804.l
+		moveq	#0,d4
+		tst.b	($FFFFFFD0).w ; this was level_started_flag
+		beq.s	BuildSprites_2
+		jsr	loc_40804.l
 BuildSprites_2:
 		lea	($FFFFAC00).w,a4
 		moveq	#7,d7
@@ -19667,13 +19662,13 @@ GotThroughAct:				; XREF: Obj3E_EndAct
 		move.w	($FFFFF72A).w,($FFFFF728).w
 		clr.b	($FFFFFE2D).w	; disable invincibility
 		clr.b	($FFFFFE1E).w	; stop time counter
-        	clr.b	(Reload_level).w
+		clr.b	(Reload_level).w
 		move.b	#$3A,($FFFFD5C0).w
 		move.l  a0,-(sp)
-        move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-        lea Art_TitleCard,a0        ; load title card patterns
-        move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-        jsr LoadUncArt          ; load uncompressed art
+		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+		lea Art_TitleCard,a0        ; load title card patterns
+		move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+		jsr LoadUncArt          ; load uncompressed art
 		move.l  (sp)+,a0
 		move.b	#1,($FFFFF7D6).w
 		moveq	#0,d0
@@ -24829,9 +24824,9 @@ Obj01_ChkInvin:
 		beq.s	Obj01_ChkShoes	; if not, branch
 		tst.b	invincibility_time(a0)		; check	time remaining for invinciblity
 		beq.s	Obj01_ChkShoes	; if no	time remains, branch
-        	move.b	($FFFFFE05).w,d0
-       		andi.b	#6,d0
-        	bne.s	Obj01_ChkShoes
+		move.b	($FFFFFE05).w,d0
+		andi.b	#6,d0
+		bne.s	Obj01_ChkShoes
 		subq.b	#1,invincibility_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ChkShoes
 		tst.b	($FFFFF7AA).w
@@ -24842,8 +24837,8 @@ Obj01_ChkInvin:
 		move.b	d0,mQueue+1.w	; play normal music
 
 Obj01_RmvInvin:
-        	subq.b	#2,$24(a0)
-        	move.b	#$78,invulnerable_time(a0)
+		subq.b	#2,$24(a0)
+		move.b	#$78,invulnerable_time(a0)
 		clr.b	($FFFFFE2D).w ; cancel invincibility
 
 Obj01_ChkShoes:
@@ -24851,9 +24846,9 @@ Obj01_ChkShoes:
 		beq.s	Obj01_ExitChk	; if not, branch
 		tst.b	speedshoes_time(a0)		; check	time remaining
 		beq.s	Obj01_ExitChk
-        	move.b	($FFFFFE05).w,d0
-        	andi.b	#6,d0
-        	bne.s	Obj01_ExitChk
+		move.b	($FFFFFE05).w,d0
+		andi.b	#6,d0
+		bne.s	Obj01_ExitChk
 		subq.b	#1,speedshoes_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ExitChk
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
@@ -25569,17 +25564,17 @@ Sonic_Roll:				; XREF: Obj01_MdNormal
 		neg.w	d0
 
 loc_13392:
-        	btst	#JbD,($FFFFF602).w    	; is down being pressed?
-        	beq.s	Obj01_NoRoll    	; if not, branch
-        	move.b	($FFFFF602).w,d0
-        	andi.b	#J_L|J_R,d0    		; is left/right being pressed?
-        	bne.s	Obj01_NoRoll    	; if yes, branch
-        	move.w	$14(a0),d0
-        	bpl.s	.cont 			; If ground speed is positive, continue
-        	neg.w	d0 			; If not, negate it to get the absolute value
+		btst	#JbD,($FFFFF602).w    	; is down being pressed?
+		beq.s	Obj01_NoRoll    	; if not, branch
+		move.b	($FFFFF602).w,d0
+		andi.b	#J_L|J_R,d0    		; is left/right being pressed?
+		bne.s	Obj01_NoRoll    	; if yes, branch
+		move.w	$14(a0),d0
+		bpl.s	.cont 			; If ground speed is positive, continue
+		neg.w	d0 			; If not, negate it to get the absolute value
 .cont: 		cmpi.w	#$100,d0    		; is Sonic moving at $100 speed or faster?
-        	bhi.s	Obj01_ChkRoll    	; if yes, branch
-        	move.b	#8,$1C(a0)    		; use "ducking" animation
+		bhi.s	Obj01_ChkRoll    	; if yes, branch
+		move.b	#8,$1C(a0)    		; use "ducking" animation
 
 Obj01_NoRoll:
 		rts
@@ -25678,9 +25673,9 @@ loc_134AE:
 		move.w	d1,$12(a0)
 
 locret_134C2:
-        	move.b  ($FFFFF603).w,d0
-        	andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
-        	bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
+		move.b  ($FFFFF603).w,d0
+		andi.b  #J_B|J_C|J_A,d0 ; is a jump button pressed?
+		bne.s   Sonic_CheckGoSuper      ; if yes, test for turning into Super Sonic
 		rts
 ; ===========================================================================
 
@@ -26338,10 +26333,10 @@ GameOver:				; XREF: Obj01_Death
 
 loc_138C2:
 		music	mus_GameOver	; play game over music
-        	move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-	        lea Art_GameOver,a0        	; load patterns
-        	move.l 	#((Art_GameOver_End-Art_GameOver)/32)-1,d0; the art length, in tiles
-	        jmp LoadUncArt          ; load uncompressed art
+		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
+		lea Art_GameOver,a0        	; load patterns
+		move.l 	#((Art_GameOver_End-Art_GameOver)/32)-1,d0; the art length, in tiles
+		jmp LoadUncArt          ; load uncompressed art
 ; ===========================================================================
 
 loc_138D4:
@@ -26455,10 +26450,10 @@ locret_139C2:
 ; ---------------------------------------------------------------------------
 ; Sonic when he's drowning
 ; ---------------------------------------------------------------------------
- 
+
 ; ||||||||||||||| S	U B	R O	U T	I N	E |||||||||||||||||||||||||||||||||||||||
- 
- 
+
+
 Obj01_Drowned:
 		bsr.w   SpeedToPos		; Make Sonic able to move
 		addi.w  #$10,$12(a0)	; Apply gravity
@@ -26475,277 +26470,277 @@ Obj01_Drowned:
 
 
 Sonic_Animate: ; loc_10AB2:
-        lea     (Sonic_AnimateData), a1 ; loc_10CB4
-        moveq	#0,d0
-        move.b  $1C(a0), d0
-        cmp.b   $1D(a0), d0
-        beq.s   loc_10ADA
-        move.b  d0, $1D(a0)
-        move.b  #$00, $1B(a0)
-        move.b  #$00, $1E(a0)
-        bclr    #$5, $22(a0)
+	lea     (Sonic_AnimateData), a1 ; loc_10CB4
+	moveq	#0,d0
+	move.b  $1C(a0), d0
+	cmp.b   $1D(a0), d0
+	beq.s   loc_10ADA
+	move.b  d0, $1D(a0)
+	move.b  #$00, $1B(a0)
+	move.b  #$00, $1E(a0)
+	bclr    #$5, $22(a0)
 loc_10ADA:
-        add.w   d0,d0
-        adda.w  $00(a1,d0), a1
-        move.b  (a1), d0
-        bmi.s   loc_10B4A
-        move.b  $22(a0),d1
-        andi.b  #$1,d1
-        andi.b  #$FC, $1(a0)
-        or.b    d1, $1(a0)
-        subq.b  #$1, $1E(a0) 
-        bpl.s   loc_10B18
-        move.b  d0, $1E(a0)             
+	add.w   d0,d0
+	adda.w  $00(a1,d0), a1
+	move.b  (a1), d0
+	bmi.s   loc_10B4A
+	move.b  $22(a0),d1
+	andi.b  #$1,d1
+	andi.b  #$FC, $1(a0)
+	or.b    d1, $1(a0)
+	subq.b  #$1, $1E(a0)
+	bpl.s   loc_10B18
+	move.b  d0, $1E(a0)
 loc_10B00:        
-        moveq	#0,d1
-        move.b  $1B(a0),d1
-        move.b  $1(a1,d1), d0
-        cmpi.b  #$F0,d0
-        bcc.s   loc_10B1A
+	moveq	#0,d1
+	move.b  $1B(a0),d1
+	move.b  $1(a1,d1), d0
+	cmpi.b  #$F0,d0
+	bcc.s   loc_10B1A
 loc_10B10:        
-        move.b  d0, $1A(a0)
-        addq.b  #$1, $1B(a0)
+	move.b  d0, $1A(a0)
+	addq.b  #$1, $1B(a0)
 loc_10B18:        
-        rts
+	rts
 loc_10B1A:
-        addq.b  #$1,d0
-        bne.s   loc_10B2A
-        move.b  #$00, $1B(a0)
-        move.b  $1(a1), d0
-        bra.s   loc_10B10
+	addq.b  #$1,d0
+	bne.s   loc_10B2A
+	move.b  #$00, $1B(a0)
+	move.b  $1(a1), d0
+	bra.s   loc_10B10
 loc_10B2A:
-        addq.b  #$1,d0
-        bne.s   loc_10B3E
-        move.b  $2(a1,d1), d0
-        sub.b   d0, $1B(a0)
-        sub.b   d0,d1
-        move.b  $1(a1,d1), d0
-        bra.s   loc_10B10
+	addq.b  #$1,d0
+	bne.s   loc_10B3E
+	move.b  $2(a1,d1), d0
+	sub.b   d0, $1B(a0)
+	sub.b   d0,d1
+	move.b  $1(a1,d1), d0
+	bra.s   loc_10B10
 loc_10B3E:
-        addq.b  #$1,d0
-        bne.s   loc_10B48
-        move.b  $2(a1,d1), $1C(a0)
+	addq.b  #$1,d0
+	bne.s   loc_10B48
+	move.b  $2(a1,d1), $1C(a0)
 loc_10B48: 
-        rts            
+	rts
 loc_10B4A: 
-        subq.b  #$1, $1E(a0)
-        bpl.s   loc_10B18
-        addq.b  #$1,d0
-        bne     loc_10C3E
-        moveq	#0,d0
-        move.b  $27(a0), d0
-        bne     loc_10BD8
-        moveq	#0,d1
-        move.b  $26(a0), d0
-        move.b  $22(a0),d2
-        andi.b  #$1,d2
-        bne.s   loc_10B72
-        not.b  d0
+	subq.b  #$1, $1E(a0)
+	bpl.s   loc_10B18
+	addq.b  #$1,d0
+	bne     loc_10C3E
+	moveq	#0,d0
+	move.b  $27(a0), d0
+	bne     loc_10BD8
+	moveq	#0,d1
+	move.b  $26(a0), d0
+	move.b  $22(a0),d2
+	andi.b  #$1,d2
+	bne.s   loc_10B72
+	not.b  d0
 loc_10B72:
-        addi.b  #$10,d0
-        bpl.s   loc_10B7A
-        moveq   #$3,d1
+	addi.b  #$10,d0
+	bpl.s   loc_10B7A
+	moveq   #$3,d1
 loc_10B7A:
-        andi.b  #$FC, $1(a0)
-        eor.b   d1,d2
-        or.b    d2, $1(a0)
-        btst    #$5, $22(a0)
-        bne     loc_10C82
-        lsr.b   #$4,d0
-        andi.b  #$6,d0
-        move.w  $14(a0),d2
-        bpl.s   loc_10B9E
-        neg.w   d2
+	andi.b  #$FC, $1(a0)
+	eor.b   d1,d2
+	or.b    d2, $1(a0)
+	btst    #$5, $22(a0)
+	bne     loc_10C82
+	lsr.b   #$4,d0
+	andi.b  #$6,d0
+	move.w  $14(a0),d2
+	bpl.s   loc_10B9E
+	neg.w   d2
 loc_10B9E:
-        lea     (Sonic_Animate_Run), a1 ; loc_10D00
-        cmpi.w  #$600,d2
-        bcc.s   loc_10BB0
-        lea     (Sonic_Animate_Walk), a1 ; loc_10CF2
+	lea     (Sonic_Animate_Run), a1 ; loc_10D00
+	cmpi.w  #$600,d2
+	bcc.s   loc_10BB0
+	lea     (Sonic_Animate_Walk), a1 ; loc_10CF2
 loc_10BB0:
-        move.b  d0,d1
-        lsr.b   #$1,d1
-        add.b   d1,d0
-        add.b   d0,d0
-        add.b   d0,d0
-        move.b  d0,d3
-        neg.w   d2
-        addi.w  #$800,d2
-        bpl.s   loc_10BC6
-        moveq	#0,d2
+	move.b  d0,d1
+	lsr.b   #$1,d1
+	add.b   d1,d0
+	add.b   d0,d0
+	add.b   d0,d0
+	move.b  d0,d3
+	neg.w   d2
+	addi.w  #$800,d2
+	bpl.s   loc_10BC6
+	moveq	#0,d2
 loc_10BC6:
-        lsr.w   #$8,d2
-        lsr.w   #$1,d2
-        move.b  d2, $1E(a0)
-        bsr     loc_10B00
-        add.b   d3, $1A(a0)
-        rts    
+	lsr.w   #$8,d2
+	lsr.w   #$1,d2
+	move.b  d2, $1E(a0)
+	bsr     loc_10B00
+	add.b   d3, $1A(a0)
+	rts
 loc_10BD8:
-        move.b  $27(a0), d0
-        moveq	#0,d1
-        move.b  $22(a0),d2
-        andi.b  #$1,d2
-        bne.s   loc_10C06
-        andi.b  #$FC, $1(a0)
-        addi.b  #$B,d0
-        divu.w  #$16,d0
-        addi.b  #$9B,d0
-        move.b  d0, $1A(a0)
-        move.b  #$00, $1E(a0)
-        rts
+	move.b  $27(a0), d0
+	moveq	#0,d1
+	move.b  $22(a0),d2
+	andi.b  #$1,d2
+	bne.s   loc_10C06
+	andi.b  #$FC, $1(a0)
+	addi.b  #$B,d0
+	divu.w  #$16,d0
+	addi.b  #$9B,d0
+	move.b  d0, $1A(a0)
+	move.b  #$00, $1E(a0)
+	rts
 loc_10C06:
-        andi.b  #$FC, $1(a0)
-        tst.b   $29(a0)
-        beq.s   loc_10C1E
-        ori.b   #$1, $1(a0)
-        addi.b  #$B,d0
-        bra.s   loc_10C2A
+	andi.b  #$FC, $1(a0)
+	tst.b   $29(a0)
+	beq.s   loc_10C1E
+	ori.b   #$1, $1(a0)
+	addi.b  #$B,d0
+	bra.s   loc_10C2A
 loc_10C1E:
-        ori.b   #$3, $1(a0)
-        neg.b   d0
-        addi.b  #$8F,d0
+	ori.b   #$3, $1(a0)
+	neg.b   d0
+	addi.b  #$8F,d0
 loc_10C2A:
-        divu.w  #$16,d0
-        addi.b  #$9B,d0
-        move.b  d0, $1A(a0)
-        move.b  #$00, $1E(a0)
-        rts 
+	divu.w  #$16,d0
+	addi.b  #$9B,d0
+	move.b  d0, $1A(a0)
+	move.b  #$00, $1E(a0)
+	rts
 loc_10C3E:
-        addq.b  #$1,d0
-        bne.s   loc_10C82
-        move.w  $14(a0),d2
-        bpl.s   loc_10C4A
-        neg.w   d2
+	addq.b  #$1,d0
+	bne.s   loc_10C82
+	move.w  $14(a0),d2
+	bpl.s   loc_10C4A
+	neg.w   d2
 loc_10C4A:
-        lea     (Sonic_Animate_Roll2), a1 ; loc_10D18
-        cmpi.w  #$600,d2
-        bcc.s   loc_10C5C
-        lea     (Sonic_Animate_Roll), a1 ; loc_10D0E
+	lea     (Sonic_Animate_Roll2), a1 ; loc_10D18
+	cmpi.w  #$600,d2
+	bcc.s   loc_10C5C
+	lea     (Sonic_Animate_Roll), a1 ; loc_10D0E
 loc_10C5C:
-        neg.w   d2
-        addi.w  #$400,d2
-        bpl.s   loc_10C66
-        moveq	#0,d2
+	neg.w   d2
+	addi.w  #$400,d2
+	bpl.s   loc_10C66
+	moveq	#0,d2
 loc_10C66:
-        lsr.w   #$8,d2
-        move.b  d2, $1E(a0)
-        move.b  $22(a0),d1
-        andi.b  #$1,d1
-        andi.b  #$FC, $1(a0)
-        or.b    d1, $1(a0)
-        bra     loc_10B00
+	lsr.w   #$8,d2
+	move.b  d2, $1E(a0)
+	move.b  $22(a0),d1
+	andi.b  #$1,d1
+	andi.b  #$FC, $1(a0)
+	or.b    d1, $1(a0)
+	bra     loc_10B00
 loc_10C82:        
-        move.w  $14(a0),d2
-        bmi.s   loc_10C8A
-        neg.w   d2
+	move.w  $14(a0),d2
+	bmi.s   loc_10C8A
+	neg.w   d2
 loc_10C8A:
-        addi.w  #$800,d2
-        bpl.s   loc_10C92
-        moveq	#0,d2
+	addi.w  #$800,d2
+	bpl.s   loc_10C92
+	moveq	#0,d2
 loc_10C92:
-        lsr.w   #$6,d2
-        move.b  d2, $1E(a0)
-        lea     (Sonic_Animate_Push), a1 ; loc_10D22
-        move.b  $22(a0),d1
-        andi.b  #$1,d1
-        andi.b  #$FC, $1(a0)
-        or.b    d1, $1(a0)
-        bra     loc_10B00                 
+	lsr.w   #$6,d2
+	move.b  d2, $1E(a0)
+	lea     (Sonic_Animate_Push), a1 ; loc_10D22
+	move.b  $22(a0),d1
+	andi.b  #$1,d1
+	andi.b  #$FC, $1(a0)
+	or.b    d1, $1(a0)
+	bra     loc_10B00
 Sonic_AnimateData: ; loc_10CB4:
-        dc.w    Sonic_Animate_Walk-Sonic_AnimateData        ; loc_10CF2
-        dc.w    Sonic_Animate_Run-Sonic_AnimateData         ; loc_10D00
-        dc.w    Sonic_Animate_Roll-Sonic_AnimateData        ; loc_10D0E
-        dc.w    Sonic_Animate_Roll2-Sonic_AnimateData       ; loc_10D18 
-        dc.w    Sonic_Animate_Push-Sonic_AnimateData        ; loc_10D22
-        dc.w    Sonic_Animate_Wait-Sonic_AnimateData        ; loc_10D30
-        dc.w    Sonic_Animate_Balance-Sonic_AnimateData     ; loc_10D59
-        dc.w    Sonic_Animate_LookUp-Sonic_AnimateData      ; loc_10D5D
-        dc.w    Sonic_Animate_Duck-Sonic_AnimateData        ; loc_10D62
-        dc.w    Sonic_Animate_Spindash-Sonic_AnimateData    ; loc_10D67
-        dc.w    Sonic_Animate_WallRecoil1-Sonic_AnimateData ; loc_10D74
-        dc.w    Sonic_Animate_WallRecoil2-Sonic_AnimateData ; loc_10D77
-        dc.w    Sonic_Animate_0x0C-Sonic_AnimateData        ; loc_10D7D
-        dc.w    Sonic_Animate_Stop-Sonic_AnimateData        ; loc_10D81
-        dc.w    Sonic_Animate_Float1-Sonic_AnimateData      ; loc_10D8C
-        dc.w    Sonic_Animate_Float2-Sonic_AnimateData      ; loc_10D90
-        dc.w    Sonic_Animate_0x10-Sonic_AnimateData        ; loc_10D97
-        dc.w    Sonic_Animate_S1LzHang-Sonic_AnimateData    ; loc_10D9B
-        dc.w    Sonic_Animate_Unused_0x12-Sonic_AnimateData ; loc_10D9F
-        dc.w    Sonic_Animate_Unused_0x13-Sonic_AnimateData ; loc_10DA5
-        dc.w    Sonic_Animate_Unused_0x14-Sonic_AnimateData ; loc_10DAA
-        dc.w    Sonic_Animate_Bubble-Sonic_AnimateData      ; loc_10DAD
-        dc.w    Sonic_Animate_Death1-Sonic_AnimateData      ; loc_10DB4
-        dc.w    Sonic_Animate_Drown-Sonic_AnimateData       ; loc_10DB7
-        dc.w    Sonic_Animate_Death2-Sonic_AnimateData      ; loc_10DBA
-        dc.w    Sonic_Animate_Unused_0x19-Sonic_AnimateData ; loc_10DBD
-        dc.w    Sonic_Animate_Hurt-Sonic_AnimateData        ; loc_10DC6
-        dc.w    Sonic_Animate_S1LzSlide-Sonic_AnimateData   ; loc_10DC9
-        dc.w    Sonic_Animate_0x1C-Sonic_AnimateData        ; loc_10DCD
-        dc.w    Sonic_Animate_Float3-Sonic_AnimateData      ; loc_10DD1
-        dc.w    Sonic_Animate_0x1E-Sonic_AnimateData        ; loc_10DD8
+	dc.w    Sonic_Animate_Walk-Sonic_AnimateData        ; loc_10CF2
+	dc.w    Sonic_Animate_Run-Sonic_AnimateData         ; loc_10D00
+	dc.w    Sonic_Animate_Roll-Sonic_AnimateData        ; loc_10D0E
+	dc.w    Sonic_Animate_Roll2-Sonic_AnimateData       ; loc_10D18
+	dc.w    Sonic_Animate_Push-Sonic_AnimateData        ; loc_10D22
+	dc.w    Sonic_Animate_Wait-Sonic_AnimateData        ; loc_10D30
+	dc.w    Sonic_Animate_Balance-Sonic_AnimateData     ; loc_10D59
+	dc.w    Sonic_Animate_LookUp-Sonic_AnimateData      ; loc_10D5D
+	dc.w    Sonic_Animate_Duck-Sonic_AnimateData        ; loc_10D62
+	dc.w    Sonic_Animate_Spindash-Sonic_AnimateData    ; loc_10D67
+	dc.w    Sonic_Animate_WallRecoil1-Sonic_AnimateData ; loc_10D74
+	dc.w    Sonic_Animate_WallRecoil2-Sonic_AnimateData ; loc_10D77
+	dc.w    Sonic_Animate_0x0C-Sonic_AnimateData        ; loc_10D7D
+	dc.w    Sonic_Animate_Stop-Sonic_AnimateData        ; loc_10D81
+	dc.w    Sonic_Animate_Float1-Sonic_AnimateData      ; loc_10D8C
+	dc.w    Sonic_Animate_Float2-Sonic_AnimateData      ; loc_10D90
+	dc.w    Sonic_Animate_0x10-Sonic_AnimateData        ; loc_10D97
+	dc.w    Sonic_Animate_S1LzHang-Sonic_AnimateData    ; loc_10D9B
+	dc.w    Sonic_Animate_Unused_0x12-Sonic_AnimateData ; loc_10D9F
+	dc.w    Sonic_Animate_Unused_0x13-Sonic_AnimateData ; loc_10DA5
+	dc.w    Sonic_Animate_Unused_0x14-Sonic_AnimateData ; loc_10DAA
+	dc.w    Sonic_Animate_Bubble-Sonic_AnimateData      ; loc_10DAD
+	dc.w    Sonic_Animate_Death1-Sonic_AnimateData      ; loc_10DB4
+	dc.w    Sonic_Animate_Drown-Sonic_AnimateData       ; loc_10DB7
+	dc.w    Sonic_Animate_Death2-Sonic_AnimateData      ; loc_10DBA
+	dc.w    Sonic_Animate_Unused_0x19-Sonic_AnimateData ; loc_10DBD
+	dc.w    Sonic_Animate_Hurt-Sonic_AnimateData        ; loc_10DC6
+	dc.w    Sonic_Animate_S1LzSlide-Sonic_AnimateData   ; loc_10DC9
+	dc.w    Sonic_Animate_0x1C-Sonic_AnimateData        ; loc_10DCD
+	dc.w    Sonic_Animate_Float3-Sonic_AnimateData      ; loc_10DD1
+	dc.w    Sonic_Animate_0x1E-Sonic_AnimateData        ; loc_10DD8
 Sonic_Animate_Walk: ; loc_10CF2:
-        dc.b    $FF, $10, $11, $12, $13, $14, $15, $16, $17, $C, $D, $E, $F, $FF
+	dc.b    $FF, $10, $11, $12, $13, $14, $15, $16, $17, $C, $D, $E, $F, $FF
 Sonic_Animate_Run: ; loc_10D00:
-        dc.b    $FF, $3C, $3D, $3E, $3F, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+	dc.b    $FF, $3C, $3D, $3E, $3F, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 Sonic_Animate_Roll: ; loc_10D0E:
-        dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
+	dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
 Sonic_Animate_Roll2: ; loc_10D18:
-        dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
+	dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
 Sonic_Animate_Push: ; loc_10D22:
-        dc.b    $FD, $77, $78, $79, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
+	dc.b    $FD, $77, $78, $79, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
 Sonic_Animate_Wait: ; loc_10D30:        
-        dc.b    $7, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1
-        dc.b    $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $2
-        dc.b    $3, $3, $3, $4, $4, $5, $5, $FE, $4
+	dc.b    $7, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1
+	dc.b    $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $2
+	dc.b    $3, $3, $3, $4, $4, $5, $5, $FE, $4
 Sonic_Animate_Balance: ; loc_10D59:         
-        dc.b    $7, $89, $8A, $FF
+	dc.b    $7, $89, $8A, $FF
 Sonic_Animate_LookUp: ; loc_10D5D:        
-        dc.b    $5, $6, $7, $FE, $1
+	dc.b    $5, $6, $7, $FE, $1
 Sonic_Animate_Duck: ; loc_10D62:          
-        dc.b    $5, $7F, $80, $FE, $1
+	dc.b    $5, $7F, $80, $FE, $1
 Sonic_Animate_Spindash: ; loc_10D67:        
-        dc.b    $00, $71, $72, $71, $73, $71, $74, $71, $75, $71, $76, $71, $FF 
+	dc.b    $00, $71, $72, $71, $73, $71, $74, $71, $75, $71, $76, $71, $FF
 Sonic_Animate_WallRecoil1: ; loc_10D74:        
-        dc.b    $3F, $82, $FF
+	dc.b    $3F, $82, $FF
 Sonic_Animate_WallRecoil2: ; loc_10D77:
-        dc.b    $7, $8, $8, $9, $FD, $5
+	dc.b    $7, $8, $8, $9, $FD, $5
 Sonic_Animate_0x0C: ; loc_10D7D:        
-        dc.b    $7, $9, $FD, $5
+	dc.b    $7, $9, $FD, $5
 Sonic_Animate_Stop: ; loc_10D81:         
-        dc.b    $3, $81, $82, $83, $84, $85, $86, $87, $88, $FE, $2
+	dc.b    $3, $81, $82, $83, $84, $85, $86, $87, $88, $FE, $2
 Sonic_Animate_Float1: ; loc_10D8C:         
-        dc.b    $7, $94, $96, $FF
+	dc.b    $7, $94, $96, $FF
 Sonic_Animate_Float2: ; loc_10D90:        
-        dc.b    $7, $91, $92, $93, $94, $95, $FF
+	dc.b    $7, $91, $92, $93, $94, $95, $FF
 Sonic_Animate_0x10: ; loc_10D97:        
-        dc.b    $2F, $7E, $FD, $00
+	dc.b    $2F, $7E, $FD, $00
 Sonic_Animate_S1LzHang: ; loc_10D9B:        
-        dc.b    $5, $8F, $90, $FF
+	dc.b    $5, $8F, $90, $FF
 Sonic_Animate_Unused_0x12: ; loc_10D9F:        
-        dc.b    $F, $43, $43, $43, $FE, $1
+	dc.b    $F, $43, $43, $43, $FE, $1
 Sonic_Animate_Unused_0x13: ; loc_10DA5:        
-        dc.b    $F, $43, $44, $FE, $1
+	dc.b    $F, $43, $44, $FE, $1
 Sonic_Animate_Unused_0x14: ; loc_10DAA:        
-        dc.b    $3F, $49, $FF
+	dc.b    $3F, $49, $FF
 Sonic_Animate_Bubble: ; loc_10DAD:         
-        dc.b    $B, $97, $97, $12, $13, $FD, $00
+	dc.b    $B, $97, $97, $12, $13, $FD, $00
 Sonic_Animate_Death1: ; loc_10DB4:         
-        dc.b    $20, $9A, $FF
+	dc.b    $20, $9A, $FF
 Sonic_Animate_Drown: ; loc_10DB7:        
-        dc.b    $20, $99, $FF
+	dc.b    $20, $99, $FF
 Sonic_Animate_Death2: ; loc_10DBA:         
-        dc.b    $20, $98, $FF
+	dc.b    $20, $98, $FF
 Sonic_Animate_Unused_0x19: ; loc_10DBD: 
-        dc.b    $3, $4E, $4F, $50, $51, $52, $00, $FE, $1
+	dc.b    $3, $4E, $4F, $50, $51, $52, $00, $FE, $1
 Sonic_Animate_Hurt: ; loc_10DC6:        
-        dc.b    $40, $8D, $FF
+	dc.b    $40, $8D, $FF
 Sonic_Animate_S1LzSlide: ; loc_10DC9:          
-        dc.b    $9, $8D, $8E, $FF
+	dc.b    $9, $8D, $8E, $FF
 Sonic_Animate_0x1C: ; loc_10DCD:        
-        dc.b    $77, $00, $FD, $00
+	dc.b    $77, $00, $FD, $00
 Sonic_Animate_Float3: ; loc_10DD1:        
-        dc.b    $3, $91, $92, $93, $94, $95, $FF
+	dc.b    $3, $91, $92, $93, $94, $95, $FF
 Sonic_Animate_0x1E: ; loc_10DD8:        
-        dc.b    $3, $3C, $FD, $00
+	dc.b    $3, $3C, $FD, $00
 
 ; ---------------------------------------------------------------------------
 ; Sonic	pattern	loading	subroutine
@@ -30972,11 +30967,11 @@ loc_16F76:
 		moveq	#0,d0
 		move.b	$23(a0),d0
 		bset	#0,2(a2,d0.w)
-    	cmpi.b    #6,($FFFFFE57).w ; DeltaWooloo: from here and below is what we'll be focusing on
-    	beq.s    locret_16F90
-    	cmpi.w    #$32,($FFFFFE20).w
-    	bcs.s    locret_16F90
-    	bsr.w    Obj79_MakeSpecialStars
+	cmpi.b    #6,($FFFFFE57).w ; DeltaWooloo: from here and below is what we'll be focusing on
+	beq.s    locret_16F90
+	cmpi.w    #$32,($FFFFFE20).w
+	bcs.s    locret_16F90
+	bsr.w    Obj79_MakeSpecialStars
 
 locret_16F90:
 		rts
@@ -31114,9 +31109,9 @@ return_1F534:
 ; ===========================================================================
 ; loc_1F536:
 Obj79_Star:
-        tst.b    $21(a0)
-        beq.s    loc_1F554
-        move.b    #$10,($FFFFF600).w
+	tst.b    $21(a0)
+	beq.s    loc_1F554
+	move.b    #$10,($FFFFF600).w
 loc_1F553
     clr.b    $21(a0)
 
@@ -37335,7 +37330,7 @@ Obj09_JumpHeight:			; XREF: Obj09_InAir
 		asr.l	#8,d0
 		move.w	d0,$12(a0)		; set the speed to the jump release speed
 		bclr	#7,$22(a0)		; clear "Sonic has jumped" flag
- 
+
 locret_1BBB4:
 		rts
 		
@@ -39041,7 +39036,7 @@ Debug_Index:	dc.w Debug_Main-Debug_Index
 
 Debug_Main:				; XREF: Debug_Index
 		clr.l   ($FFFFD000+$10).w ; Clear X/Y Speed
-        	clr.w   ($FFFFD000+$14).w ; Clear Inertia
+		clr.w   ($FFFFD000+$14).w ; Clear Inertia
 		addq.b	#2,($FFFFFE08).w
 		move.w	($FFFFF72C).w,($FFFFFEF0).w ; buffer level x-boundary
 		move.w	($FFFFF726).w,($FFFFFEF2).w ; buffer level y-boundary
@@ -39071,7 +39066,7 @@ Debug_UseList:
 		move.w	(a2)+,d6
 		cmp.b	($FFFFFE06).w,d6
 		bhi.s	loc_1CF9E
-		move.b	#0,($FFFFFE06).w
+		clr.b	($FFFFFE06).w
 
 loc_1CF9E:
 		bsr.w	Debug_ShowItem
@@ -39116,7 +39111,7 @@ loc_1D000:
 		move.b	#1,($FFFFFE0A).w
 		addq.b	#1,($FFFFFE0B).w
 		bne.s	loc_1D018
-		move.b	#-1,($FFFFFE0B).w
+		st.b	($FFFFFE0B).w
 
 loc_1D018:
 		move.b	($FFFFF604).w,d4
@@ -39176,7 +39171,7 @@ Debug_NextItem:
 		addq.b	#1,($FFFFFE06).w ; go forwards 1 item
 		cmp.b	($FFFFFE06).w,d6
 		bhi.s	Debug_NoLoop
-		move.b	#0,($FFFFFE06).w ; loop	back to	first item
+		clr.b	($FFFFFE06).w ; loop	back to	first item
 
 Debug_NoLoop:
 		bra.w	Debug_ShowItem
@@ -39206,8 +39201,8 @@ Debug_Exit:
 		moveq	#0,d0
 		move.w	d0,($FFFFFE08).w ; deactivate debug mode
 		bsr.w 	Hud_Base
-        	move.b 	#1,($FFFFFE1D).w
-        	move.b 	#1,($FFFFFE1F).w
+		move.b 	#1,($FFFFFE1D).w
+		move.b 	#1,($FFFFFE1F).w
 		move.l	#Map_Sonic,($FFFFD004).w
 		move.w	#$780,($FFFFD002).w
 		move.b	d0,($FFFFD01C).w
@@ -39836,6 +39831,7 @@ Level_SBZ2bg:	incbin	levels\sbz2bg.bin
 Level_End:	incbin	levels\ending.bin
 		even
 byte_6A320:	dc.b 0,	0, 0, 0
+		even
 
 ; ---------------------------------------------------------------------------
 ; Sprite locations index
@@ -39946,11 +39942,10 @@ ObjPos_Null:	dc.b $FF, $FF, 0, 0, 0,	0
 
 	if safe=1
 ErrorLockupExit:
-		jsr		ReadJoypads
+		jsr	ReadJoypads
 		btst	#JbS,($FFFFF605).w ; is Start button pressed?
 		beq.s	ErrorLockupExit	; if not, branch
 		jmp 	(GameProgram).l
-		rts
 	endif
 
 		include "_inc/Twizzler.asm"

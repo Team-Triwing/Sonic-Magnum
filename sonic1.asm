@@ -1,6 +1,6 @@
 Main		SECTION org(0)
 
-Z80_Space =	$8D0			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
+Z80_Space =	$6DF			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
@@ -40,14 +40,14 @@ MEGADRIVE:	dc.b "SEGA GENESIS    " ; Hardware system ID
 Checksum:	dc.w 0
 		dc.b 'J               ' ; I/O support
 RomStartLoc:	dc.l StartOfRom		; ROM start
-RomEndLoc:		dc.l EndOfRom-1		; ROM end
+RomEndLoc:	dc.l EndOfRom-1		; ROM end
 RamStartLoc:	dc.l $FF0000		; RAM start
-RamEndLoc:		dc.l $FFFFFF		; RAM end
+RamEndLoc:	dc.l $1000000-1		; RAM end
 SRAMSupport:	dc.l $20202020		; change to $5241E020 to create	SRAM
-				dc.l $20202020		; SRAM start
-				dc.l $20202020		; SRAM end
-				dc.b "                                                    "
-				dc.b 'JUE             ' ; Region
+		dc.l $20202020		; SRAM start
+		dc.l $20202020		; SRAM end
+		dc.b "                                                    "
+		dc.b 'JUE             ' ; Region
 EndOfHeader:
 ; ===========================================================================
 
@@ -57,7 +57,7 @@ EntryPoint:
 		tst.w	($A1000C).l	; test port C control
 
 PortA_Ok:
-		bne.s	PortC_Ok
+		bne.w	PortC_Ok
 		move.b	-$10FF(a1),d0	; get hardware version
 		andi.b	#$F,d0
 		beq.s	SkipSecurity
@@ -72,13 +72,13 @@ SkipSecurity:
 		moveq	#0,d0
 		movea.l	d0,a6
 		move.l	a6,usp		; set usp to $0
-		moveq	#$17,d1
 
-VDPInitLoop:
+		rept 24
 		move.b	(a5)+,d5	; add $8000 to value
 		move.w	d5,(a4)		; move value to	VDP register
 		add.w	d7,d5		; next register
-		dbf	d1,VDPInitLoop
+		endr
+
 		move.l	(a5)+,(a4)
 		move.w	d0,(a3)		; clear	the screen
 		move.w	d7,(a1)		; stop the Z80
@@ -101,22 +101,21 @@ ClrRAMLoop:
 		dbf	d6,ClrRAMLoop	; clear	the entire RAM
 		move.l	(a5)+,(a4)	; set VDP display mode and increment
 		move.l	(a5)+,(a4)	; set VDP to CRAM write
-		moveq	#$1F,d3
 
-ClrCRAMLoop:
+		rept 32
 		move.l	d0,(a3)
-		dbf	d3,ClrCRAMLoop	; clear	the CRAM
+		endr
+
 		move.l	(a5)+,(a4)
-		moveq	#$13,d4
 
-ClrVDPStuff:
+		rept 20
 		move.l	d0,(a3)
-		dbf	d4,ClrVDPStuff
-		moveq	#3,d5
+		endr
 
-PSGInitLoop:
+		rept 4
 		move.b	(a5)+,$11(a3)	; reset	the PSG
-		dbf	d5,PSGInitLoop
+		endr
+
 		move.w	d0,(a2)
 		movem.l	(a6),d0-a6	; clear	all registers
 
@@ -173,7 +172,7 @@ endinit
 
 GameProgram:
 		tst.w	(VDP_CTRL).l
-		waitDMA							; RM: sonic 2 onward does this
+		waitDMA
 		move.w	#$4EF9,(V_int_jump).w	; machine code for jmp
 		move.w	#$4EF9,(H_int_jump).w
 		move.l	#VInt,(V_int_addr).w
@@ -211,21 +210,21 @@ MainGameLoop:
 ; ---------------------------------------------------------------------------
 
 GameModeArray:
-				dc.l	SegaScreen	; Sega Screen ($00)
+		dc.l	SegaScreen	; Sega Screen ($00)
 ; ===========================================================================
-				dc.l	TitleScreen	; Title	Screen ($04)
+		dc.l	TitleScreen	; Title	Screen ($04)
 ; ===========================================================================
-				dc.l	Level		; Demo Mode ($08)
+		dc.l	Level		; Demo Mode ($08)
 ; ===========================================================================
-				dc.l	Level		; Normal Level ($0C)
+		dc.l	Level		; Normal Level ($0C)
 ; ===========================================================================
-				dc.l	SpecialStage	; Special Stage	($10)
+		dc.l	SpecialStage	; Special Stage	($10)
 ; ===========================================================================
-				dc.l	ContinueScreen	; Continue Screen ($14)
+		dc.l	ContinueScreen	; Continue Screen ($14)
 ; ===========================================================================
-				dc.l	EndingSequence	; End of game sequence ($18)
+		dc.l	EndingSequence	; End of game sequence ($18)
 ; ===========================================================================
-				dc.l	Credits		; Credits ($1C)
+		dc.l	Credits		; Credits ($1C)
 ; ===========================================================================
 
 CheckSumError:	if safe=0
@@ -252,7 +251,7 @@ ChecksumErr_ConsProg:
 				Console.WriteLine 	"Calculated Checksum: $%<.w d0>%<endl>"
 				Console.WriteLine 	"  Checksum in ROM: $%<.w d7>"
 				rts
-				endif
+		endif
 ; ===========================================================================
 
 Art_Text:	incbin	artunc\menutext.bin	; text used in level select and debug mode
@@ -353,7 +352,7 @@ locret_C42:
 
 Vint_02:				; XREF: off_B6E
 		bsr.w	sub_106E
-		bsr.w	sub_6886
+		jsr	sub_6886
 		bsr.w	sub_1642
 		tst.w	($FFFFF614).w
 		beq.s	locret_C5C
@@ -427,7 +426,7 @@ loc_D50:
 
 
 Demo_Time:				; XREF: loc_D50; Hint
-		bsr.w	LoadTilesAsYouMove
+		jsr	LoadTilesAsYouMove
 		jsr	AniArt_Load
 		jsr	HudUpdate
 		bsr.w	sub_165E
@@ -521,7 +520,7 @@ loc_ED8:				; XREF: loc_E7A
 		movem.l	d0-d7,($FFFFFF10).w
 		movem.l	($FFFFF754).w,d0-d1
 		movem.l	d0-d1,($FFFFFF30).w
-		bsr.w	LoadTilesAsYouMove
+		jsr	LoadTilesAsYouMove
 		jsr	AniArt_Load
 		jsr	HudUpdate
 		bsr.w	sub_1642
@@ -722,22 +721,20 @@ VDPSetupGame:				; XREF: GameClrRAM; ChecksumError
 		lea	(VDP_CTRL).l,a0
 		lea	(VDP_DATA).l,a1
 		lea	(VDPSetupArray).l,a2
-		moveq	#$12,d7
 
-VDP_Loop:
+		rept 19
 		move.w	(a2)+,(a0)
-		dbf	d7,VDP_Loop	; set the VDP registers
+		endr
 
 		move.w	(VDPSetupArray+2).l,d0
 		move.w	d0,($FFFFF60C).w
 		move.w	#$8ADF,($FFFFF624).w
 		moveq	#0,d0
 		move.l	#$C0000000,(VDP_CTRL).l ; set VDP to CRAM write
-		move.w	#$3F,d7
 
-VDP_ClrCRAM:
+		rept 64
 		move.w	d0,(a1)
-		dbf	d7,VDP_ClrCRAM	; clear	the CRAM
+		endr
 
 		clr.l	($FFFFF616).w
 		clr.l	($FFFFF61A).w
@@ -786,9 +783,7 @@ loc_12E6:
 		btst	#1,d1
 		bne.s	loc_12E6
 
-		move.w	#$8F02,(a5)
 		lea	(VDP_CTRL).l,a5
-		move.w	#$8F01,(a5)
 		move.l	#$940F93FF,(a5)
 		move.w	#$9780,(a5)
 		move.l	#$60000083,(a5)
@@ -803,19 +798,16 @@ loc_1314:
 		clr.l	($FFFFF616).w
 		clr.l	($FFFFF61A).w
 		lea	($FFFFF800).w,a1
-		moveq	#0,d0
-		move.w	#$A0,d1
 
-loc_133A:
-		move.l	d0,(a1)+
-		dbf	d1,loc_133A
+		rept 160
+		clr.l	(a1)+
+		endr
+
 		lea	($FFFFCC00).w,a1
-		moveq	#0,d0
-		move.w	#$100,d1
 
-loc_134A:
-		move.l	d0,(a1)+
-		dbf	d1,loc_134A
+		rept 257
+		clr.l	(a1)+
+		endr
 		rts
 ; End of function ClearScreen
 
@@ -835,7 +827,7 @@ PauseGame:				; XREF: Level_MainLoop; et al
 		beq.s	Pause_DoNothing	; if not, branch
 
 loc_13BE:
-		move.b	#1,($FFFFF63A).w ; freeze time
+		st.b	($FFFFF63A).w ; freeze time
 	AMPS_MUSPAUSE			; pause music
 
 loc_13CA:
@@ -882,8 +874,8 @@ Pause_DoNothing:			; XREF: PauseGame
 
 Pause_SlowMo:				; XREF: PauseGame
 	if safe=0
-		move.b	#1,($FFFFF63A).w
-	AMPS_MUSUNPAUSE			; unpause music
+		st.b	($FFFFF63A).w
+	AMPS_MUSPAUSE			; unpause music
 	else
 		Console.Run SampleLevelDebugger
 	endif
@@ -1964,442 +1956,83 @@ KosDec_ByteMap:
 	dc.b	$0F,$8F,$4F,$CF,$2F,$AF,$6F,$EF,$1F,$9F,$5F,$DF,$3F,$BF,$7F,$FF
 	endif
 ; ===========================================================================
+;  unzx0_68000.s - ZX0 decompressor for 68000 - 88 bytes
+;
+;  in:  a0 = start of compressed data
+;       a1 = start of decompression buffer
+;
+;  Copyright (C) 2021 Emmanuel Marty
+;  ZX0 compression (c) 2021 Einar Saukas, https://github.com/einar-saukas/ZX0
+;
+;  This software is provided 'as-is', without any express or implied
+;  warranty.  In no event will the authors be held liable for any damages
+;  arising from the use of this software.
+;
+;  Permission is granted to anyone to use this software for any purpose,
+;  including commercial applications, and to alter it and redistribute it
+;  freely, subject to the following restrictions:
+;
+;  1. The origin of this software must not be misrepresented; you must not
+;     claim that you wrote the original software. If you use this software
+;     in a product, an acknowledgment in the product documentation would be
+;     appreciated but is not required.
+;  2. Altered source versions must be plainly marked as such, and must not be
+;     misrepresented as being the original software.
+;  3. This notice may not be removed or altered from any source distribution.
 
-SaxmanDec:
-		move.w  (a0)+,d6
-		rol.w   #8,d6
-SaxDec2:
-		moveq   #0,d2
-		lea     (a1),a4
-		moveq   #0,d0
-		lea     byte_1AD4(pc),a2
-		move.w  #$F000,d3
-		moveq   #$F,d7
+zx0_decompress:
+               movem.l a2/d2,-(sp)  ; preserve registers
+               moveq #-128,d1       ; initialize empty bit queue
+                                    ; plus bit to roll into carry
+               moveq #-1,d2         ; initialize rep-offset to 1
 
-loc_1A38:                               ; CODE XREF: ROM:00001A56?j
-					; ROM:00001A7C?j ...
-		dbf     d2,loc_1A4A
-		moveq   #7,d2
-		subq.w  #1,d6
-		bne.s   loc_1A44
-		rts
-; ---------------------------------------------------------------------------
+.literals:     bsr.s .get_elias     ; read number of literals to copy
+               subq.l #1,d0         ; dbf will loop until d0 is -1, not 0
+.copy_lits:    move.b (a0)+,(a1)+   ; copy literal byte
+               dbf d0,.copy_lits    ; loop for all literal bytes
 
-loc_1A44:                               ; CODE XREF: ROM:00001A40?j
-		move.b  (a0)+,d0
-		move.b  (a2,d0.w),d0
+               add.b d1,d1          ; read 'match or rep-match' bit
+               bcs.s .get_offset    ; if 1: read offset, if 0: rep-match
 
-loc_1A4A:                               ; CODE XREF: ROM:loc_1A38?j
-		add.b   d0,d0
-		bcc.s   loc_1AA4
-		subq.w  #1,d6
-		bne.s   loc_1A54
-		rts
-; ---------------------------------------------------------------------------
+.rep_match:    bsr.s .get_elias     ; read match length (starts at 1)
+.do_copy:      subq.l #1,d0         ; dbf will loop until d0 is -1, not 0
+.do_copy_offs: move.l a1,a2         ; calculate backreference address
+               add.l d2,a2          ; (dest + negative match offset)
+.copy_match:   move.b (a2)+,(a1)+   ; copy matched byte
+               dbf d0,.copy_match   ; loop for all matched bytes
 
-loc_1A54:                               ; CODE XREF: ROM:00001A50?j
-		move.b  (a0)+,(a1)+
-		bra.s   loc_1A38
-; ---------------------------------------------------------------------------
+               add.b d1,d1          ; read 'literal or match' bit
+               bcc.s .literals      ; if 0: go copy literals
 
-loc_1A58:
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		move.b  (a5)+,(a1)+
-		bra.s   loc_1A38
-; ---------------------------------------------------------------------------
+.get_offset:   moveq #-2,d0         ; initialize value to $fe
+               bsr.s .elias_loop    ; read high byte of match offset
+               addq.b #1,d0         ; obtain negative offset high byte
+               beq.s .done          ; exit if EOD marker
+               move.w d0,d2         ; transfer negative high byte into d2
+               lsl.w #8,d2          ; shift it to make room for low byte
 
-loc_1A7E:
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		move.b  d3,(a1)+
-		bra.s   loc_1A38
-; ---------------------------------------------------------------------------
+               moveq #1,d0          ; initialize length value to 1
+               move.b (a0)+,d2      ; read low byte of offset + 1 bit of len
+               asr.l #1,d2          ; shift len bit into carry/offset in place
+               bcs.s .do_copy_offs  ; if len bit is set, no need for more
+               bsr.s .elias_bt      ; read rest of elias-encoded match length
+               bra.s .do_copy_offs  ; go copy match
 
-loc_1AA4:                               ; CODE XREF: ROM:00001A4C?j
-		subq.w  #2,d6
-		bhi.s   loc_1AAA
-		rts
-; ---------------------------------------------------------------------------
+.get_elias:    moveq #1,d0          ; initialize value to 1
+.elias_loop:   add.b d1,d1          ; shift bit queue, high bit into carry
+               bne.s .got_bit       ; queue not empty, bits remain
+               move.b (a0)+,d1      ; read 8 new bits
+               addx.b d1,d1         ; shift bit queue, high bit into carry
+                                    ; and shift 1 from carry into bit queue
 
-loc_1AAA:                               ; CODE XREF: ROM:00001AA6?j
-		move.b  (a0)+,d1
-		move.b  (a0)+,d5
-		move.b  d5,d4
-		not.w   d4
-		and.w   d7,d4
-		add.w   d4,d4
-		lsl.w   #4,d5
-		move.b  d1,d5
-		addi.w  #$12,d5
-		sub.w   a1,d5
-		add.w   a4,d5
-		or.w    d3,d5
-		lea     (a1,d5.w),a5
-		cmpa.l  a4,a5
-		bcs.s   loc_1AD0
-		jmp     loc_1A58(pc,d4.w)
-; ---------------------------------------------------------------------------
+.got_bit:      bcs.s .got_elias     ; done if control bit is 1
+.elias_bt:     add.b d1,d1          ; read data bit
+               addx.l d0,d0         ; shift data bit into value in d0
+               bra.s .elias_loop    ; keep reading
 
-loc_1AD0:                               ; CODE XREF: ROM:00001ACA?j
-		jmp     loc_1A7E(pc,d4.w)
-; ---------------------------------------------------------------------------
-byte_1AD4:      dc.b 0                  ; DATA XREF: ROM:00001A2E?o
-		dc.b $80
-		dc.b $40 ; @
-		dc.b $C0
-		dc.b $20
-		dc.b $A0
-		dc.b $60 ; `
-		dc.b $E0
-		dc.b $10
-		dc.b $90
-		dc.b $50 ; P
-		dc.b $D0
-		dc.b $30 ; 0
-		dc.b $B0
-		dc.b $70 ; p
-		dc.b $F0
-		dc.b   8
-		dc.b $88
-		dc.b $48 ; H
-		dc.b $C8
-		dc.b $28 ; (
-		dc.b $A8
-		dc.b $68 ; h
-		dc.b $E8
-		dc.b $18
-		dc.b $98
-		dc.b $58 ; X
-		dc.b $D8
-		dc.b $38 ; 8
-		dc.b $B8
-		dc.b $78 ; x
-		dc.b $F8
-		dc.b   4
-		dc.b $84
-		dc.b $44 ; D
-		dc.b $C4
-		dc.b $24 ; $
-		dc.b $A4
-		dc.b $64 ; d
-		dc.b $E4
-		dc.b $14
-		dc.b $94
-		dc.b $54 ; T
-		dc.b $D4
-		dc.b $34 ; 4
-		dc.b $B4
-		dc.b $74 ; t
-		dc.b $F4
-		dc.b  $C
-		dc.b $8C
-		dc.b $4C ; L
-		dc.b $CC
-		dc.b $2C ; ,
-		dc.b $AC
-		dc.b $6C ; l
-		dc.b $EC
-		dc.b $1C
-		dc.b $9C
-		dc.b $5C ; \
-		dc.b $DC
-		dc.b $3C ; <
-		dc.b $BC
-		dc.b $7C ; |
-		dc.b $FC
-		dc.b   2
-		dc.b $82
-		dc.b $42 ; B
-		dc.b $C2
-		dc.b $22 ; "
-		dc.b $A2
-		dc.b $62 ; b
-		dc.b $E2
-		dc.b $12
-		dc.b $92
-		dc.b $52 ; R
-		dc.b $D2
-		dc.b $32 ; 2
-		dc.b $B2
-		dc.b $72 ; r
-		dc.b $F2
-		dc.b  $A
-		dc.b $8A
-		dc.b $4A ; J
-		dc.b $CA
-		dc.b $2A ; *
-		dc.b $AA
-		dc.b $6A ; j
-		dc.b $EA
-		dc.b $1A
-		dc.b $9A
-		dc.b $5A ; Z
-		dc.b $DA
-		dc.b $3A ; :
-		dc.b $BA
-		dc.b $7A ; z
-		dc.b $FA
-		dc.b   6
-		dc.b $86
-		dc.b $46 ; F
-		dc.b $C6
-		dc.b $26 ; &
-		dc.b $A6
-		dc.b $66 ; f
-		dc.b $E6
-		dc.b $16
-		dc.b $96
-		dc.b $56 ; V
-		dc.b $D6
-		dc.b $36 ; 6
-		dc.b $B6
-		dc.b $76 ; v
-		dc.b $F6
-		dc.b  $E
-		dc.b $8E
-		dc.b $4E ; N
-		dc.b $CE
-		dc.b $2E ; .
-		dc.b $AE
-		dc.b $6E ; n
-		dc.b $EE
-		dc.b $1E
-		dc.b $9E
-		dc.b $5E ; ^
-		dc.b $DE
-		dc.b $3E ; >
-		dc.b $BE
-		dc.b $7E ; ~
-		dc.b $FE
-		dc.b   1
-		dc.b $81
-		dc.b $41 ; A
-		dc.b $C1
-		dc.b $21 ; !
-		dc.b $A1
-		dc.b $61 ; a
-		dc.b $E1
-		dc.b $11
-		dc.b $91
-		dc.b $51 ; Q
-		dc.b $D1
-		dc.b $31 ; 1
-		dc.b $B1
-		dc.b $71 ; q
-		dc.b $F1
-		dc.b   9
-		dc.b $89
-		dc.b $49 ; I
-		dc.b $C9
-		dc.b $29 ; )
-		dc.b $A9
-		dc.b $69 ; i
-		dc.b $E9
-		dc.b $19
-		dc.b $99
-		dc.b $59 ; Y
-		dc.b $D9
-		dc.b $39 ; 9
-		dc.b $B9
-		dc.b $79 ; y
-		dc.b $F9
-		dc.b   5
-		dc.b $85
-		dc.b $45 ; E
-		dc.b $C5
-		dc.b $25 ; %
-		dc.b $A5
-		dc.b $65 ; e
-		dc.b $E5
-		dc.b $15
-		dc.b $95
-		dc.b $55 ; U
-		dc.b $D5
-		dc.b $35 ; 5
-		dc.b $B5
-		dc.b $75 ; u
-		dc.b $F5
-		dc.b  $D
-		dc.b $8D
-		dc.b $4D ; M
-		dc.b $CD
-		dc.b $2D ; -
-		dc.b $AD
-		dc.b $6D ; m
-		dc.b $ED
-		dc.b $1D
-		dc.b $9D
-		dc.b $5D ; ]
-		dc.b $DD
-		dc.b $3D ; =
-		dc.b $BD
-		dc.b $7D ; }
-		dc.b $FD
-		dc.b   3
-		dc.b $83
-		dc.b $43 ; C
-		dc.b $C3
-		dc.b $23 ; #
-		dc.b $A3
-		dc.b $63 ; c
-		dc.b $E3
-		dc.b $13
-		dc.b $93
-		dc.b $53 ; S
-		dc.b $D3
-		dc.b $33 ; 3
-		dc.b $B3
-		dc.b $73 ; s
-		dc.b $F3
-		dc.b  $B
-		dc.b $8B
-		dc.b $4B ; K
-		dc.b $CB
-		dc.b $2B ; +
-		dc.b $AB
-		dc.b $6B ; k
-		dc.b $EB
-		dc.b $1B
-		dc.b $9B
-		dc.b $5B ; [
-		dc.b $DB
-		dc.b $3B ; ;
-		dc.b $BB
-		dc.b $7B ; {
-		dc.b $FB
-		dc.b   7
-		dc.b $87
-		dc.b $47 ; G
-		dc.b $C7
-		dc.b $27 ; '
-		dc.b $A7
-		dc.b $67 ; g
-		dc.b $E7
-		dc.b $17
-		dc.b $97
-		dc.b $57 ; W
-		dc.b $D7
-		dc.b $37 ; 7
-		dc.b $B7
-		dc.b $77 ; w
-		dc.b $F7
-		dc.b  $F
-		dc.b $8F
-		dc.b $4F ; O
-		dc.b $CF
-		dc.b $2F ; /
-		dc.b $AF
-		dc.b $6F ; o
-		dc.b $EF
-		dc.b $1F
-		dc.b $9F
-		dc.b $5F ; _
-		dc.b $DF
-		dc.b $3F ; ?
-		dc.b $BF
-		dc.b $7F ; 
-		dc.b $FF
-				
-;****************************************************************************
-; DecompressSlz
-; Decompresses SLZ data into memory
-;----------------------------------------------------------------------------
-; input a0.l .... Pointer to compressed data
-; input a1.l .... Where to store decompressed data
-; output a0.l ... Right after input buffer
-; output a1.l ... Right after output buffer
-; breaks ........ d5, d6, d7
-;****************************************************************************
+.done:         movem.l (sp)+,a2/d2  ; restore preserved registers
+.got_elias:    rts
 
-SLZDec:
-	move.w	d3, -(sp)				; Save registers
-	move.w	d4, -(sp)
-
-	move.b	(a0)+, d7				; Get uncompressed size
-	lsl.w	#8, d7
-	move.b	(a0)+, d7
-
-	moveq	#1, d6					; Cause code to fetch new token data
-									; as soon as it starts
-.MainLoop:
-	tst.w	d7						; Did we read all the data?
-	beq.w	.End					  ; If so, we're done with it!
-
-	subq.w	#1, d6					; Check if we need more tokens
-	bne.s	.HasTokens
-	move.b	(a0)+, d5
-	moveq	#8, d6
-.HasTokens:
-
-	add.b	d5, d5					; Get next token type
-	bcc.s	.Uncompressed			  ; 0 = uncompressed, 1 = compressed
-
-	move.b	(a0)+, d3				; Compressed? Read string info
-	lsl.w	#8, d3					  ; d3 = distance
-	move.b	(a0)+, d3				  ; d4 = length
-	move.b	d3, d4
-	lsr.w	#4, d3
-	and.w	#$0F, d4
-
-	subq.w	#3, d7					; Length is offset by 3
-	sub.w	d4, d7					; Now that we know the string length,
-									; discount it from the amount of data
-									; to be read
-
-	addq.w	#3, d3					; Distance is offset by 3
-	neg.w	d3						; Make distance go backwards
-
-	add.w	d4, d4					; Copy bytes using Duff's device
-	add.w	d4, d4					  ; MUCH faster than a loop, due to lack
-	eor.w	#$0F<<2, d4				  ; of iteration overhead
-	jmp		.Duff(pc,d4.w)
-.Duff:
-	rept	$10+2
-	move.b	(a1,d3.w), (a1)+
-	endr
-
-	bra.s	.MainLoop				; Keep processing data
-
-.Uncompressed:
-	move.b	(a0)+, (a1)+			; Uncompressed? Read as is
-	subq.w	#1, d7					; It's always one byte long
-	bra.w	.MainLoop				; Keep processing data
-
-.End:
-	move.w	(sp)+, d4				; Restore registers
-	move.w	(sp)+, d3
-	rts								; End of subroutine
 	
 ; ---------------------------------------------------------------------------
 ; Original version written by vladikcomper, with improvements by Flamewing
@@ -3005,7 +2638,7 @@ Pal_DecColor:				; XREF: Pal_FadeOut
 		subi.w	#$200,d5				; MJ: decrease blue
 
 FCO_NoBlue:
-		andi.w	#$E0,d2				; MJ: get only green (needs to be word)
+		andi.w	#$E0,d2					; MJ: get only green (needs to be word)
 		beq.s	FCO_NoGreen				; MJ: if green is finished, branch
 		subi.b	#$20,d5					; MJ: decrease green
 
@@ -3414,7 +3047,6 @@ Pal_SBZ3SonWat:	incbin	pallet\son_sbzu.bin	; Sonic (underwater in SBZ act 3) pal
 Pal_SpeResult:	incbin	pallet\ssresult.bin	; special stage results screen pallets
 Pal_SpeContinue:incbin	pallet\sscontin.bin	; special stage results screen continue pallet
 Pal_Ending:	incbin	pallet\ending.bin	; ending sequence pallets
-Pal_PreTitle:	incbin	pallet\pretitle.bin
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	delay the program by ($FFFFF62A) frames
@@ -3791,10 +3423,10 @@ TitleScreen:				; XREF: GameModeArray
 		bsr.w	DeformBgLayer
 		lea	(Blk16_GHZ).l,a0 ; load	GHZ 16x16 mappings
 		lea	($FFFFB000).w,a1
-		jsr	SLZDec
+		jsr	zx0_decompress
 		lea	(Blk256_GHZ).l,a0 ; load GHZ 256x256 mappings
 		lea	($FF0000).l,a1
-		jsr	SLZDec
+		jsr	zx0_decompress
 		bsr.w	LevelLayoutLoad
 		bsr.w	Pal_FadeFrom
 		bsr.w	ClearScreen
@@ -3820,11 +3452,10 @@ TitleScreen:				; XREF: GameModeArray
 		move.w	#$178,($FFFFF614).w ; run title	screen for $178	frames
 		lea	($FFFFD080).w,a1
 		moveq	#0,d0
-		moveq	#$10-1,d1		; this was causing some problems, fixed the bug
 
-Title_ClrObjRam2:
-		move.l	d0,(a1)+
-		dbf	d1,Title_ClrObjRam2
+		rept 17
+		clr.l	(a1)+
+		endr
 
 		move.b	#$E,($FFFFD040).w ; load big Sonic object
 		move.b	#$F,($FFFFD080).w ; load "PRESS	START BUTTON" object
@@ -3936,30 +3567,30 @@ Title_ChkLevSel:
 		bsr.w	PalLoad1	; load level select pallet
 		lea	($FFFFCC00).w,a1
 		moveq	#0,d0
-		move.w	#$DF,d1
 
-Title_ClrScroll:
-		move.l	d0,(a1)+
-		dbf	d1,Title_ClrScroll ; fill scroll data with 0
+		rept 240
+		clr.l	(a1)+
+		endr
+
 		bsr.w	ClearScreen
 		bsr.w	ClearPLC
 		move.l	d0,($FFFFF616).w
 		move	#$2700,sr
 		lea	(VDP_DATA).l,a6
 		move.l	#$60000003,(VDP_CTRL).l
-		move.w	#$3FF,d1
 
-Title_ClrVram:
+		rept 1024
 		move.l	d0,(a6)
-		dbf	d1,Title_ClrVram ; fill	VRAM with 0
+		endr
+
 		lea	(VDP_DATA).l,a6
 		move.l	#$50000003,4(a6)
 		lea	(Art_Text).l,a5
-		move.w	#$28F,d1
 
-Title_LoadText:
+		rept 655
 		move.w	(a5)+,(a6)
-		dbf	d1,Title_LoadText ; load uncompressed text patterns
+		endr
+
 		moveq	#0,d0				; clear d0
 		move.l	d0,($FFFFFF30).w		; clear foreground strip draw flags
 		bsr.w	LevSelTextLoad
@@ -4301,10 +3932,10 @@ MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ, mus_FZ
 ; ===========================================================================
 
 Level_ClrStuff:
-	clr.w	($FFFFFE20).w
-	clr.w	($FFFFFE22).w
-	jsr	(Hud_Base).l
-	bra.s	Level_ClrRam
+		clr.w	($FFFFFE20).w
+		clr.w	($FFFFFE22).w
+		jsr	(Hud_Base).l
+		bra.w	Level_ClrRam
 
 ; ---------------------------------------------------------------------------
 ; Level
@@ -4314,18 +3945,18 @@ Level:					; XREF: GameModeArray
 		bset	#7,($FFFFF600).w ; add $80 to screen mode (for pre level sequence)
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_37B6
-	tst.b	(Reload_level).w
-	bne.s	loc_37B6
+		tst.b	(Reload_level).w
+		bne.s	loc_37B6
 		command	mus_FadeOut	; fade out music
 
 loc_37B6:
 		bsr.w	ClearPLC
 		bsr.w	Pal_FadeFrom
 		clr.b  	($FFFFFFD0).w
-	tst.b	(Reload_level).w
-	bne.s	Level_ClrStuff
+		tst.b	(Reload_level).w
+		bne.s	Level_ClrStuff
 		tst.w	($FFFFFFF0).w
-		bmi.s	Level_ClrRam
+		bmi.w	Level_ClrRam
 		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
 		lea Art_TitleCard,a0        	; load title card patterns
 		move.l 	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
@@ -4346,36 +3977,28 @@ loc_37FC:
 
 Level_ClrRam:
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-Level_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,Level_ClrObjRam ; clear object RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFF628).w,a1
-		moveq	#0,d0
-		move.w	#$15,d1
 
-Level_ClrVars:
-		move.l	d0,(a1)+
-		dbf	d1,Level_ClrVars ; clear misc variables
+		rept 22
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFF700).w,a1
-		moveq	#0,d0
-		move.w	#$3F,d1
 
-Level_ClrVars2:
-		move.l	d0,(a1)+
-		dbf	d1,Level_ClrVars2 ; clear misc variables
+		rept 64
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFFE60).w,a1
-		moveq	#0,d0
-		move.w	#$47,d1
 
-Level_ClrVars3:
-		move.l	d0,(a1)+
-		dbf	d1,Level_ClrVars3 ; clear object variables
+		rept 72
+		clr.l	(a1)+
+		endr
 
 		bsr.w	ClearScreen
 		lea	(VDP_CTRL).l,a6
@@ -4391,7 +4014,7 @@ Level_ClrVars3:
 		resetDMA
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
 		bne.s	Level_LoadPal	; if not, branch
-	move.l	#WaterTransition_LZ,($FFFFF610).w
+		move.l	#WaterTransition_LZ,($FFFFF610).w
 		move.w	#$8014,(a6)
 		moveq	#0,d0
 		move.b	($FFFFFE11).w,d0
@@ -4412,7 +4035,7 @@ Level_LoadPal:
 		cmpi.b	#1,($FFFFFE10).w ; is level LZ?
 		bne.s	Level_GetBgm	; if not, branch
 		moveq	#$F,d0		; pallet number	$0F (LZ)
-		cmpi.b	#3,($FFFFFE11).w ; is act number 3?
+		cmpi.b	#3,($FFFFFE11).w; is act number 3?
 		bne.s	Level_WaterPal	; if not, branch
 		moveq	#$10,d0		; pallet number	$10 (SBZ3)
 
@@ -4424,8 +4047,8 @@ Level_WaterPal:
 
 Level_GetBgm:
 		command	mus_OutWater	; get out of water(tm)
-	tst.b	(Reload_level).w
-	bne.s	loc_3946
+		tst.b	(Reload_level).w
+		bne.s	loc_3946
 		command	mus_Reset	; fade reset music
 		tst.w	($FFFFFFF0).w
 		bmi.s	loc_3946
@@ -4435,7 +4058,7 @@ Level_GetBgm:
 		move.b	(a1,d0.w),d0	; add d0 to a1
 		move.w	d0,(Level_Music).w	; store level music
 		move.b	d0,mQueue+1.w	; play music
-		move.b	#$34,($FFFFD080).w ; load title	card object
+		move.b	#$34,($FFFFD080).w	; load title	card object
 
 Level_TtlCard:
 		move.b	#$C,($FFFFF62A).w
@@ -4451,7 +4074,7 @@ Level_TtlCard:
 		jsr	Hud_Base
 
 loc_3946:
-	move.b	#1,(Reload_level).w
+		st.b	(Reload_level).w
 		moveq	#3,d0
 		bsr.w	PalLoad1	; load Sonic's pallet line
 		bsr.w	LevelSizeLoad
@@ -4498,12 +4121,12 @@ loc_39E8:
 		move.b	d0,($FFFFFE2E).w ; clear speed shoes
 		move.b	d0,($FFFFFE2F).w
 		move.w	d0,($FFFFFE08).w
-		move.w	d0,($FFFFFE02).w
+		move.b	d0,($FFFFFE02).w
 		move.w	d0,($FFFFFE04).w
 		bsr.w	OscillateNumInit
-		move.b	#1,($FFFFFE1F).w ; update score	counter
-		move.b	#1,($FFFFFE1D).w ; update rings	counter
-		move.b	#1,($FFFFFE1E).w ; update time counter
+		st.b	($FFFFFE1F).w ; update score	counter
+		st.b	($FFFFFE1D).w ; update rings	counter
+		st.b	($FFFFFE1E).w ; update time counter
 		clr.w	($FFFFF790).w
 		lea	(Demo_Index).l,a1 ; load demo data
 		moveq	#0,d0
@@ -4600,7 +4223,7 @@ loc_3B14:
 		bsr.w	SignpostArtLoad
 		cmpi.b	#8,($FFFFF600).w
 		beq.s	Level_ChkDemo	; if screen mode is 08 (demo), branch
-		tst.w	($FFFFFE02).w	; is the level set to restart?
+		tst.b	($FFFFFE02).w	; is the level set to restart?
 		bne.w	Level		; if yes, branch
 		cmpi.b	#$C,($FFFFF600).w
 		beq.w	Level_MainLoop	; if screen mode is $0C	(level), branch
@@ -4608,7 +4231,7 @@ loc_3B14:
 ; ===========================================================================
 
 Level_ChkDemo:				; XREF: Level_MainLoop
-		tst.w	($FFFFFE02).w	; is level set to restart?
+		tst.b	($FFFFFE02).w	; is level set to restart?
 		bne.s	Level_EndDemo	; if yes, branch
 		tst.w	($FFFFF614).w	; is there time	left on	the demo?
 		beq.s	Level_EndDemo	; if not, branch
@@ -5457,7 +5080,7 @@ SS_ClrNemRam:
 		dbf	d1,SS_ClrNemRam	; clear	Nemesis	buffer
 
 		clr.b	($FFFFF64E).w
-		clr.w	($FFFFFE02).w
+		clr.b	($FFFFFE02).w
 		moveq	#$A,d0
 		bsr.w	PalLoad1	; load special stage pallet
 		jsr	SS_Load
@@ -5566,8 +5189,8 @@ loc_47D4:
 		bsr.w	LoadPLC2
 		moveq	#$1B,d0
 		bsr.w	LoadPLC		; load results screen patterns
-		move.b	#1,($FFFFFE1F).w ; update score	counter
-		move.b	#1,($FFFFF7D6).w ; update ring bonus counter
+		st.b	($FFFFFE1F).w ; update score	counter
+		st.b	($FFFFF7D6).w ; update ring bonus counter
 		move.w	($FFFFFE20).w,d0
 		mulu.w	#10,d0		; multiply rings by 10
 		move.w	d0,($FFFFF7D4).w; set rings bonus
@@ -5588,7 +5211,7 @@ SS_NormalExit:
 		jsr	ObjectsLoad
 		jsr	BuildSprites
 		bsr.w	RunPLC_RAM
-		tst.w	($FFFFFE02).w
+		tst.b	($FFFFFE02).w
 		beq.s	SS_NormalExit
 		tst.l	($FFFFF680).w
 		bne.s	SS_NormalExit
@@ -6268,9 +5891,9 @@ End_LoadSonic:
 		move.w	d0,($FFFFFE02).w
 		move.w	d0,($FFFFFE04).w
 		bsr.w	OscillateNumInit
-		move.b	#1,($FFFFFE1F).w
-		move.b	#1,($FFFFFE1D).w
-		move.b	#0,($FFFFFE1E).w
+		st.b	($FFFFFE1F).w
+		st.b	($FFFFFE1D).w
+		sf.b	($FFFFFE1E).w
 		move.w	#1800,($FFFFF614).w
 		move.b	#$18,($FFFFF62A).w
 		bsr.w	DelayProgram
@@ -6306,10 +5929,10 @@ End_MainLoop:
 ; ===========================================================================
 
 loc_52DA:
-		tst.w	($FFFFFE02).w	; is level set to restart?
+		tst.b	($FFFFFE02).w	; is level set to restart?
 		beq.s	End_MainLoop	; if not, branch
 
-		clr.w	($FFFFFE02).w
+		clr.b	($FFFFFE02).w
 		move.w	#$3F,($FFFFF626).w
 		clr.w	($FFFFF794).w
 
@@ -6331,9 +5954,9 @@ End_AllEmlds:				; XREF: loc_5334
 		bsr.w	Pal_ToWhite
 
 loc_5334:
-		tst.w	($FFFFFE02).w
+		tst.b	($FFFFFE02).w
 		beq.w	End_AllEmlds
-		clr.w	($FFFFFE02).w
+		clr.b	($FFFFFE02).w
 		move.w	#$2E2F,($FFFFA480).w ; modify level layout
 		lea	(VDP_CTRL).l,a5
 		lea	(VDP_DATA).l,a6
@@ -6444,7 +6067,7 @@ Obj87_Wait:
 Obj87_LookUp:				; XREF: Obj87_Index
 		cmpi.w	#$2000,($FFD43C).l
 		bne.s	locret_5480
-		move.w	#1,($FFFFFE02).w ; set level to	restart	(causes	flash)
+		st.b	($FFFFFE02).w ; set level to	restart	(causes	flash)
 		move.w	#$5A,$30(a0)
 		addq.b	#2,$25(a0)
 
@@ -6461,7 +6084,7 @@ Obj87_ClrObjRam:			; XREF: Obj87_Index
 Obj87_ClrLoop:
 		clr.l	(a1)+
 		dbf	d1,Obj87_ClrLoop ; clear the object RAM
-		move.w	#1,($FFFFFE02).w
+		st.b	($FFFFFE02).w
 		addq.b	#2,$25(a0)
 		move.b	#1,$1C(a0)
 		move.w	#$3C,$30(a0)
@@ -8739,7 +8362,7 @@ locret_6EF0:
 		rts	
 ; ===========================================================================
 unk_6EF2:	dc.b   0 ;	 
-unk_6EF3:	dc.b   0 ;	 
+		dc.b   0 ;
 		dc.b   0 ;  
 		dc.b   0 ;  
 		dc.b   0 ;  
@@ -8847,7 +8470,7 @@ loc_6F54:
 		move.w	#$E0,d4	; 'à'
 
 loc_6F66:
-		lea	(unk_6EF3).l,a0
+		lea	(unk_6EF2+1).l,a0
 		move.w	($FFFFF70C).w,d0
 		subi.w	#$200,d0
 		add.w	d4,d0
@@ -9002,7 +8625,7 @@ loc_7088:
 		movem.l	d4-d5,-(sp)
 		bsr.w	sub_712A
 		move.l	d1,d0
-		bsr.w	sub_70AC
+		bsr.s	sub_70AC
 		addi.w	#$100,d1
 		andi.w	#$FFF,d1
 		movem.l	(sp)+,d4-d5
@@ -9149,13 +8772,13 @@ LoadTilesFromStart:
 		lea	($FFFFA440).w,a4
 		move.w	#$6000,d2
 		tst.b	($FFFFFE10).w
-		beq.w	loc_7220
+		beq.s	loc_7220
 		cmpi.b	#2,($FFFFFE10).w
-		beq.w	loc_725A
+		beq.s	loc_725A
 		cmpi.w	#$500,($FFFFFE10).w
 		beq.w	loc_7288
 		cmpi.b	#6,($FFFFFE10).w
-		beq.w	loc_7220
+		beq.s	loc_7220
 ; End of function LoadTilesFromStart
 
 
@@ -9170,7 +8793,7 @@ loc_71FC:
 		movem.l	d4-d6,-(sp)
 		moveq	#0,d5
 		move.w	d4,d1
-		bsr.w	Calc_VRAM_Pos
+		bsr.s	Calc_VRAM_Pos
 		move.w	d1,d4
 		moveq	#0,d5
 		moveq	#$1F,d6
@@ -9193,7 +8816,7 @@ loc_7224:
 		move.w	($FFFFF70C).w,d0
 		add.w	d4,d0
 		andi.w	#$F0,d0	; 'ð'
-		bsr.w	sub_72BA
+		bsr.s	sub_72BA
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_7224
@@ -9223,12 +8846,12 @@ loc_725A:
 
 loc_725E:
 		movem.l	d4-d6,-(sp)
-		lea	(unk_6EF3).l,a0
+		lea	(unk_6EF2+1).l,a0
 		move.w	($FFFFF70C).w,d0
 		subi.w	#$200,d0
 		add.w	d4,d0
 		andi.w	#$7F0,d0
-		bsr.w	sub_72BA
+		bsr.s	sub_72BA
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_725E
@@ -9245,7 +8868,7 @@ loc_728C:
 		move.w	($FFFFF70C).w,d0
 		add.w	d4,d0
 		andi.w	#$1F0,d0
-		bsr.w	sub_72BA
+		bsr.s	sub_72BA
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_728C
@@ -9321,7 +8944,7 @@ LoadZoneTiles:
 		move.w	d7,-(sp)		; Store d7 in the Stack
 		move.b	#$C,($FFFFF62A).w
 		bsr.w	DelayProgram
-		bsr.w	RunPLC_RAM
+		jsr	RunPLC_RAM
 		move.w	(sp)+,d7		; Restore d7 from the Stack
 		move.w	#$800,d3		; Force the DMA transfer length to be $1000/2 (the first cycle is dynamic because the art's DMA'd backwards)
 		dbf	d7,@loop		; Loop for each $1000 bytes the decompressed art is
@@ -9346,10 +8969,10 @@ MainLoadBlockLoad:			; XREF: Level; EndingSequence
 		addq.l	#4,a2
 		movea.l	(a2)+,a0
 		lea	($FFFFB000).w,a1 ; RAM address for 16x16 mappings
-		jsr	SLZDec
+		jsr	zx0_decompress
 		movea.l	(a2)+,a0
 		lea	($FF0000).l,a1	; RAM address for 256x256 mappings
-		jsr	SLZDec
+		jsr	zx0_decompress
 		bsr.w	LevelLayoutLoad
 		move.w	(a2)+,d0
 		move.w	(a2),d0
@@ -9374,7 +8997,7 @@ MLB_NormalPal:
 		moveq	#0,d0
 		move.b	(a2),d0
 		beq.s	locret_6D10
-		bsr.w	LoadPLC		; load pattern load cues
+		jsr	LoadPLC		; load pattern load cues
 
 locret_6D10:
 		rts
@@ -9589,7 +9212,7 @@ loc_6ED0:
 		move.b	#1,($FFFFF7AA).w ; lock	screen
 		addq.b	#2,($FFFFF742).w
 		moveq	#$11,d0
-		bra.w	LoadPLC		; load boss patterns
+		jmp	LoadPLC		; load boss patterns
 ; ===========================================================================
 
 locret_6EE8:
@@ -9646,7 +9269,7 @@ loc_6F4A:
 		move.b	#1,($FFFFF7AA).w ; lock	screen
 		addq.b	#2,($FFFFF742).w
 		moveq	#$11,d0
-		bra.w	LoadPLC		; load boss patterns
+		jmp	LoadPLC		; load boss patterns
 ; ===========================================================================
 
 locret_6F62:
@@ -9663,7 +9286,7 @@ Resize_SBZ3:
 		cmpi.w	#$18,($FFFFD00C).w ; has Sonic reached the top of the level?
 		bcc.s	locret_6F8C	; if not, branch
 		clr.b	($FFFFFE30).w
-		move.w	#1,($FFFFFE02).w ; restart level
+		st.b	($FFFFFE02).w ; restart level
 		move.w	#$502,($FFFFFE10).w ; set level	number to 0502 (FZ)
 		move.b	#1,($FFFFF7C8).w ; freeze Sonic
 		music	mus_FZ
@@ -9808,7 +9431,7 @@ loc_70D0:
 		move.b	#1,($FFFFF7AA).w ; lock	screen
 		addq.b	#2,($FFFFF742).w
 		moveq	#$11,d0
-		bra.w	LoadPLC		; load boss patterns
+		jmp	LoadPLC		; load boss patterns
 ; ===========================================================================
 
 locret_70E8:
@@ -9872,7 +9495,7 @@ loc_7144:
 		move.b	#1,($FFFFF7AA).w ; lock	screen
 		addq.b	#2,($FFFFF742).w
 		moveq	#$11,d0
-		bra.w	LoadPLC		; load boss patterns
+		jmp	LoadPLC		; load boss patterns
 ; ===========================================================================
 
 locret_715C:
@@ -9952,7 +9575,7 @@ loc_71EC:
 		music	mus_Boss	; play boss music
 		move.b	#1,($FFFFF7AA).w ; lock	screen
 		moveq	#$11,d0
-		bra.w	LoadPLC		; load boss patterns
+		jmp	LoadPLC		; load boss patterns
 ; ===========================================================================
 
 locret_7200:
@@ -10025,7 +9648,7 @@ Resize_SBZ2boss:
 		move.b	#$83,(a1)	; load collapsing block	object
 		addq.b	#2,($FFFFF742).w
 		moveq	#$1E,d0
-		bra.w	LoadPLC		; load SBZ2 Eggman patterns
+		jmp	LoadPLC		; load SBZ2 Eggman patterns
 ; ===========================================================================
 
 locret_7298:
@@ -10072,7 +9695,7 @@ Resize_FZmain:
 		bcs.s	loc_72C2
 		addq.b	#2,($FFFFF742).w
 		moveq	#$1F,d0
-		bsr.w	LoadPLC		; load FZ boss patterns
+		jsr	LoadPLC		; load FZ boss patterns
 		bra.s	loc_72C2
 ; ===========================================================================
 
@@ -12443,7 +12066,7 @@ Obj28_Ending:				; XREF: Obj28_Index
 
 Obj28_FromEnemy:			; XREF: Obj28_Ending
 		addq.b	#2,$24(a0)
-		bsr.w	RandomNumber
+		jsr	RandomNumber
 		andi.w	#1,d0
 		moveq	#0,d1
 		move.b	($FFFFFE10).w,d1
@@ -13396,7 +13019,7 @@ Obj25_Delete:				; XREF: Obj25_Index
 
 CollectRing:				; XREF: Obj25_Collect
 		addq.w	#1,($FFFFFE20).w ; add 1 to rings
-		ori.b	#1,($FFFFFE1D).w ; update the rings counter
+		st.b	($FFFFFE1D).w ; update the rings counter
 		moveq	#sfx_RingRight,d0; play ring sound
 		cmpi.w	#100,($FFFFFE20).w ; do	you have < 100 rings?
 		bcs.s	Obj25_PlaySnd	; if yes, branch
@@ -13467,7 +13090,7 @@ Obj37_MakeRings:			; XREF: Obj37_CountRings
 
 Obj37_ResetCounter:			; XREF: Obj37_Loop
 		clr.w	($FFFFFE20).w ; reset number	of rings to zero
-		move.b	#$80,($FFFFFE1D).w ; update ring counter
+		st.b	($FFFFFE1D).w ; update ring counter
 		clr.b	($FFFFFE1B).w
 		moveq	#-1,d0		; Move #-1 to d0
 		move.b	d0,$1F(a0)	; Move d0 to new timer
@@ -13917,11 +13540,11 @@ Obj2E_ChkEggman:			; XREF: Obj2E_Move
 		move.b	$1C(a0),d0
 		cmpi.b	#1,d0		; does monitor contain Eggman?
 		bne.s	Obj2E_ChkSonic
-	move.l	a0,a1 				; move a0 to a1, because Touch_ChkHurt wants the damaging object to be in a1
-	move.l	a0,-(sp) 			; push a0 on the stack, and decrement stack pointer
-	lea		($FFFFD000).w,a0 	; put Sonic's ram address in a0, because Touch_ChkHurt wants the damaged object to be in a0
-	jsr	Touch_ChkHurt 			; run the Touch_ChkHurt routine
-	move.l	(sp)+,a0 			; pop the previous value of a0 from the stack, and increment stack pointer
+		move.l	a0,a1 				; move a0 to a1, because Touch_ChkHurt wants the damaging object to be in a1
+		move.l	a0,-(sp) 			; push a0 on the stack, and decrement stack pointer
+		lea		($FFFFD000).w,a0 	; put Sonic's ram address in a0, because Touch_ChkHurt wants the damaged object to be in a0
+		jsr	Touch_ChkHurt 			; run the Touch_ChkHurt routine
+		move.l	(sp)+,a0 			; pop the previous value of a0 from the stack, and increment stack pointer
 		rts
 ; ===========================================================================
 
@@ -13986,7 +13609,7 @@ Obj2E_ChkRings:
 		cmpi.b	#6,d0		; does monitor contain 10 rings?
 		bne.s	Obj2E_ChkS
 		addi.w	#$A,($FFFFFE20).w ; add	10 rings to the	number of rings	you have
-		ori.b	#1,($FFFFFE1D).w ; update the ring counter
+		st.b	($FFFFFE1D).w ; update the ring counter
 		cmpi.w	#100,($FFFFFE20).w ; check if you have 100 rings
 		bcs.s	Obj2E_RingSound
 		bset	#1,($FFFFFE1B).w
@@ -16458,7 +16081,7 @@ Obj39_SetWait:				; XREF: Obj39_Main
 
 Obj39_Wait:				; XREF: Obj39_Index
 		move.b	($FFFFF605).w,d0
-		andi.b	#J_B|J_C|J_A,d0		; is button A, B or C pressed?
+		andi.b	#J_B|J_C|J_A,d0	; is button A, B or C pressed?
 		bne.s	Obj39_ChgMode	; if yes, branch
 		btst	#0,$1A(a0)
 		bne.s	Obj39_Display
@@ -16476,11 +16099,11 @@ Obj39_ChgMode:				; XREF: Obj39_Wait
 		bne.s	Obj39_Display	; if yes, branch
 		move.b	#0,($FFFFF600).w ; set mode to 0 (Sega screen)
 		command	mus_Reset	 ; fade reset music
-		bra.s	Obj39_Display
+		bra.w	DisplaySprite
 ; ===========================================================================
 
 Obj39_ResetLvl:				; XREF: Obj39_ChgMode
-		move.w	#1,($FFFFFE02).w ; restart level
+		st.b	($FFFFFE02).w ; restart level
 
 Obj39_Display:				; XREF: Obj39_ChgMode
 		bra.w	DisplaySprite
@@ -16638,7 +16261,7 @@ Obj3A_ChkSS:				; XREF: Obj3A_NextLevel
 ; ===========================================================================
 
 Vint_04A:				; XREF: Obj3A_ChkSS
-		move.w	#1,($FFFFFE02).w ; restart level
+		st.b	($FFFFFE02).w ; restart level
 
 Obj3A_Display2:				; XREF: Obj3A_NextLevel, Obj3A_ChkSS
 		bra.w	DisplaySprite
@@ -16827,7 +16450,7 @@ locret_C8EA:
 ; ===========================================================================
 
 Obj7E_Exit:				; XREF: Obj7E_Index
-		move.w	#1,($FFFFFE02).w ; restart level
+		st.b	($FFFFFE02).w ; restart level
 		bra.w	DisplaySprite
 ; ===========================================================================
 
@@ -16929,7 +16552,7 @@ Map_obj34:	dc.w byte_C9FE-Map_obj34
 		dc.w byte_CB3C-Map_obj34
 		dc.w byte_CB47-Map_obj34
 		dc.w byte_CB8A-Map_obj34
-byte_C9FE:	dc.b $B	;  SUNSET ISLE (former GHZ)
+byte_C9FE:	dc.b $B	;  SUNSET ISLE (formerly GHZ)
 		dc.b $F8, 5, 0, $3E, $A4	; S
 		dc.b $F8, 5, 0, $46, $B4	; U
 		dc.b $F8, 5, 0, $2E, $C4	; N
@@ -25534,7 +25157,7 @@ Boundary_Bottom:
 		cmpi.w	#$2000,($FFFFD008).w
 		jcs	KillSonic
 		clr.b	($FFFFFE30).w		; clear lamppost counter
-		move.w	#1,($FFFFFE02).w	; restart the level
+		st.b	($FFFFFE02).w	; restart the level
 		move.w	#$103,($FFFFFE10).w	; set level to SBZ3 (LZ4)
 
 Boundary_Bottom_locret:
@@ -25745,7 +25368,7 @@ Sonic_Super:
 		move.b	#60,($FFFFF670).w	; Reset frame counter to 60
 		tst.w	($FFFFFE20).w
 		beq.s	Sonic_RevertToNormal
-		ori.b	#1,($FFFFFE1D).w
+		st.b	($FFFFFE1D).w
 		cmpi.w	#1,($FFFFFE20).w
 		beq.s	.update
 		cmpi.w	#10,($FFFFFE20).w
@@ -25753,7 +25376,7 @@ Sonic_Super:
 		cmpi.w	#100,($FFFFFE20).w
 		bne.s	.update2
 .update
-		ori.b	#$80,($FFFFFE1D).w
+		st.b	($FFFFFE1D).w
 .update2
 		subq.w	#1,($FFFFFE20).w
 		bne.s	return_1AC3C
@@ -26365,7 +25988,7 @@ Obj01_ResetLevel:			; XREF: Obj01_Index
 		beq.s	locret_13914
 		subq.w	#1,$3A(a0)	; subtract 1 from time delay
 		bne.s	locret_13914
-		move.w	#1,($FFFFFE02).w ; restart the level
+		st.b	($FFFFFE02).w ; restart the level
 
 locret_13914:
 		rts
@@ -26799,16 +26422,16 @@ locret_13C96:
 
 ApplySpeedSettings:
 	moveq	#0,d0				; Quickly clear d0
-	tst.w	speedshoes_time(a0)		; Does character have speedshoes?
+	tst.w	($FFFFD000+speedshoes_time).w	; Does character have speedshoes?
 	beq.s	.noshoes			; If not, branch
 	addq.b	#6,d0				; Quickly add 6 to d0
-.noshoes
+.noshoes:
 	btst	#6,$32(a0)			; Is the character underwater?
-	beq.s	.notunderwater				; If not, branch
+	beq.s	.notunderwater			; If not, branch
 	addi.b	#12,d0				; Add 12 to d0
 .notunderwater:
-	tst.b	($FFFFFE19).w		; Is the character Super?
-	beq.s	.notsuper				; If not, branch
+	tst.b	($FFFFFE19).w			; Is the character Super?
+	beq.s	.notsuper			; If not, branch
 	addi.b	#24,d0				; Add 24 to d0
 .notsuper:
 	lea	Speedsettings(pc,d0.w),a1	; Load correct speed settings into a1
@@ -26818,7 +26441,6 @@ ApplySpeedSettings:
 ; ===========================================================================
 ; ----------------------------------------------------------------------------
 ; Speed Settings Array
-
 ; This array defines what speeds the character should be set to
 ; ----------------------------------------------------------------------------
 ;		top_speed	acceleration	deceleration	; #	; Comment
@@ -38416,7 +38038,7 @@ Map_obj21:
 
 
 AddPoints:
-		move.b	#1,($FFFFFE1F).w ; set score counter to	update
+		st.b	($FFFFFE1F).w ; set score counter to	update
 		lea	($FFFFFE26).w,a3
 		add.l	d0,(a3)		; add d0*10 to the score
 		move.l	#999999,d1
@@ -38472,11 +38094,11 @@ Hud_ChkTime:
 		addq.b	#1,-(a1)
 		cmpi.b	#60,(a1)
 		bcs.s	Hud_ChkLives
-		move.b	#0,(a1)
+		clr.b	(a1)
 		addq.b	#1,-(a1)
 		cmpi.b	#60,(a1)
 		bcs.s	loc_1C734
-		move.b	#0,(a1)
+		clr.b	(a1)
 		addq.b	#1,-(a1)
 		cmpi.b	#9,(a1)
 		bcs.s	loc_1C734
@@ -38519,7 +38141,7 @@ TimeOver:				; XREF: Hud_ChkTime
 		lea	($FFFFD000).w,a0
 		movea.l	a0,a2
 		bsr.w	KillSonic
-		move.b	#1,($FFFFFE1A).w
+		st.b	($FFFFFE1A).w
 		rts
 ; ===========================================================================
 
@@ -39201,8 +38823,8 @@ Debug_Exit:
 		moveq	#0,d0
 		move.w	d0,($FFFFFE08).w ; deactivate debug mode
 		bsr.w 	Hud_Base
-		move.b 	#1,($FFFFFE1D).w
-		move.b 	#1,($FFFFFE1F).w
+		st.b 	($FFFFFE1D).w
+		st.b 	($FFFFFE1F).w
 		move.l	#Map_Sonic,($FFFFD004).w
 		move.w	#$780,($FFFFD002).w
 		move.b	d0,($FFFFD01C).w

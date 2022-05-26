@@ -12,7 +12,7 @@ LoadDualPCM:
 		lea	dZ80,a1						; load Z80 RAM address into a1
 
 		waitZ80Stop						; check if Z80 has stopped
-		jsr	SaxmanDec					; decompress into z80 RAM
+		jsr	zx0_decompress					; decompress into z80 RAM
 
 		moveq	#2,d0					; set flush timer for 60hz systems
 		btst	#6,ConsoleRegion.w		; is this a PAL Mega Drive?

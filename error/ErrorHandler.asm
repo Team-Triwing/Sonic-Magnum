@@ -30,7 +30,7 @@ _eh_default			equ	0 ;_eh_show_sr_usp
 
 Str_ErrorHeader:
    dc.b   pal3,"Send the following information to", endl
-   dc.b   pal2,"RepellantMold/valvastVT",pal3,":",pal0,endl,endl
+   dc.b   pal2,"RepellantMold",pal3,":",pal0,endl,endl
    dc.b   0
    even
 

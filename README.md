@@ -1,28 +1,41 @@
-# Sonic Magnum, formerly UNTITLED S1 COLLAB HACK & collab-sonic-rom-hack
-A Sonic 1 hack by **Team Triwing**, based off AMPS in Sonic 1
-This hack only had a few months of development time before being in development hell for a while
-# Credits
-## Creator
+# Sonic Magnum
+A Sonic 1 hack by **Team Triwing**, based off AMPS in Sonic 1  
+This hack only had a several weeks of development time (May 2021) before being in development hell from my very small team being dormant very quickly. :hurtrealbad:
+
+Credits
+======
+Creator(s)
+------
 * RepellantMold
 * valvastVT
-## Level design
+
+Level design
+------
 * valvastVT
 * RepellantMold
-## Sound
+
+Sound
+------
 * RepellantMold
-## Testing
+
+Testing
+------
 * RepellantMold
-### Beta Testing
-* pierogi
+
+Beta Testing
+------
+* impierogi
+
 ### Compatibility Testing
-* RepellantMold (US model AtGames Genesis Flashback 2018)
+* RepellantMold (North American model AtGames Genesis Flashback 2018)
 * valvastVT (real hardware - Model 1 NTSC)
+
 ## Tools
 * Sik - romfix (compiled by RepellantMold)
 * AuroraFields - AMPS
 * Vladikcomper - Error handler
 * MarkeyJester - Twizzler compression
-* MainMemory - SonLVL & SonPLN
+* MainMemory - SonLVL/SonPLN
 * Selbi - Sonic 1: Text Code Generator
 * Xenowhirl - SonMapEd
 * Hivebrain - HivePal

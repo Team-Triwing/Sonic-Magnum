@@ -1,6 +1,6 @@
 Main		SECTION org(0)
 
-Z80_Space =	$6DF			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
+Z80_Space =	$6E0			; The amount of space reserved for Z80 driver. The compressor tool may ask you to increase the size...
 z80_ram:	equ $A00000
 z80_bus_request	equ $A11100
 z80_reset:	equ $A11200
@@ -274,11 +274,11 @@ Vint:				; XREF: Vectors
 		jsr	off_B6E(pc,d0.w)
 
 loc_B5E:				; XREF: Vint_00
-		move	#$2300,sr       ; enable interrupts (we can accept horizontal interrupts from now on)
-		tst.b	($FFFFF64F).w 	; test "AMPS running flag" 
-		bne.s	loc_B64         ; if it was set already, don't call another instance of AMPS
-		jsr UpdateAMPS          ; run AMPS
-		clr.b	($FFFFF64F).w   ; reset "AMPS running flag"
+		move	#$2300,sr	; enable interrupts (we can accept horizontal interrupts from now on)
+		tst.b	($FFFFF64F).w	; test "AMPS running flag"
+		bne.s	loc_B64		; if it was set already, don't call another instance of AMPS
+		jsr	UpdateAMPS	; run AMPS
+		clr.b	($FFFFF64F).w	; reset "AMPS running flag"
 
 loc_B64:				; XREF: loc_D50
 		btst	#6,(ConsoleRegion).w
@@ -463,7 +463,7 @@ Vint_05:				; XREF: off_B6E
 		move.w	#$7C00,(a5)
 		move.w	#$83,($FFFFF640).w
 		move.w	($FFFFF640).w,(a5)
-		bsr.w	PalCycle_SS
+		jsr	PalCycle_SS
 		jsr	(ProcessDMA).l
 
 loc_E64:
@@ -1465,11 +1465,10 @@ loc_15D8:
 
 ClearPLC:				; XREF: LoadPLC2
 		lea	($FFFFF680).w,a2
-		moveq	#$1F,d0
 
-ClearPLC_Loop:
+		rept 32
 		clr.l	(a2)+
-		dbf	d0,ClearPLC_Loop
+		endr
 		rts
 ; End of function ClearPLC
 
@@ -1578,12 +1577,11 @@ locret_16DA:				; XREF: sub_1642
 loc_16DC:				; XREF: sub_165E
 		lea ($FFFFF680).w,a0
 		lea 6(a0),a1
-		moveq   #$E,d0      ; do $F cues
 
-loc_16E2:               ; XREF: sub_165E
+		rept 15
 		move.l  (a1)+,(a0)+
 		move.w  (a1)+,(a0)+
-		dbf d0,loc_16E2
+		endr
 
 		moveq   #0,d0
 		move.l  d0,(a0)+    ; clear the last cue to avoid overcopying it
@@ -1645,11 +1643,11 @@ RunPLC_Loop:
 ; 	a1	Destination address
 ; ---------------------------------------------------------------------------
 
-flip_x              =      (1<<11)
-flip_y              =      (1<<12)
-palette_line_1      =      (1<<13)
-palette_line_2      =      (2<<13)
-high_priority       =      (1<<15)
+flip_x	=	(1<<11)
+flip_y	=	(1<<12)
+palette_line_1	=	(1<<13)
+palette_line_2	=	(2<<13)
+high_priority	=	(1<<15)
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 ; ---------------------------------------------------------------------------
@@ -1910,7 +1908,7 @@ _Kos_RunBitStream macro
 	dbra	d2,.skip\@
 	moveq	#7,d2					; We have 8 new bits, but will use one up below.
 	move.b	d1,d0					; Use the remaining 8 bits.
-	not.w	d3						; Have all 16 bits been used up?
+	not.w	d3					; Have all 16 bits been used up?
 	bne.s	.skip\@					; Branch if not.
 	move.b	(a0)+,d0				; Get desc field low-byte.
 	move.b	(a0)+,d1				; Get desc field hi-byte.
@@ -2343,7 +2341,7 @@ loc_1B06:				; XREF: PalCycle_SBZ
 		tst.b	($FFFFFE11).w
 		beq.s	loc_1B2E
 		lea	(Pal_SBZCyc10).l,a0
-		move.w	#0,($FFFFF634).w
+		clr.w	($FFFFF634).w
 
 loc_1B2E:
 		moveq	#-1,d1
@@ -2402,71 +2400,71 @@ Pal_SBZCyc9:	incbin	pallet\c_sbz_9.bin
 Pal_SBZCyc10:	incbin	pallet\c_sbz_10.bin
 
 PalCycle_SuperSonic:
-	    tst.b   ($FFFFF65F).w
-	    beq.s   loc_24DE
-	    bmi.s   loc_24E0
-	    cmpi.b	#1,($FFFFF65F).w
-	    bgt.s	PalCycle_SuperSonic_revert	; branch for values greater than 1
-	    subq.b  #1,($FFFFF65E).w
-	    bpl.s   loc_24DE
-	    move.b  #3,($FFFFF65E).w
-	    lea     (loc_2516), a0
-	    move.w  ($FFFFF65C).w,d0
-	    addq.w  #8,($FFFFF65C).w
-	    cmpi.w  #$30,($FFFFF65C).w
-	    bcs.s   loc_24D2
-	    st.b  ($FFFFF65F).w
+	tst.b	($FFFFF65F).w
+	beq.s	loc_24DE
+	bmi.s	loc_24E0
+	cmpi.b	#1,($FFFFF65F).w
+	bgt.s	PalCycle_SuperSonic_revert	; branch for values greater than 1
+	subq.b	#1,($FFFFF65E).w
+	bpl.s	loc_24DE
+	move.b	#3,($FFFFF65E).w
+	lea	(loc_2516),a0
+	move.w	($FFFFF65C).w,d0
+	addq.w	#8,($FFFFF65C).w
+	cmpi.w	#$30,($FFFFF65C).w
+	bcs.s	loc_24D2
+	st.b	($FFFFF65F).w
 loc_24D2:
-	    lea     ($FFFFFB04).w,a1
-	    move.l  0(a0,d0),(a1)+
-	    move.l  4(a0,d0),(a1)
+	lea	($FFFFFB04).w,a1
+	move.l	0(a0,d0),(a1)+
+	move.l	4(a0,d0),(a1)
 loc_24DE:
-	    rts
+	rts
 loc_24E0:
-	    subq.b  #1,($FFFFF65E).w
-	    bpl.s   loc_24DE
-	    move.b  #7,($FFFFF65E).w
-	    lea     (loc_2516), a0
-	    move.w  ($FFFFF65C).w,d0
-	    addq.w  #8,($FFFFF65C).w
-	    cmpi.w  #$78,($FFFFF65C).w
-	    bcs.s   loc_2508
-	    move.w  #$30,($FFFFF65C).w
+	subq.b	#1,($FFFFF65E).w
+	bpl.s	loc_24DE
+	move.b	#7,($FFFFF65E).w
+	lea	(loc_2516),a0
+	move.w	($FFFFF65C).w,d0
+	addq.w	#8,($FFFFF65C).w
+	cmpi.w	#$78,($FFFFF65C).w
+	bcs.s	loc_2508
+	move.w	#$30,($FFFFF65C).w
 loc_2508:
-	    lea     ($FFFFFB04).w,a1
-	    move.l  $00(a0,d0),(a1)+
-	    move.l  $4(a0,d0),(a1)
-	    rts
+	lea	($FFFFFB04).w,a1
+	move.l	0(a0,d0),(a1)+
+	move.l	4(a0,d0),(a1)
+	rts
 
 PalCycle_SuperSonic_revert:	; runs the fade in transition backwards
-	    ; run frame timer
-	    subq.b	#1,($FFFFF65E).w
-	    bpl.s	.return	; rts
-	    move.b	#3,($FFFFF65E).w
+	; run frame timer
+	subq.b	#1,($FFFFF65E).w
+	bpl.s	.return	; rts
+	move.b	#3,($FFFFF65E).w
 
-	    ; decrement palette frame and update Sonic's palette
-	    lea	(loc_2516).l,a0
-	    move.w	($FFFFF65C).w,d0
-	    subq.w	#8,($FFFFF65C).w	; previous frame
-	    bcc.s	.notfirstframe			; branch, if it isn't the first frame
-	    clr.w	($FFFFF65C).w
-	    clr.b	($FFFFF65F).w	; stop palette cycle
+	; decrement palette frame and update Sonic's palette
+	lea	(loc_2516).l,a0
+	move.w	($FFFFF65C).w,d0
+	subq.w	#8,($FFFFF65C).w	; previous frame
+	bcc.s	.notfirstframe			; branch, if it isn't the first frame
+	clr.w	($FFFFF65C).w
+	clr.b	($FFFFF65F).w	; stop palette cycle
 .notfirstframe
-	    lea	($FFFFFB04).w,a1
-	    move.l	(a0,d0.w),(a1)+
-	    move.l	4(a0,d0.w),(a1)
+	lea	($FFFFFB04).w,a1
+	move.l	(a0,d0.w),(a1)+
+	move.l	4(a0,d0.w),(a1)
 .return
-	    rts
+	rts
 	
-loc_2516:              
-	    dc.w    $A22, $C42, $E44, $E66, $844, $A64, $E66, $E88
-	    dc.w    $666, $A86, $E88, $EAA, $488, $AA8, $EAA, $ECC
-	    dc.w    $4AA, $ACA, $ECC, $EEE, $4CC, $AEC, $EEE, $EEE
-	    dc.w    $4EE, $AEE, $EEE, $EEE, $6EE, $EEE, $EEE, $EEE
-	    dc.w    $8EE, $EEE, $EEE, $EEE, $6EE, $CEE, $EEE, $EEE
-	    dc.w    $4EE, $AEE, $EEE, $EEE, $2EE, $8EE, $CEE, $EEE
-	    dc.w    $EE, $6EE, $AEE, $EEE, $EE, $4EE, $8EE, $CEE
-	    dc.w    $EE, $6EE, $AEE, $EEE, $EE, $8EE, $CEE, $EEE
+loc_2516:
+	dc.w	$A22,$C42,$E44,$E66,$844,$A64,$E66,$E88
+	dc.w	$666,$A86,$E88,$EAA,$488,$AA8,$EAA,$ECC
+	dc.w	$4AA,$ACA,$ECC,$EEE,$4CC,$AEC,$EEE,$EEE
+	dc.w	$4EE,$AEE,$EEE,$EEE,$6EE,$EEE,$EEE,$EEE
+	dc.w	$8EE,$EEE,$EEE,$EEE,$6EE,$CEE,$EEE,$EEE
+	dc.w	$4EE,$AEE,$EEE,$EEE,$2EE,$8EE,$CEE,$EEE
+	dc.w	$EE,$6EE,$AEE,$EEE,$0EE,$4EE,$8EE,$CEE
+	dc.w	$EE,$6EE,$AEE,$EEE,$0EE,$8EE,$CEE,$EEE
 
 ; ---------------------------------------------------------------------------
 ; Subroutine to	fade out and fade in
@@ -3419,15 +3417,15 @@ TitleScreen:				; XREF: GameModeArray
 		clr.w	($FFFFF634).w ; disable pallet cycling
 		clr.b	($FFFFFE19).w
 		clr.b	(Reload_level).w
-		bsr.w	LevelSizeLoad
-		bsr.w	DeformBgLayer
+		jsr	LevelSizeLoad
+		jsr	DeformBgLayer
 		lea	(Blk16_GHZ).l,a0 ; load	GHZ 16x16 mappings
 		lea	($FFFFB000).w,a1
 		jsr	zx0_decompress
 		lea	(Blk256_GHZ).l,a0 ; load GHZ 256x256 mappings
 		lea	($FF0000).l,a1
 		jsr	zx0_decompress
-		bsr.w	LevelLayoutLoad
+		jsr	LevelLayoutLoad
 		bsr.w	Pal_FadeFrom
 		bsr.w	ClearScreen
 		lea	(VDP_CTRL).l,a5
@@ -3435,7 +3433,7 @@ TitleScreen:				; XREF: GameModeArray
 		lea	($FFFFF708).w,a3
 		lea	($FFFFA440).w,a4
 		move.w	#$6000,d2
-		bsr.w	LoadTilesFromStart2
+		jsr	LoadTilesFromStart2
 		lea	($FF0000).l,a1
 		lea	(Eni_Title).l,a0 ; load	title screen mappings
 		move.w	#0,d0
@@ -3471,7 +3469,7 @@ TitleScreen:				; XREF: GameModeArray
 		bsr.w	DelayProgram		; late, or we will lose the YM data and break music
 		music	mus_Title		; play title screen music
 		jsr	ObjectsLoad
-		bsr.w	DeformBgLayer
+		jsr	DeformBgLayer
 		jsr	BuildSprites
 		moveq	#0,d0
 		bsr.w	LoadPLC2
@@ -3485,7 +3483,7 @@ loc_317C:
 		move.b	#4,($FFFFF62A).w
 		bsr.w	DelayProgram
 		jsr	ObjectsLoad
-		bsr.w	DeformBgLayer
+		jsr	DeformBgLayer
 		jsr	BuildSprites
 		bsr.w	PalCycle_Title
 		bsr.w	RunPLC_RAM
@@ -3695,7 +3693,7 @@ Demo:					; XREF: TitleScreen
 loc_33B6:				; XREF: loc_33E4
 		move.b	#4,($FFFFF62A).w
 		bsr.w	DelayProgram
-		bsr.w	DeformBgLayer
+		jsr	DeformBgLayer
 		bsr.w	PalCycle_Load
 		bsr.w	RunPLC_RAM
 		move.w	($FFFFD008).w,d0
@@ -4077,12 +4075,12 @@ loc_3946:
 		st.b	(Reload_level).w
 		moveq	#3,d0
 		bsr.w	PalLoad1	; load Sonic's pallet line
-		bsr.w	LevelSizeLoad
-		bsr.w	DeformBgLayer
+		jsr	LevelSizeLoad
+		jsr	DeformBgLayer
 		bset	#2,($FFFFF754).w
-		bsr.w	LoadZoneTiles
-		bsr.w	MainLoadBlockLoad ; load block mappings	and pallets
-		bsr.w	LoadTilesFromStart
+		jsr	LoadZoneTiles
+		jsr	MainLoadBlockLoad ; load block mappings	and pallets
+		jsr	LoadTilesFromStart
 		bsr.w	ColIndexLoad
 		bsr.w	LZWaterEffects
 		move.b	#1,($FFFFD000).w ; load	Sonic object
@@ -4211,7 +4209,7 @@ Level_MainLoop:
 		bcc.s	loc_3B14
 
 loc_3B10:
-		bsr.w	DeformBgLayer
+		jsr	DeformBgLayer
 
 loc_3B14:
 		jsr	BuildSprites
@@ -4838,11 +4836,9 @@ ColPointers:
 OscillateNumInit:			; XREF: Level
 		lea	($FFFFFE5E).w,a1
 		lea	(Osc_Data).l,a2
-		moveq	#$20,d1
-
-Osc_Loop:
+		rept 33
 		move.w	(a2)+,(a1)+
-		dbf	d1,Osc_Loop
+		endr
 		rts
 ; End of function OscillateNumInit
 
@@ -4957,7 +4953,7 @@ loc_4232:
 		addq.b	#1,($FFFFFEC5).w
 		cmpi.b	#6,($FFFFFEC5).w
 		bcs.s	loc_4250
-		move.b	#0,($FFFFFEC5).w
+		clr.b	($FFFFFEC5).w
 
 loc_4250:
 		tst.b	($FFFFFEC6).w
@@ -5048,36 +5044,28 @@ loc_463C:
 		moveq	#$14,d0
 		bsr.w	RunPLC_ROM	; load special stage patterns
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-SS_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,SS_ClrObjRam	; clear	the object RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFF700).w,a1
-		moveq	#0,d0
-		move.w	#$3F,d1
 
-SS_ClrRam:
-		move.l	d0,(a1)+
-		dbf	d1,SS_ClrRam	; clear	variables
+		rept 64
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFFE60).w,a1
-		moveq	#0,d0
-		move.w	#$27,d1
 
-SS_ClrRam2:
-		move.l	d0,(a1)+
-		dbf	d1,SS_ClrRam2	; clear	variables
+		rept 40
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFAA00).w,a1
-		moveq	#0,d0
-		move.w	#$7F,d1
 
-SS_ClrNemRam:
-		move.l	d0,(a1)+
-		dbf	d1,SS_ClrNemRam	; clear	Nemesis	buffer
+		rept 128
+		clr.l	(a1)+
+		endr
 
 		clr.b	($FFFFF64E).w
 		clr.b	($FFFFFE02).w
@@ -5092,7 +5080,7 @@ SS_ClrNemRam:
 		clr.w	($FFFFF780).w	; set stage angle to "upright"
 		move.w	#$40,($FFFFF782).w ; set stage rotation	speed
 		music	mus_SS		; play special stage BG	music
-		move.w	#0,($FFFFF790).w
+		clr.w	($FFFFF790).w
 		lea	(Demo_Index).l,a1
 		moveq	#6,d0
 		lsl.w	#2,d0
@@ -5176,10 +5164,10 @@ loc_47D4:
 		move.w	#$8407,(a6)
 		move.w	#$9001,(a6)
 		bsr.w	ClearScreen
-		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-		lea Art_TitleCard,a0        ; load title card patterns
-		move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-		jsr LoadUncArt          ; load uncompressed art
+		move.l	#$70000002,(VDP_CTRL)				; set mode "VRAM Write to $B000"
+		lea	Art_TitleCard,a0				; load title card patterns
+		move.l	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0	; the title card art length, in tiles
+		jsr	LoadUncArt					; load uncompressed art
 		jsr	Hud_Base
 		resetDMA
 		music	mus_GotThroughSpecial; play end-of-level music
@@ -5195,12 +5183,10 @@ loc_47D4:
 		mulu.w	#10,d0		; multiply rings by 10
 		move.w	d0,($FFFFF7D4).w; set rings bonus
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-SS_EndClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,SS_EndClrObjRam ; clear object RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
 
 		move.b	#$7E,($FFFFD5C0).w ; load results screen object
 
@@ -5526,25 +5512,24 @@ ContinueScreen:				; XREF: GameModeArray
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8700,(a6)
-		bsr.w	ClearScreen
+		jsr	ClearScreen
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-Cont_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,Cont_ClrObjRam ; clear object RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
+
 		clr.b  	($FFFFFFD0).w
-		move.l  #$70000002,(VDP_CTRL)        ; set mode "VRAM Write to $B000"
-		lea Art_TitleCard,a0        ; load title card patterns
-		move.l  #((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
-		jsr LoadUncArt          ; load uncompressed art
+		move.l	#$70000002,(VDP_CTRL)	; set mode "VRAM Write to $B000"
+		lea	Art_TitleCard,a0	; load title card patterns
+		move.l	#((Art_TitleCard_End-Art_TitleCard)/32)-1,d0; the title card art length, in tiles
+		jsr	LoadUncArt	; load uncompressed art
 		move.l	#$60000002,(VDP_CTRL).l
 		lea	(Nem_ContSonic).l,a0 ; load Sonic patterns
-		bsr.w	NemDec
+		jsr	NemDec
 		move.l	#$6A200002,(VDP_CTRL).l
 		lea	(Nem_MiniSonic).l,a0 ; load continue screen patterns
-		bsr.w	NemDec
+		jsr	NemDec
 		moveq	#10,d1
 		jsr	ContScrCounter	; run countdown	(start from 10)
 		moveq	#$12,d0
@@ -5569,7 +5554,7 @@ Cont_ClrObjRam:
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
 		move.w	d0,(VDP_CTRL).l
-		bsr.w	Pal_FadeTo
+		jsr	Pal_FadeTo
 
 ; ---------------------------------------------------------------------------
 ; Continue screen main loop
@@ -5695,14 +5680,14 @@ Obj80_ChkType:				; XREF: Obj80_Index
 		andi.b	#1,d0
 		bne.s	loc_4F40
 		tst.w	($FFFFD010).w
-		jne		DeleteObject
+		jne	DeleteObject
 		rts
 ; ===========================================================================
 
 loc_4F40:				; XREF: Obj80_ChkType
 		move.b	($FFFFFE0F).w,d0
 		andi.b	#$F,d0
-		jne		DisplaySprite
+		jne	DisplaySprite
 		bchg	#0,$1A(a0)
 		jmp	DisplaySprite
 ; ===========================================================================
@@ -5759,13 +5744,13 @@ Obj81_GetUp:				; XREF: Obj81_Animate
 		move.b	#$1E,$1C(a0)	; use "getting up" animation
 		clr.w	$14(a0)
 		subq.w	#8,$C(a0)
-		sfx		sfx_Roll
+		sfx	sfx_Roll
 
 Obj81_Run:				; XREF: Obj81_Index
 		cmpi.w	#$800,$14(a0)	; check	Sonic's "run speed" (not moving)
 		bne.s	Obj81_AddSpeed	; if too low, branch
 		move.w	#$1000,$10(a0)	; move Sonic to	the right
-		sfx		sfx_Dash
+		sfx	sfx_Dash
 		bra.s	Obj81_ShowRun
 ; ===========================================================================
 
@@ -5793,44 +5778,36 @@ Map_obj80:
 
 EndingSequence:				; XREF: GameModeArray
 		command	mus_Stop	; stop music
-		bsr.w	Pal_FadeFrom
+		jsr	Pal_FadeFrom
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-End_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,End_ClrObjRam ; clear object	RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFF628).w,a1
-		moveq	#0,d0
-		move.w	#$15,d1
 
-End_ClrRam:
-		move.l	d0,(a1)+
-		dbf	d1,End_ClrRam	; clear	variables
+		rept 22
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFF700).w,a1
-		moveq	#0,d0
-		move.w	#$3F,d1
 
-End_ClrRam2:
-		move.l	d0,(a1)+
-		dbf	d1,End_ClrRam2	; clear	variables
+		rept 64
+		clr.l	(a1)+
+		endr
 
 		lea	($FFFFFE60).w,a1
-		moveq	#0,d0
-		move.w	#$47,d1
 
-End_ClrRam3:
-		move.l	d0,(a1)+
-		dbf	d1,End_ClrRam3	; clear	variables
+		rept 72
+		clr.l	(a1)+
+		endr
 
 		move	#$2700,sr
 		move.w	($FFFFF60C).w,d0
 		andi.b	#$BF,d0
 		move.w	d0,(VDP_CTRL).l
-		bsr.w	ClearScreen
+		jsr	ClearScreen
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8B03,(a6)
 		move.w	#$8230,(a6)
@@ -5849,7 +5826,7 @@ End_ClrRam3:
 
 End_LoadData:
 		moveq	#$1C,d0
-		bsr.w	RunPLC_ROM	; load ending sequence patterns
+		jsr	RunPLC_ROM	; load ending sequence patterns
 		jsr	Hud_Base
 		bsr.w	LevelSizeLoad
 		bsr.w	DeformBgLayer
@@ -5861,9 +5838,9 @@ End_LoadData:
 		move	#$2300,sr
 		lea	(Kos_EndFlowers).l,a0	; load extra flower patterns
 		lea	($FFFF9400).w,a1 ; RAM address to buffer the patterns
-		bsr.w	KosDec
+		jsr	KosDec
 		moveq	#3,d0
-		bsr.w	PalLoad1	; load Sonic's pallet
+		jsr	PalLoad1	; load Sonic's pallet
 		music	mus_Ending	; play ending sequence music
 		btst	#JbA,($FFFFF604).w ; is button A pressed?
 		beq.s	End_LoadSonic	; if not, branch
@@ -5896,28 +5873,28 @@ End_LoadSonic:
 		sf.b	($FFFFFE1E).w
 		move.w	#1800,($FFFFF614).w
 		move.b	#$18,($FFFFF62A).w
-		bsr.w	DelayProgram
+		jsr	DelayProgram
 		move.w	($FFFFF60C).w,d0
 		ori.b	#$40,d0
 		move.w	d0,(VDP_CTRL).l
 		move.w	#$3F,($FFFFF626).w
-		bsr.w	Pal_FadeTo
+		jsr	Pal_FadeTo
 
 ; ---------------------------------------------------------------------------
 ; Main ending sequence loop
 ; ---------------------------------------------------------------------------
 
 End_MainLoop:
-		bsr.w	PauseGame
+		jsr	PauseGame
 		move.b	#$18,($FFFFF62A).w
-		bsr.w	DelayProgram
+		jsr	DelayProgram
 		addq.w	#1,($FFFFFE04).w
 		bsr.w	End_MoveSonic
 		jsr	ObjectsLoad
 		bsr.w	DeformBgLayer
 		jsr	BuildSprites
 		jsr	ObjPosLoad
-		bsr.w	PalCycle_Load
+		jsr	PalCycle_Load
 		bsr.w	OscillateNumDo
 		bsr.w	ChangeRingFrame
 		cmpi.b	#$18,($FFFFF600).w ; is	scene number $18 (ending)?
@@ -5937,9 +5914,9 @@ loc_52DA:
 		clr.w	($FFFFF794).w
 
 End_AllEmlds:				; XREF: loc_5334
-		bsr.w	PauseGame
+		;jsr	PauseGame
 		move.b	#$18,($FFFFF62A).w
-		bsr.w	DelayProgram
+		jsr	DelayProgram
 		addq.w	#1,($FFFFFE04).w
 		bsr.w	End_MoveSonic
 		jsr	ObjectsLoad
@@ -5951,7 +5928,7 @@ End_AllEmlds:				; XREF: loc_5334
 		subq.w	#1,($FFFFF794).w
 		bpl.s	loc_5334
 		move.w	#2,($FFFFF794).w
-		bsr.w	Pal_ToWhite
+		jsr	Pal_ToWhite
 
 loc_5334:
 		tst.b	($FFFFFE02).w
@@ -5965,8 +5942,8 @@ loc_5334:
 		move.w	#$4000,d2
 		bsr.w	LoadTilesFromStart2
 		moveq	#$13,d0
-		bsr.w	PalLoad1	; load ending pallet
-		bsr.w	Pal_MakeWhite
+		jsr	PalLoad1	; load ending pallet
+		jsr	Pal_MakeWhite
 		bra.w	End_MainLoop
 
 ; ---------------------------------------------------------------------------
@@ -6276,8 +6253,8 @@ Map_obj89:
 ; ---------------------------------------------------------------------------
 
 Credits:				; XREF: GameModeArray
-		bsr.w	ClearPLC
-		bsr.w	Pal_FadeFrom
+		jsr	ClearPLC
+		jsr	Pal_FadeFrom
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
@@ -6287,28 +6264,25 @@ Credits:				; XREF: GameModeArray
 		move.w	#$8B03,(a6)
 		move.w	#$8720,(a6)
 		clr.b	($FFFFF64E).w
-		bsr.w	ClearScreen
+		jsr	ClearScreen
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-Cred_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,Cred_ClrObjRam ; clear object RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
 
 		move.l	#$74000002,(VDP_CTRL).l
 		lea	(Nem_CreditText).l,a0	; load credits alphabet patterns
-		bsr.w	NemDec
+		jsr	NemDec
 		lea	($FFFFFB80).w,a1
-		moveq	#0,d0
-		move.w	#$1F,d1
 
-Cred_ClrPallet:
-		move.l	d0,(a1)+
-		dbf	d1,Cred_ClrPallet ; fill pallet	with black ($0000)
+		rept 32
+		clr.l	(a1)+
+		endr
+
 		clr.b  	($FFFFFFD0).w
 		moveq	#3,d0
-		bsr.w	PalLoad1	; load Sonic's pallet
+		jsr	PalLoad1	; load Sonic's pallet
 		move.b	#$8A,($FFFFD080).w ; load credits object
 		jsr	ObjectsLoad
 		jsr	BuildSprites
@@ -6321,18 +6295,18 @@ Cred_ClrPallet:
 		moveq	#0,d0
 		move.b	(a2),d0
 		beq.s	loc_5862
-		bsr.w	LoadPLC		; load level patterns
+		jsr	LoadPLC		; load level patterns
 
 loc_5862:
 		moveq	#1,d0
-		bsr.w	LoadPLC		; load standard	level patterns
+		jsr	LoadPLC		; load standard	level patterns
 		move.w	#120,($FFFFF614).w ; display a credit for 2 seconds
-		bsr.w	Pal_FadeTo
+		jsr	Pal_FadeTo
 
 Cred_WaitLoop:
 		move.b	#4,($FFFFF62A).w
-		bsr.w	DelayProgram
-		bsr.w	RunPLC_RAM
+		jsr	DelayProgram
+		jsr	RunPLC_RAM
 		tst.w	($FFFFF614).w	; have 2 seconds elapsed?
 		bne.s	Cred_WaitLoop	; if not, branch
 		tst.l	($FFFFF680).w	; have level gfx finished decompressing?
@@ -6369,11 +6343,10 @@ EndingDemoLoad:				; XREF: Credits
 		bne.s	EndDemo_Exit	; if not, branch
 		lea	(EndDemo_LampVar).l,a1 ; load lamppost variables
 		lea	($FFFFFE30).w,a2
-		move.w	#8,d0
 
-EndDemo_LampLoad:
+		rept 8
 		move.l	(a1)+,(a2)+
-		dbf	d0,EndDemo_LampLoad
+		endr
 
 EndDemo_Exit:
 		rts
@@ -6401,8 +6374,8 @@ EndDemo_LampVar:
 ; ---------------------------------------------------------------------------
 
 TryAgainEnd:				; XREF: Credits
-		bsr.w	ClearPLC
-		bsr.w	Pal_FadeFrom
+		jsr	ClearPLC
+		jsr	Pal_FadeFrom
 		lea	(VDP_CTRL).l,a6
 		move.w	#$8004,(a6)
 		move.w	#$8230,(a6)
@@ -6412,41 +6385,37 @@ TryAgainEnd:				; XREF: Credits
 		move.w	#$8B03,(a6)
 		move.w	#$8720,(a6)
 		clr.b	($FFFFF64E).w
-		bsr.w	ClearScreen
+		jsr	ClearScreen
 		lea	($FFFFD000).w,a1
-		moveq	#0,d0
-		move.w	#$7FF,d1
 
-TryAg_ClrObjRam:
-		move.l	d0,(a1)+
-		dbf	d1,TryAg_ClrObjRam ; clear object RAM
+		rept 2048
+		clr.l	(a1)+
+		endr
 
 		moveq	#$1D,d0
-		bsr.w	RunPLC_ROM	; load "TRY AGAIN" or "END" patterns
+		jsr	RunPLC_ROM	; load "TRY AGAIN" or "END" patterns
 		lea	($FFFFFB80).w,a1
-		moveq	#0,d0
-		move.w	#$1F,d1
 
-TryAg_ClrPallet:
-		move.l	d0,(a1)+
-		dbf	d1,TryAg_ClrPallet ; fill pallet with black ($0000)
+		rept 32
+		clr.l	(a1)+
+		endr
 
 		moveq	#$13,d0
-		bsr.w	PalLoad1	; load ending pallet
+		jsr	PalLoad1	; load ending pallet
 		clr.w	($FFFFFBC0).w
 		move.b	#$8B,($FFFFD080).w ; load Eggman object
 		jsr	ObjectsLoad
 		jsr	BuildSprites
 		move.w	#1800,($FFFFF614).w ; show screen for 30 seconds
-		bsr.w	Pal_FadeTo
+		jsr	Pal_FadeTo
 
 ; ---------------------------------------------------------------------------
 ; "TRY AGAIN" and "END"	screen main loop
 ; ---------------------------------------------------------------------------
 TryAg_MainLoop:
-		bsr.w	PauseGame
+		jsr	PauseGame
 		move.b	#4,($FFFFF62A).w
-		bsr.w	DelayProgram
+		jsr	DelayProgram
 		jsr	ObjectsLoad
 		jsr	BuildSprites
 		andi.b	#J_S,($FFFFF605).w ; is	Start button pressed?
@@ -8922,7 +8891,7 @@ LoadZoneTiles:
 		andi.l	#$FFFFFF,d0   	 	; Filter out the first byte, which contains the first PLC ID, leaving the address of the zone's art in d0
 		movea.l	d0,a0			; Load the address of the zone's art into a0 (source)
 		lea	($FF0000).l,a1		; Load v_256x256/StartOfRAM (in this context, an art buffer) into a1 (destination)
-		bsr.w	CompDec			; Decompress a0 to a1 (Comper compression)
+		jsr	CompDec			; Decompress a0 to a1 (Comper compression)
 
 		move.w	a1,d3			; Move a word of a1 to d3, note that a1 doesn't exactly contain the address of v_256x256/StartOfRAM anymore, after KosDec, a1 now contains v_256x256/StartOfRAM + the size of the file decompressed to it, d3 now contains the length of the file that was decompressed
 		move.w	d3,d7			; Move d3 to d7, for use in seperate calculations
@@ -8943,7 +8912,7 @@ LoadZoneTiles:
 		jsr	(QueueDMA).l		; Use d1, d2, and d3 to locate the decompressed art and ready for transfer to VRAM
 		move.w	d7,-(sp)		; Store d7 in the Stack
 		move.b	#$C,($FFFFF62A).w
-		bsr.w	DelayProgram
+		jsr	DelayProgram
 		jsr	RunPLC_RAM
 		move.w	(sp)+,d7		; Restore d7 from the Stack
 		move.w	#$800,d3		; Force the DMA transfer length to be $1000/2 (the first cycle is dynamic because the art's DMA'd backwards)
@@ -8991,7 +8960,7 @@ MLB_UsePal0E:
 		moveq	#$E,d0		; use SBZ2/FZ pallet
 
 MLB_NormalPal:
-		bsr.w	PalLoad1	; load pallet (based on	d0)
+		jsr	PalLoad1	; load pallet (based on	d0)
 		movea.l	(sp)+,a2
 		addq.w	#4,a2
 		moveq	#0,d0
@@ -10060,7 +10029,7 @@ Obj11_MoveSonic:			; XREF: Obj11_WalkOff
 
 Obj11_Bend:				; XREF: Obj11_Action; Obj11_WalkOff
 		move.b	$3E(a0),d0
-		bsr.w	CalcSine
+		jsr	CalcSine
 		move.w	d0,d4
 		lea	(Obj11_BendData2).l,a4
 		moveq	#0,d0
@@ -10422,7 +10391,7 @@ loc_7BB6:
 
 
 Obj15_Move2:				; XREF: Obj15_Move; Obj48_Display
-		bsr.w	CalcSine
+		jsr	CalcSine
 		move.w	$38(a0),d2
 		move.w	$3A(a0),d3
 		lea	$28(a0),a2
@@ -10731,7 +10700,7 @@ loc_7F06:
 
 Obj18_Nudge:				; XREF: Obj18_Action; Obj18_Action2
 		move.b	$38(a0),d0
-		bsr.w	CalcSine
+		jsr	CalcSine
 		move.w	#$400,d1
 		muls.w	d1,d0
 		swap	d0
@@ -24404,7 +24373,7 @@ loc_12C64:
 
 loc_12C7E:
 		bsr.s	Sonic_Display
-		bsr.w	Sonic_Super       ;<--- add this!
+		bsr.w	Sonic_Super
 		bsr.w	Sonic_RecordPos
 		bsr.w	Sonic_Water
 		move.b	($FFFFF768).w,$36(a0)
@@ -25320,22 +25289,22 @@ locret_134D2:
 
 ; loc_1AB38: test_set_SS:
 Sonic_CheckGoSuper:
-		tst.b	($FFFFFE19).w	; is Sonic already Super?
-		bne.w	Sonic_RevertToNormal		; if yes, branch
+		tst.b	($FFFFFE19).w		; is Sonic already Super?
+		bne.w	Sonic_RevertToNormal	; if yes, branch
 	if safe=0
 		cmpi.b	#6,($FFFFFFB1).w	; does Sonic have exactly 6 emeralds?
 		bne.s	return_1ABA4		; if not, branch
 		cmpi.w	#50,($FFFFFE20).w	; does Sonic have at least 50 rings?
 		bcs.s	return_1ABA4		; if not, branch
 	endif
-		tst.b	($FFFFFE1E).w	; has Sonic reached the end of the act?
+		tst.b	($FFFFFE1E).w		; has Sonic reached the end of the act?
 		beq.s	return_1ABA4		; if yes, branch
 		move.b	#1,($FFFFF65F).w
 		move.b	#$F,($FFFFF65E).w
 		move.b	#1,($FFFFFE19).w
 		move.b	#$81,$2A(a0)
-		move.b	#$A,$1C(a0)			; use transformation animation
-;		move.b	#$7E,($FFFFB000+$2040).w	; Obj7E is the ending sonic which is why it's commented out
+		move.b	#$A,$1C(a0)		; use transformation animation
+;		move.b	#$7E,($FFFFB000+$2040).w; Obj7E is the ending sonic which is why it's commented out
 		sfx	sfx_Transform
 		lea	($FFFFF760).w,a2	; Load Sonic_top_speed into a2
 		bsr.w	ApplySpeedSettings	; Fetch Speed settings
@@ -25357,12 +25326,12 @@ return_1ABA4:
 
 ; loc_1ABA6:
 Sonic_Super:
-		tst.b	($FFFFFE19).w	; Ignore all this code if not Super Sonic
+		tst.b	($FFFFFE19).w		; Ignore all this code if not Super Sonic
 		beq.s	return_1AC3C
 		cmpi.b	#1,($FFFFF65F).w	; is Super Sonic's transformation sequence finished?
-		beq.s	return_1ABA4			; if not, branch
+		beq.s	return_1ABA4		; if not, branch
 		tst.b	($FFFFFE1E).w
-		beq.s	Sonic_RevertToNormal ; ?
+		beq.s	Sonic_RevertToNormal	; ?
 		subq.b	#1,($FFFFF670).w
 		bhi.s	return_1AC3C
 		move.b	#60,($FFFFF670).w	; Reset frame counter to 60
@@ -25869,7 +25838,7 @@ Sonic_ResetOnFloor:			; XREF: PlatformObject; et al
 		subq.w	#5,$C(a0)
 
 loc_137E4:
-		move.b	#0,$3C(a0)
+		clr.b	$3C(a0)
 		clr.w	($FFFFF7D0).w
 		rts
 ; End of function Sonic_ResetOnFloor
@@ -25913,7 +25882,7 @@ Sonic_HurtStop:				; XREF: Obj01_Hurt
 		move.w	d0,$12(a0)
 		move.w	d0,$10(a0)
 		move.w	d0,$14(a0)
-		move.b	#0,$1C(a0)
+		clr.b	$1C(a0)
 		subq.b	#2,$24(a0)
 		move.b	#$78,invulnerable_time(a0)
 
@@ -26093,27 +26062,27 @@ Obj01_Drowned:
 
 
 Sonic_Animate: ; loc_10AB2:
-	lea     (Sonic_AnimateData), a1 ; loc_10CB4
+	lea	(Sonic_AnimateData),a1 ; loc_10CB4
 	moveq	#0,d0
-	move.b  $1C(a0), d0
-	cmp.b   $1D(a0), d0
-	beq.s   loc_10ADA
-	move.b  d0, $1D(a0)
-	move.b  #$00, $1B(a0)
-	move.b  #$00, $1E(a0)
-	bclr    #$5, $22(a0)
+	move.b	$1C(a0),d0
+	cmp.b	$1D(a0),d0
+	beq.s	loc_10ADA
+	move.b	d0,$1D(a0)
+	move.b	#$00,$1B(a0)
+	move.b	#$00,$1E(a0)
+	bclr	#$5,$22(a0)
 loc_10ADA:
-	add.w   d0,d0
-	adda.w  $00(a1,d0), a1
-	move.b  (a1), d0
-	bmi.s   loc_10B4A
-	move.b  $22(a0),d1
-	andi.b  #$1,d1
-	andi.b  #$FC, $1(a0)
-	or.b    d1, $1(a0)
-	subq.b  #$1, $1E(a0)
-	bpl.s   loc_10B18
-	move.b  d0, $1E(a0)
+	add.w	d0,d0
+	adda.w	$00(a1,d0),a1
+	move.b	(a1), d0
+	bmi.s	loc_10B4A
+	move.b	$22(a0),d1
+	andi.b	#$1,d1
+	andi.b	#$FC,1(a0)
+	or.b	d1,1(a0)
+	subq.b	#$1,$1E(a0)
+	bpl.s	loc_10B18
+	move.b	d0,$1E(a0)
 loc_10B00:        
 	moveq	#0,d1
 	move.b  $1B(a0),d1
@@ -38657,22 +38626,22 @@ Debug_Index:	dc.w Debug_Main-Debug_Index
 ; ===========================================================================
 
 Debug_Main:				; XREF: Debug_Index
-		clr.l   ($FFFFD000+$10).w ; Clear X/Y Speed
-		clr.w   ($FFFFD000+$14).w ; Clear Inertia
+		clr.l   ($FFFFD000+$10).w	; Clear X/Y Speed
+		clr.w   ($FFFFD000+$14).w	; Clear Inertia
 		addq.b	#2,($FFFFFE08).w
 		move.w	($FFFFF72C).w,($FFFFFEF0).w ; buffer level x-boundary
 		move.w	($FFFFF726).w,($FFFFFEF2).w ; buffer level y-boundary
-		move.w	#0,($FFFFF72C).w
+		clr.w	($FFFFF72C).w
 		move.w	#$720,($FFFFF726).w
 		andi.w	#$7FF,($FFFFD00C).w
 		andi.w	#$7FF,($FFFFF704).w
 		andi.w	#$3FF,($FFFFF70C).w
 		move.b	#0,$1A(a0)
 		move.b	#0,$1C(a0)
-		cmpi.b	#$10,($FFFFF600).w ; is	game mode = $10	(special stage)?
+		cmpi.b	#$10,($FFFFF600).w	; is game mode = $10 (special stage)?
 		bne.s	Debug_Zone	; if not, branch
-		move.w	#0,($FFFFF782).w ; stop	special	stage rotating
-		move.w	#0,($FFFFF780).w ; make	special	stage "upright"
+		clr.w	($FFFFF782).w	; stop	special	stage rotating
+		clr.w	($FFFFF780).w	; make	special	stage "upright"
 		moveq	#6,d0		; use 6th debug	item list
 		bra.s	Debug_UseList
 ; ===========================================================================
@@ -38707,7 +38676,7 @@ loc_1CFBE:
 		add.w	d0,d0
 		adda.w	(a2,d0.w),a2
 		move.w	(a2)+,d6
-		bsr.w	Debug_Control
+		bsr.s	Debug_Control
 		jmp	DisplaySprite
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
@@ -38835,7 +38804,6 @@ Debug_Exit:
 		cmpi.b	#$10,($FFFFF600).w ; are you in	the special stage?
 		bne.s	Debug_DoNothing	; if not, branch
 		clr.b 	($FFFFFC02).w    ; clear 1st entry in object state table
-		clr.w	($FFFFF780).w
 		move.w	#$40,($FFFFF782).w ; set new level rotation speed
 		move.l	#Map_Sonic,($FFFFD004).w
 		move.w	#$780,($FFFFD002).w
@@ -38929,15 +38897,15 @@ Eni_Title:	incbin	mapeni\titlescr.bin	; title screen foreground (mappings)
 		even
 Twim_TitleFg:	incbin	arttwim\titlefor.twim	; title screen foreground
 		even
-Twim_TitleSonic:	incbin	arttwim\titleson.twim	; Sonic on title screen
+Twim_TitleSonic:incbin	arttwim\titleson.twim	; Sonic on title screen
 		even
 Twim_TitleTM:	incbin	arttwim\titletm.twim	; TM on title screen
 		even
-Eni_SplashScreen:	incbin	Splash\SPLASHMAP.bin	; Splash screen (mappings)
+Eni_SplashScreen:incbin	Splash\SPLASHMAP.bin	; Splash screen (mappings)
 		even
-Nem_SplashScreen:	incbin	Splash\SPLASHART.bin	; Splash screen
+Nem_SplashScreen:incbin	Splash\SPLASHART.bin	; Splash screen
 		even
-Pal_SplashScreen:	incbin	Splash\SPLASHPAL.bin	; Splash screen (palette)
+Pal_SplashScreen:incbin	Splash\SPLASHPAL.bin	; Splash screen (palette)
 		even
 ; ---------------------------------------------------------------------------
 ; Sprite mappings - Sonic
@@ -39315,13 +39283,13 @@ Blk256_GHZ:	incbin	map256\ghz.bin
 		even
 Blk16_LZ:	incbin	map16\lz.bin
 		even
-Comp_LZ:		incbin	artcomp\8x8lz.bin	; LZ primary patterns
+Comp_LZ:	incbin	artcomp\8x8lz.bin	; LZ primary patterns
 		even
 Blk256_LZ:	incbin	map256\lz.bin
 		even
 Blk16_MZ:	incbin	map16\mz.bin
 		even
-Comp_MZ:		incbin	artcomp\8x8mz.bin	; MZ primary patterns
+Comp_MZ:	incbin	artcomp\8x8mz.bin	; MZ primary patterns
 		even
 Blk256_MZ:	incbin	map256\mz.bin
 		even
@@ -39370,7 +39338,7 @@ Col_SBZ:	incbin	collide\sbz.bin		; SBZ index
 Level_Index:	dc.w Level_GHZ1-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_GHZ2-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_GHZ3-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_GHZ3-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_LZ1-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_LZ2-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_LZ3-Level_Index, Level_LZbg-Level_Index, byte_6A320-Level_Index
@@ -39378,23 +39346,23 @@ Level_Index:	dc.w Level_GHZ1-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Le
 		dc.w Level_MZ1-Level_Index, Level_MZ1bg-Level_Index, Level_MZ1-Level_Index
 		dc.w Level_MZ2-Level_Index, Level_MZ2bg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_MZ3-Level_Index, Level_MZ3bg-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_MZ3-Level_Index, Level_MZ3bg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SLZ1-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SLZ2-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SLZ3-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SLZ3-Level_Index, Level_SLZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SYZ1-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SYZ2-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SYZ3-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SYZ3-Level_Index, Level_SYZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_SBZ1-Level_Index, Level_SBZ1bg-Level_Index, Level_SBZ1bg-Level_Index
 		dc.w Level_SBZ2-Level_Index, Level_SBZ2bg-Level_Index, Level_SBZ2bg-Level_Index
 		dc.w Level_SBZ2-Level_Index, Level_SBZ2bg-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_SBZ2-Level_Index, Level_SBZ2bg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_End-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 		dc.w Level_End-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
-		dc.w byte_6A320-Level_Index, byte_6A320-Level_Index, byte_6A320-Level_Index
+		dc.w Level_End-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
+		dc.w Level_End-Level_Index, Level_GHZbg-Level_Index, byte_6A320-Level_Index
 
 Level_GHZ1:	incbin	levels\ghz1.bin
 		even

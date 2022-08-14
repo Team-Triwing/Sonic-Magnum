@@ -10,7 +10,7 @@ Drvmem		equ $FFFFF100
 		include "AMPS/lang.asm"
 		include "AMPS/code/macro.asm"
 		include "error/debugger.asm"
-		
+
 		; some constant/variable craps
 		include "macros.asm"
 		include "constandvars.asm"
@@ -284,7 +284,7 @@ loc_B64:				; XREF: loc_D50
 		btst	#6,(ConsoleRegion).w
 		beq.s	loc_B42
 		move.w	#$700,d0
-		dbf	d0,*
+		dbt	d0,*
 
 loc_B42:
 		addq.l	#1,($FFFFFE0C).w
@@ -2031,7 +2031,7 @@ zx0_decompress:
 .done:         movem.l (sp)+,a2/d2  ; restore preserved registers
 .got_elias:    rts
 
-	
+
 ; ---------------------------------------------------------------------------
 ; Original version written by vladikcomper, with improvements by Flamewing
 ; ---------------------------------------------------------------------------
@@ -2455,7 +2455,7 @@ PalCycle_SuperSonic_revert:	; runs the fade in transition backwards
 	move.l	4(a0,d0.w),(a1)
 .return
 	rts
-	
+
 loc_2516:
 	dc.w	$A22,$C42,$E44,$E66,$844,$A64,$E66,$E88
 	dc.w	$666,$A86,$E88,$EAA,$488,$AA8,$EAA,$ECC
@@ -2538,7 +2538,7 @@ loc_1E1E:
 		dbf	d0,loc_1E1E
 
 locret_1E24:
-		rts	
+		rts
 ; End of function Pal_FadeIn
 
 
@@ -2589,7 +2589,7 @@ loc_1E5C:
 		beq.s	loc_1E5C				; MJ: if null, delay a frame
 		bsr.s	Pal_FadeOut
 		dbf	d4,loc_1E5C
-		rts	
+		rts
 ; End of function Pal_FadeFrom
 
 ; ---------------------------------------------------------------------------
@@ -2619,7 +2619,7 @@ loc_1E82:
 loc_1E98:
 		bsr.s	Pal_DecColor
 		dbf	d0,loc_1E98
-		rts	
+		rts
 ; End of function Pal_FadeOut
 
 
@@ -3360,7 +3360,7 @@ SplashScreen:
 		jsr     NemDec              	; run NemDec to decompress art for display
 		moveq	#$14,d0			; load pallet
 		bsr.w	PalLoad1
-		jsr Pal_FadeTo          	; fade palette in
+		jsr	Pal_FadeTo          	; fade palette in
 		music 	mus_GotThroughAct
 		move.w  #3*60,($FFFFF614).w     ; set delay time (3 seconds on a 60hz system)
 
@@ -3399,7 +3399,6 @@ TitleScreen:				; XREF: GameModeArray
 		bsr.w	ClearScreen
 		clrRAM	$FFFF0000,$FFFFEFFF	; fill RAM ($0000-$EFFF) with	$0
 		jsr	InitDMA
-		bsr.w	Pal_FadeTo
 		lea	(Twim_TitleFg).l,a0 ; load title	screen patterns
 		move.w	#$4000,d0
 		jsr	TwimDec
@@ -3426,7 +3425,6 @@ TitleScreen:				; XREF: GameModeArray
 		lea	($FF0000).l,a1
 		jsr	zx0_decompress
 		jsr	LevelLayoutLoad
-		bsr.w	Pal_FadeFrom
 		bsr.w	ClearScreen
 		lea	(VDP_CTRL).l,a5
 		lea	(VDP_DATA).l,a6
@@ -3627,7 +3625,7 @@ LevSelBCPress:				; XREF: LevelSelect
 LevSel_PlaySnd:
 		move.b	d0,mQueue+2.w	; play that sound!
 		bra.s	LevelSelect
-		
+
 LevSelStartPress:				; XREF: LevelSelect
 		clr.b	($FFFFF600).w
 		rts
@@ -3797,7 +3795,7 @@ LevSel_SndTest:				; XREF: LevSelControls
 		subq.w	#1,d0		; subtract 1 from sound	test
 		bge.s	LevSel_Right
 		moveq	#SFXoff+SFXcount-1,d0; if sound test moves below 0, set to max
-		
+
 LevSel_A:
 		btst	#JbA,d1		; is A button pressed?
 		beq.s	LevSel_Right	; if not, branch
@@ -3832,8 +3830,8 @@ LevSel_NoMove:
 LevSelTextLoad:				; XREF: TitleScreen
 	textpos:	= ($40000000+(($E210&$3FFF)<<16)+(($E210&$C000)>>14))
 					; $E210 is a VRAM address
-					
-					
+
+
 		lea	(LevelMenuText).l,a1
 		lea	(VDP_DATA).l,a6
 		move.l	#textpos,d4	; screen position (text)
@@ -3925,7 +3923,7 @@ LevelMenuText:	incbin	misc\menutext.bin
 ; ---------------------------------------------------------------------------
 ; Music	playlist
 ; ---------------------------------------------------------------------------
-MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ, mus_FZ
+MusicList:	dc.b mus_GHZ, mus_LZ, mus_MZ, mus_SLZ, mus_SYZ, mus_SBZ
 		even
 ; ===========================================================================
 
@@ -4268,7 +4266,7 @@ loc_3BC8:
 		tst.w	($FFFFF614).w
 		bne.s	loc_3B98
 		rts
-		
+
 WaterTransition_LZ:    dc.w $13    ; # of entries - 1
 	dc.w $62
 	dc.w $68
@@ -5078,7 +5076,7 @@ loc_463C:
 		move.b	#9,($FFFFD000).w ; load	special	stage Sonic object
 		bsr.w	PalCycle_SS
 		clr.w	($FFFFF780).w	; set stage angle to "upright"
-		move.w	#$40,($FFFFF782).w ; set stage rotation	speed
+		move.w	#$20,($FFFFF782).w ; set stage rotation	speed
 		music	mus_SS		; play special stage BG	music
 		clr.w	($FFFFF790).w
 		lea	(Demo_Index).l,a1
@@ -6815,17 +6813,17 @@ BgScroll_GHZ:				; XREF: BgScroll_Index
 		clr.l	(a2)+
 		clr.l	(a2)+
 		clr.l	(a2)+
-		rts 
+		rts
 ; ===========================================================================
 
 BgScroll_LZ:				; XREF: BgScroll_Index
 		asr.l	#1,d0
 		move.w	d0,($FFFFF70C).w
-		rts	
+		rts
 ; ===========================================================================
 
 BgScroll_MZ:				; XREF: BgScroll_Index
-		rts	
+		rts
 ; ===========================================================================
 
 BgScroll_SLZ:				; XREF: BgScroll_Index
@@ -6833,7 +6831,7 @@ BgScroll_SLZ:				; XREF: BgScroll_Index
 		addi.w	#$C0,d0
 		move.w	d0,($FFFFF70C).w
 		clr.l	($FFFFF708).w
-		rts	
+		rts
 ; ===========================================================================
 
 BgScroll_SYZ:				; XREF: BgScroll_Index
@@ -6845,7 +6843,7 @@ BgScroll_SYZ:				; XREF: BgScroll_Index
 		addq.w	#1,d0
 		move.w	d0,($FFFFF70C).w
 		clr.l	($FFFFF708).w
-		rts	
+		rts
 ; ===========================================================================
 
 BgScroll_SBZ:				; XREF: BgScroll_Index
@@ -6853,7 +6851,7 @@ BgScroll_SBZ:				; XREF: BgScroll_Index
 		asr.w	#3,d0
 		addq.w	#1,d0
 		move.w	d0,($FFFFF70C).w
-		rts	
+		rts
 ; ===========================================================================
 
 BgScroll_End:				; XREF: BgScroll_Index
@@ -6893,7 +6891,7 @@ DeformLayers:
 DeformBgLayer:
 		tst.b	(f_nobgscroll).w
 		beq.s	.bgscroll
-		rts	
+		rts
 ; ===========================================================================
 
 	.bgscroll:
@@ -6937,7 +6935,7 @@ Deform_GHZ:
 		add.l	d1,d4		; 13.28% scrolling
 		moveq	#0,d6
 		bsr.w	BGScroll_Block3	; for mountains
-		
+
 		move.w	(v_scrshiftx).w,d4
 		ext.l	d4
 		asl.l	#7,d4		; 50% scrolling
@@ -6955,7 +6953,7 @@ Deform_GHZ:
 	.notOverflow:
 		move.w	d0,d4
 		move.w	d0,(v_bgscrposy_dup).w	; no need to reload tiles vertically
-		
+
 		move.w	(v_screenposx).w,d0
 		move.w	d0,-(sp)	; save screen position for deformation
 		cmpi.b	#4,($FFFFF600).w
@@ -6983,7 +6981,7 @@ Deform_GHZ:
 		move.w	(v_bg3screenposx).w,d0	; lower cloud
 		add.w	(a2)+,d0
 		move.w	d0,(a1)+
-	; copy from the 3 scroll blocks	
+	; copy from the 3 scroll blocks
 		move.w	(v_bg3screenposx).w,d0
 		move.w	d0,(a1)+		; distant mountains
 
@@ -7001,14 +6999,14 @@ Deform_GHZ:
 		moveq	#0,d3
 		move.w	d0,d3
 		moveq	#$67,d1
-.waterLoop:		
+.waterLoop:
 		move.w	d3,d0
 		move.w	d0,(a1)+	; pixelwise water scroll
 		swap.w	d3
 		add.l	d2,d3
 		swap.w	d3
 		dbf	d1,.waterLoop
-		
+
 		lea	(BGScrollSize_GHZ).l,a4
 		lea	($FFFFA810).w,a5
 		jsr	ProcessBGScroll
@@ -7032,13 +7030,13 @@ Deform_LZ:
 		asl.l	#7,d5		; 50% vertical scrolling
 		bsr.w	BGScroll_Uniform
 		move.w	(v_bgscreenposy).w,(v_bgscrposy_dup).w
-		
+
 		lea	(Lz_Scroll_Data).l,a3
 		lea	(Obj0A_WobbleData).l,a2
 		move.b	($FFFFF7D8).w,d2	; water deformation offset
 		move.b	d2,d3
 		addi.w	#$80,($FFFFF7D8).w
-		
+
 		add.w	(v_bgscreenposy).w,d2
 		andi.w	#$FF,d2
 		add.w	(v_screenposy).w,d3
@@ -7054,11 +7052,11 @@ Deform_LZ:
 		neg.w	d0
 		move.w	($FFFFF646).w,d4
 		move.w	(v_screenposy).w,d5
-	.overWater:		
+	.overWater:
 		cmp.w	d4,d5		; is current y >= water y?
 		bge.s	.underWater	; if yes, branch
 		move.l	d0,(a1)+	; copy fg & bg position
-		
+
 		addq.w	#1,d5		; advance current y for water check
 		addq.b	#1,d2		; advance fg & bg positions
 		addq.b	#1,d3		; for deformation offset table
@@ -7069,12 +7067,12 @@ Deform_LZ:
 		ext.w	d4
 		add.w	d6,d4		; add fg x-position
 		move.w	d4,(a1)+	; write to hscroll table
-		
+
 		move.b	(a2,d2),d4	; load deformation offset
 		ext.w	d4
 		add.w	d0,d4		; add bg x-position
 		move.w	d4,(a1)+	; write to hscroll table
-		
+
 		addq.b	#1,d2		; advance fg & bg y positions
 		addq.b	#1,d3		; for deformation offset table
 		dbf	d1,.underWater
@@ -7125,7 +7123,7 @@ Deform_MZ:
 		asl.l	#7,d4		; 50% scrolling
 		moveq	#4,d6
 		bsr.w	BGScroll_Block2		; for bushes
-		
+
 		move.w	#$200,d0		; add offset of 512px for background y
 		move.w	(v_screenposy).w,d1
 		subi.w	#$1C8,d1		; 56px before inner sections
@@ -7145,13 +7143,13 @@ Deform_MZ:
 		or.b	d0,(v_bg3_scroll_flags).w
 		clr.b	(v_bg1_scroll_flags).w
 		clr.b	(v_bg2_scroll_flags).w
-		
+
 		lea	($FFFFA800).w,a1
 		clr.w	(a1)+		; unused 2 chunks
-		
+
 		move.w	(v_screenposx).w,d2
 		neg.w	d2
-		
+
 		move.w	d2,d0		; clouds
 		asr.w	#2,d0
 		sub.w	d2,d0
@@ -7166,20 +7164,20 @@ Deform_MZ:
 		asr.w	#1,d3		; start with 50% scrolling
 		moveq	#9,d1
 		neg.w	d3
-	.cloudLoop:		
+	.cloudLoop:
 		move.w	d3,(a1)+	; clouds (8px instead of 16px)
 		swap.w	d3
 		sub.l	d0,d3
 		swap.w	d3
 		dbf	d1,.cloudLoop
-		
-		move.w	(v_bg3screenposx).w,d0	
+
+		move.w	(v_bg3screenposx).w,d0
 		move.w	d0,(a1)+	; mountains
-		move.w	(v_bg2screenposx).w,d0	
+		move.w	(v_bg2screenposx).w,d0
 		move.w	d0,(a1)+	; bushes & buildings
-		move.w	(v_bgscreenposx).w,d0	
+		move.w	(v_bgscreenposx).w,d0
 		move.w	d0,(a1)+	; inner background
-		
+
 		lea	(BGScrollSize_MZ).l,a4
 		lea	($FFFFA800).w,a5
 		jmp	ProcessBGScroll
@@ -7198,13 +7196,13 @@ Deform_SLZ:
 		asl.l	#7,d5
 		bsr.w	Bg_Scroll_Y	; 50% vertical scrolling
 		move.w	(v_bgscreenposy).w,(v_bgscrposy_dup).w
-		
+
 		lea	($FFFFA800).w,a1
 		clr.w	(a1)+	; unused $C0 pixels
-		
+
 		move.w	(v_screenposx).w,d2
 		neg.w	d2
-		
+
 		move.w	d2,d0		; stars
 		asr.w	#3,d0
 		sub.w	d2,d0
@@ -7218,13 +7216,13 @@ Deform_SLZ:
 		move.w	d2,d3		; start with 100% scrolling
 		moveq	#$1B,d1
 		neg.w	d3
-	.starsLoop:		
+	.starsLoop:
 		move.w	d3,(a1)+	; stars
 		swap.w	d3
 		sub.l	d0,d3
 		swap.w	d3
 		dbf	d1,.starsLoop
-		
+
 		move.w	d2,d0
 		asr.w	#3,d0
 		move.w	d0,d1
@@ -7264,11 +7262,11 @@ Deform_SYZ:
 		add.l	d1,d5		; 7.03% vertical scrolling
 		bsr.w	Bg_Scroll_Y
 		move.w	(v_bgscreenposy).w,(v_bgscrposy_dup).w
-		
+
 		lea	($FFFFA800).w,a1
 		move.w	(v_screenposx).w,d2
 		neg.w	d2
-		
+
 		move.w	d2,d0		; clouds
 		asr.w	#3,d0
 		sub.w	d2,d0
@@ -7283,13 +7281,13 @@ Deform_SYZ:
 		asr.w	#1,d3		; start with 50% scrolling
 		moveq	#7,d1
 		neg.w	d3
-	.cloudLoop:		
+	.cloudLoop:
 		move.w	d3,(a1)+	; clouds
 		swap.w	d3
 		sub.l	d0,d3
 		swap.w	d3
 		dbf	d1,.cloudLoop
-		
+
 		move.w	d2,d0
 		asr.w	#3,d0		; 12.5% scrolling
 		neg.w	d0		; mountains
@@ -7315,13 +7313,13 @@ Deform_SYZ:
 		asr.w	#1,d3		; start with 50% scrolling
 		moveq	#$D,d1
 		neg.w	d3
-	.bushLoop:		
+	.bushLoop:
 		move.w	d3,(a1)+	; bushes
 		swap.w	d3
 		sub.l	d0,d3
 		swap.w	d3
 		dbf	d1,.bushLoop
-		
+
 		lea	(BGScrollSize_SYZ).l,a4
 		lea	($FFFFA800).w,a5
 		jmp	ProcessBGScroll
@@ -7337,19 +7335,19 @@ Deform_SYZ:
 Deform_SBZ:
 		tst.b	($FFFFFE11).w		; is it act 2?
 		bne.w	Bg_Scroll_SBz_2		; go to SBZ2 deformation
-		
+
 		move.w	(v_scrshiftx).w,d4
 		ext.l	d4
 		asl.l	#7,d4		; 50% scrolling
 		moveq	#2,d6
 		bsr.w	BGScroll_Block1	; for lower black buildings
-		
+
 		move.w	(v_scrshiftx).w,d4
 		ext.l	d4
 		asl.l	#6,d4		; 25% scrolling
 		moveq	#6,d6
 		bsr.w	BGScroll_Block3	; for distant brown buildings
-		
+
 		move.w	(v_scrshiftx).w,d4
 		ext.l	d4
 		asl.l	#5,d4
@@ -7358,13 +7356,13 @@ Deform_SBZ:
 		add.l	d1,d4		; 13.28% scrolling
 		moveq	#4,d6
 		bsr.w	BGScroll_Block2	; for upper black buildings
-		
+
 		moveq	#0,d4
 		move.w	($FFFFF73C).w,d5
 		ext.l	d5
 		asl.l	#5,d5		; 12.5% vertical scrolling
 		bsr.w	BGScroll_VerticalAdd
-		
+
 		move.w	(v_bgscreenposy).w,d0
 		move.w	d0,(v_bg2screenposy).w
 		move.w	d0,(v_bg3screenposy).w
@@ -7392,20 +7390,20 @@ Deform_SBZ:
 		move.w	d2,d3
 		move.w	#3,d1
 		neg.w	d3
-.cloudLoop:		
+.cloudLoop:
 		move.w	d3,(a1)+	; clouds
 		swap.w	d3
 		sub.l	d0,d3
 		swap.w	d3
 		dbf	d1,.cloudLoop
-		
+
 		move.w	(v_bg3screenposx).w,d0
 		move.w	d0,(a1)+	; distant brown buildings
 
-		move.w	(v_bg2screenposx).w,d0		
+		move.w	(v_bg2screenposx).w,d0
 		move.w	d0,(a1)+	; upper black buildings
 
-		move.w	(v_bgscreenposx).w,d0	
+		move.w	(v_bgscreenposx).w,d0
 		move.w	d0,(a1)+	; lower black buildings
 
 		lea	(BGScrollSize_SBZ1).l,a4
@@ -7414,14 +7412,14 @@ Deform_SBZ:
 ;-------------------------------------------------------------------------------
 Bg_Scroll_SBz_2:;loc_68A2:
 		move.w	(v_scrshiftx).w,d4
-		ext.l	d4		
+		ext.l	d4
 		asl.l	#6,d4		; 25% horizontal scrolling
 		move.w	($FFFFF73C).w,d5
 		ext.l	d5
 		asl.l	#5,d5		; 12.5% vertical scrolling
 		bsr.w	BGScroll_Uniform
 		move.w	(v_bgscreenposy).w,(v_bgscrposy_dup).w
-		
+
 		lea	(v_hscrolltablebuffer).w,a1	; copy fg and bg positions to hscroll
 		move.w	#223,d1
 		move.w	(v_screenposx).w,d0
@@ -7429,7 +7427,7 @@ Bg_Scroll_SBz_2:;loc_68A2:
 		swap.w	d0
 		move.w	(v_bgscreenposx).w,d0
 		neg.w	d0
-loc_68D2:		
+loc_68D2:
 		move.l	d0,(a1)+
 		dbf	d1,loc_68D2
 		rts
@@ -7471,7 +7469,7 @@ BGScrollSize_SYZ:
 		dc.w	$10
 	endr
 		dc.w	$7FFF	; everything else
-		
+
 BGScrollSize_SBZ1:
 	rept	4		; clouds
 		dc.w	$10
@@ -7520,7 +7518,7 @@ ProcessBGScroll_ParamSize:	; for custom screen heights
 		adda.w	d2,a5	; ptrBuffer += blockSize * 2
 
 .blockwise:
-		neg.w	d0		; 
+		neg.w	d0		;
 		move.w	d1,d2	; load y-size - y-position
 		sub.w	d0,d2
 		bcc.s	.notOverflow
@@ -7607,13 +7605,13 @@ ScrollHoriz:
 		bpl.s	SH_Forward
 
 		bset	#2,(v_fg_scroll_flags).w ; screen moves backward
-		rts	
+		rts
 
 	SH_Forward:
 		bset	#3,(v_fg_scroll_flags).w ; screen moves forward
 
 locret_65B0:
-		rts	
+		rts
 ; End of function ScrollHoriz
 
 
@@ -7628,7 +7626,7 @@ MoveScreenHoriz:
 		subi.w	#16,d0		; is distance more than 160px?
 		bpl.s	SH_AheadOfMid	; if yes, branch
 		clr.w	(v_scrshiftx).w
-		rts	
+		rts
 ; ===========================================================================
 
 SH_AheadOfMid:
@@ -7648,7 +7646,7 @@ SH_SetScreen:
 		asl.w	#8,d1
 		move.w	d0,(v_screenposx).w ; set new screen position
 		move.w	d1,(v_scrshiftx).w ; set distance for screen movement
-		rts	
+		rts
 ; ===========================================================================
 
 SH_BehindMid:
@@ -7703,7 +7701,7 @@ loc_664A:
 
 loc_6656:
 		clr.w	($FFFFF73C).w
-		rts	
+		rts
 ; ===========================================================================
 
 loc_665C:
@@ -7817,14 +7815,14 @@ loc_6724:
 		sub.w	d4,d0
 		bpl.s	loc_6760
 		bset	#0,(v_fg_scroll_flags).w
-		rts	
+		rts
 ; ===========================================================================
 
 loc_6760:
 		bset	#1,(v_fg_scroll_flags).w
 
 locret_6766:
-		rts	
+		rts
 ; End of function ScrollVertical
 
 
@@ -7994,7 +7992,7 @@ BGScroll_Block3:
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
 
-sub_6886:		
+sub_6886:
 		lea	($C00004).l,a5
 		lea	($C00000).l,a6
 		lea	($FFFFF756).w,a2
@@ -8049,7 +8047,7 @@ Draw_All:
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,Draw_All
-		rts	
+		rts
 
 Draw_FG:
 		tst.b	(a2)
@@ -8094,7 +8092,7 @@ loc_6CEE:
 		bsr.w	DrawTiles_TB
 
 locret_6D08:
-		rts	
+		rts
 ; End of function LoadTilesAsYouMove
 
 
@@ -8166,7 +8164,7 @@ loc_6D88:
 		bsr.w	DrawTiles_LR3
 
 locret_6DA4:
-		rts	
+		rts
 ; End of function sub_6D0A
 
 
@@ -8200,42 +8198,42 @@ loc_6DD2:
 		bsr.w	DrawTiles_TB2
 
 locret_6DF2:
-		rts	
+		rts
 ; ===========================================================================
-unk_6DF4:	dc.b   0 ;	 
-unk_6DF5:	dc.b   0 ;	 
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   0 ;  
+unk_6DF4:	dc.b   0 ;
+unk_6DF5:	dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   0 ;
 ; ===========================================================================
 
 loc_6E16:
@@ -8275,7 +8273,7 @@ loc_6E5E:
 loc_6E72:
 		tst.b	(a2)
 		bne.s	loc_6E78
-		rts	
+		rts
 ; ===========================================================================
 
 loc_6E78:
@@ -8328,106 +8326,106 @@ loc_6ED0_2:
 		bsr.w	DrawTiles_TB2
 
 locret_6EF0:
-		rts	
+		rts
 ; ===========================================================================
-unk_6EF2:	dc.b   0 ;	 
+unk_6EF2:	dc.b   0 ;
 		dc.b   0 ;
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   2 ;  
-		dc.b   0 ;  
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   2 ;
+		dc.b   0 ;
 ; ===========================================================================
 
 loc_6F54:
@@ -8467,7 +8465,7 @@ loc_6F9A:
 loc_6FAE:
 		tst.b	(a2)
 		bne.s	loc_6FB4
-		rts	
+		rts
 ; ===========================================================================
 
 loc_6FB4:
@@ -8489,13 +8487,13 @@ loc_6FC8:
 		lea	(a0,d0.w),a0
 		bra.s	loc_6FEC
 ; ===========================================================================
-unk_6FE4:	dc.b $FF ;  
-		dc.b $18 ;  
-		dc.b $FF ;  
-		dc.b $18 ;  
-		dc.b $FF ;  
-		dc.b $20 ;  
-		dc.b $FF ;  
+unk_6FE4:	dc.b $FF ;
+		dc.b $18 ;
+		dc.b $FF ;
+		dc.b $18 ;
+		dc.b $FF ;
+		dc.b $20 ;
+		dc.b $FF ;
 		dc.b $28 ; (
 ; ===========================================================================
 
@@ -8521,7 +8519,7 @@ loc_701C:
 		addi.w	#$10,d4
 		dbf	d6,loc_6FF4
 		clr.b	(a2)
-		rts	
+		rts
 ; End of function sub_6EA4
 
 
@@ -8550,7 +8548,7 @@ loc_7032:
 		movem.l	(sp)+,d4-d5
 		addi.w	#$10,d5
 		dbf	d6,loc_7032
-		rts	
+		rts
 ; End of function DrawTiles_LR2
 
 
@@ -8571,7 +8569,7 @@ loc_705C:
 		movem.l	(sp)+,d4-d5
 		addi.w	#$10,d5
 		dbf	d6,loc_705C
-		rts	
+		rts
 ; End of function DrawTiles_LR3
 
 
@@ -8600,7 +8598,7 @@ loc_7088:
 		movem.l	(sp)+,d4-d5
 		addi.w	#$10,d4
 		dbf	d6,loc_7088
-		rts	
+		rts
 ; End of function DrawTiles_TB2
 
 
@@ -8619,7 +8617,7 @@ sub_70AC:
 		add.l	d7,d0
 		move.l	d0,(a5)
 		move.l	(a1)+,(a6)
-		rts	
+		rts
 ; ===========================================================================
 
 loc_70C8:
@@ -8634,7 +8632,7 @@ loc_70C8:
 		eori.l	#$8000800,d4
 		swap	d4
 		move.l	d4,(a6)
-		rts	
+		rts
 ; ===========================================================================
 
 loc_70E8:
@@ -8649,7 +8647,7 @@ loc_70E8:
 		move.l	d0,(a5)
 		eori.l	#$10001000,d5
 		move.l	d5,(a6)
-		rts	
+		rts
 ; ===========================================================================
 
 loc_710A:
@@ -8664,7 +8662,7 @@ loc_710A:
 		eori.l	#$18001800,d5
 		swap	d5
 		move.l	d5,(a6)
-		rts	
+		rts
 ; End of function sub_70AC
 
 
@@ -8703,7 +8701,7 @@ loc_712C:
 		adda.w	d3,a1
 
 locret_7172:
-		rts	
+		rts
 ; End of function sub_712A
 
 
@@ -8723,7 +8721,7 @@ loc_7176:
 		moveq	#3,d0
 		swap	d0
 		move.w	d4,d0
-		rts	
+		rts
 ; End of function Calc_VRAM_Pos
 
 
@@ -8770,7 +8768,7 @@ loc_71FC:
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_71FC
-		rts	
+		rts
 ; End of function LoadTilesFromStart2
 
 ; ===========================================================================
@@ -8789,24 +8787,24 @@ loc_7224:
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_7224
-		rts	
+		rts
 ; ===========================================================================
-unk_724A:	dc.b   0 ;	 
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   6 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   4 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
-		dc.b   0 ;  
+unk_724A:	dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   6 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   4 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
+		dc.b   0 ;
 ; ===========================================================================
 
 loc_725A:
@@ -8824,7 +8822,7 @@ loc_725E:
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_725E
-		rts	
+		rts
 ; ===========================================================================
 
 loc_7288:
@@ -8841,16 +8839,16 @@ loc_728C:
 		movem.l	(sp)+,d4-d6
 		addi.w	#$10,d4
 		dbf	d6,loc_728C
-		rts	
+		rts
 ; ===========================================================================
 unk_72B2:	dc.b $F7 ; ÷
-		dc.b   8 ;  
+		dc.b   8 ;
 		dc.b $F7 ; ÷
-		dc.b   8 ;  
+		dc.b   8 ;
 		dc.b $F7 ; ÷
-		dc.b $10 ;  
+		dc.b $10 ;
 		dc.b $F7 ; ÷
-		dc.b $18 ;  
+		dc.b $18 ;
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
@@ -8877,7 +8875,7 @@ loc_72DA:
 		bsr.w	DrawTiles_LR3
 
 locret_72EE:
-		rts	
+		rts
 ; End of function sub_72BA
 
 LoadZoneTiles:
@@ -13112,7 +13110,7 @@ Obj37_Sparkle:				; XREF: Obj37_Index
 
 Obj37_Delete:				; XREF: Obj37_Index
 		bra.w	DeleteObject
-; ===========================================================================	
+; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Ring Spawn Array
 ; ---------------------------------------------------------------------------
@@ -13615,8 +13613,8 @@ Obj2E_ChkS:
 		move.b	#$38,($FFFFD2C0).w ; load stars	object ($3804)
 		move.b	#4,($FFFFD2DC).w
 		rts
-		
-Obj2E_ChkGoggles:	
+
+Obj2E_ChkGoggles:
 		cmpi.b	#8,d0			; does monitor contain Goggles?
 		bne.s	Obj2E_ChkEnd
 		nop
@@ -17350,11 +17348,10 @@ DeleteObject:
 
 DeleteObject2:
 		moveq	#0,d1
-		moveq	#$F,d0
 
-loc_D646:
+		rept 16
 		move.l	d1,(a1)+	; clear	the object RAM
-		dbf	d0,loc_D646	; repeat $F times (length of object RAM)
+		endr
 		rts
 ; End of function DeleteObject
 
@@ -18401,10 +18398,8 @@ Obj43_ChkGone:				; XREF: Obj43_Action
 		lea	($FFFFFC00).w,a2
 		moveq	#0,d0
 		move.b	$23(a0),d0
-		beq.s	Obj43_Delete
+		beq.w	DeleteObject
 		bclr	#7,2(a2,d0.w)
-
-Obj43_Delete:
 		bra.w	DeleteObject
 ; ===========================================================================
 Obj43_Index2:	dc.w Obj43_RollChk-Obj43_Index2
@@ -23475,7 +23470,10 @@ locret_12106:
 
 Obj61_Type04:				; XREF: Obj61_TypeIndex
 		bsr.w	SpeedToPos
+		cmpi.w	#-$200,$12(a0)
+		beq.s	.attopspeed
 		subq.w	#8,$12(a0)	; make object rise
+	.attopspeed:
 		bsr.w	ObjHitCeiling
 		tst.w	d1
 		bpl.w	locret_12126
@@ -24417,7 +24415,7 @@ Obj01_ChkInvin:
 		tst.b	invincibility_time(a0)		; check	time remaining for invinciblity
 		beq.s	Obj01_ChkShoes	; if no	time remains, branch
 		move.b	($FFFFFE05).w,d0
-		andi.b	#6,d0
+		andi.b	#4,d0
 		bne.s	Obj01_ChkShoes
 		subq.b	#1,invincibility_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ChkShoes
@@ -24439,7 +24437,7 @@ Obj01_ChkShoes:
 		tst.b	speedshoes_time(a0)		; check	time remaining
 		beq.s	Obj01_ExitChk
 		move.b	($FFFFFE05).w,d0
-		andi.b	#6,d0
+		andi.b	#4,d0
 		bne.s	Obj01_ExitChk
 		subq.b	#1,speedshoes_time(a0)	; subtract 1 from time
 		bne.s	Obj01_ExitChk
@@ -24667,8 +24665,16 @@ Sonic_LookUp:
 		btst	#JbU,($FFFFF602).w ; is up being pressed?
 		beq.s	Sonic_Duck	; if not, branch
 		move.b	#7,$1C(a0)	; use "looking up" animation
-		cmpi.w	#$C8,($FFFFF73E).w
-		beq.s	loc_12FC2
+		move.w	($FFFFF704).w,d0	; get camera top coordinate
+		sub.w	($FFFFF72C).w,d0	; subtract zone's top bound from it
+		add.w	($FFFFF73E).w,d0	; add default offset
+		cmpi.w	#$C8,d0			; is offset <= $C8?
+		ble.s	.skip			; if so, branch
+		move.w	#$C8,d0			; set offset to $C8
+
+.skip:
+		cmp.w	($FFFFF73E).w,d0
+		ble.s	loc_12FC2
 		addq.w	#2,($FFFFF73E).w
 		bra.s	loc_12FC2
 ; ===========================================================================
@@ -24677,8 +24683,19 @@ Sonic_Duck:
 		btst	#JbD,($FFFFF602).w ; is down being pressed?
 		beq.s	Obj01_ResetScr	; if not, branch
 		move.b	#8,$1C(a0)	; use "ducking"	animation
-		cmpi.w	#8,($FFFFF73E).w
-		beq.s	loc_12FC2
+		move.w	($FFFFF704).w,d0	; get camera top coordinate
+		sub.w	($FFFFF72E).w,d0	; subtract zone's bottom bound from it (creating a negative number)
+		add.w	($FFFFF73E).w,d0	; add default offset
+		cmpi.w	#8,d0			; is offset < 8?
+		blt.s	.set			; if so, branch
+		bgt.s	.skip			; if greater than 8, branch
+
+.set:
+		move.w	#8,d0	; set offset to 8
+
+.skip:
+		cmp.w	($FFFFF73E).w,d0
+		bge.s	loc_12FC2
 		subq.w	#2,($FFFFF73E).w
 		bra.s	loc_12FC2
 ; ===========================================================================
@@ -24971,7 +24988,7 @@ loc_1320A:
 loc_13218:
 		sub.w	d4,d0
 		bcc.s	loc_13220
-		move.w	#-$80,d0
+		move.w	#0,d0
 
 loc_13220:
 		move.w	d0,$14(a0)
@@ -24993,7 +25010,7 @@ Sonic_RollRight:			; XREF: Sonic_RollSpeed
 loc_1323A:
 		add.w	d4,d0
 		bcc.s	loc_13242
-		move.w	#$80,d0
+		move.w	#0,d0
 
 loc_13242:
 		move.w	d0,$14(a0)
@@ -25011,28 +25028,28 @@ Sonic_ChgJumpDir:		; XREF: Obj01_MdJump; Obj01_MdJump2
 		move.w	($FFFFF760).w,d6
 		move.w	($FFFFF762).w,d5
 		asl.w	#1,d5
-		btst	#4,$22(a0)	
-		bne.s	Obj01_ResetScr2	
-		move.w	$10(a0),d0	
-		btst	#2,($FFFFF602).w; is left being pressed?	
-		beq.s	loc_13278; if not, branch	
-		bset	#0,$22(a0)	
-		sub.w	d5,d0	
-		move.w	d6,d1	
-		neg.w	d1	
-		cmp.w	d1,d0	
-		bgt.s	loc_13278	
+		btst	#4,$22(a0)
+		bne.s	Obj01_ResetScr2
+		move.w	$10(a0),d0
+		btst	#2,($FFFFF602).w; is left being pressed?
+		beq.s	loc_13278; if not, branch
+		bset	#0,$22(a0)
+		sub.w	d5,d0
+		move.w	d6,d1
+		neg.w	d1
+		cmp.w	d1,d0
+		bgt.s	loc_13278
 		add.w	d5,d0		; +++ remove this frame's acceleration change
 		cmp.w	d1,d0		; +++ compare speed with top speed
-		ble.s	loc_13278	; +++ if speed was already greater than the maximum, branch	
+		ble.s	loc_13278	; +++ if speed was already greater than the maximum, branch
 		move.w	d1,d0
 
 loc_13278:
-		btst	#3,($FFFFF602).w; is right being pressed?	
-		beq.s	Obj01_JumpMove; if not, branch	
-		bclr	#0,$22(a0)	
-		add.w	d5,d0	
-		cmp.w	d6,d0	
+		btst	#3,($FFFFF602).w; is right being pressed?
+		beq.s	Obj01_JumpMove; if not, branch
+		bclr	#0,$22(a0)
+		add.w	d5,d0
+		cmp.w	d6,d0
 		blt.s	Obj01_JumpMove
 		sub.w	d5,d0		; +++ remove this frame's acceleration change
 		cmp.w	d6,d0		; +++ compare speed with top speed
@@ -25130,7 +25147,7 @@ Boundary_Bottom:
 		move.w	#$103,($FFFFFE10).w	; set level to SBZ3 (LZ4)
 
 Boundary_Bottom_locret:
-		rts	
+		rts
 ; ===========================================================================
 
 Boundary_Sides:
@@ -25395,7 +25412,7 @@ loc_1AC84:
 		bra.w	Sonic_AnglePos
 
 locret_1AC8C:
-		rts	
+		rts
 ; ---------------------------------------------------------------------------
 
 loc_1AC8E:
@@ -25860,6 +25877,7 @@ loc_1380C:
 		bsr.w	Sonic_LevelBound
 		bsr.w	Sonic_RecordPos
 		bsr.w	Sonic_Animate
+		bsr.w	Sonic_Water
 		bsr.w	LoadSonicDynPLC
 		jmp	DisplaySprite
 
@@ -26083,16 +26101,16 @@ loc_10ADA:
 	subq.b	#$1,$1E(a0)
 	bpl.s	loc_10B18
 	move.b	d0,$1E(a0)
-loc_10B00:        
+loc_10B00:
 	moveq	#0,d1
 	move.b  $1B(a0),d1
 	move.b  $1(a1,d1), d0
 	cmpi.b  #$F0,d0
 	bcc.s   loc_10B1A
-loc_10B10:        
+loc_10B10:
 	move.b  d0, $1A(a0)
 	addq.b  #$1, $1B(a0)
-loc_10B18:        
+loc_10B18:
 	rts
 loc_10B1A:
 	addq.b  #$1,d0
@@ -26112,9 +26130,9 @@ loc_10B3E:
 	addq.b  #$1,d0
 	bne.s   loc_10B48
 	move.b  $2(a1,d1), $1C(a0)
-loc_10B48: 
+loc_10B48:
 	rts
-loc_10B4A: 
+loc_10B4A:
 	subq.b  #$1, $1E(a0)
 	bpl.s   loc_10B18
 	addq.b  #$1,d0
@@ -26220,7 +26238,7 @@ loc_10C66:
 	andi.b  #$FC, $1(a0)
 	or.b    d1, $1(a0)
 	bra     loc_10B00
-loc_10C82:        
+loc_10C82:
 	move.w  $14(a0),d2
 	bmi.s   loc_10C8A
 	neg.w   d2
@@ -26279,59 +26297,59 @@ Sonic_Animate_Roll2: ; loc_10D18:
 	dc.b    $FE, $6C, $70, $6D, $70, $6E, $70, $6F, $70, $FF
 Sonic_Animate_Push: ; loc_10D22:
 	dc.b    $FD, $77, $78, $79, $7A, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF
-Sonic_Animate_Wait: ; loc_10D30:        
+Sonic_Animate_Wait: ; loc_10D30:
 	dc.b    $7, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1
 	dc.b    $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $1, $2
 	dc.b    $3, $3, $3, $4, $4, $5, $5, $FE, $4
-Sonic_Animate_Balance: ; loc_10D59:         
+Sonic_Animate_Balance: ; loc_10D59:
 	dc.b    $7, $89, $8A, $FF
-Sonic_Animate_LookUp: ; loc_10D5D:        
+Sonic_Animate_LookUp: ; loc_10D5D:
 	dc.b    $5, $6, $7, $FE, $1
-Sonic_Animate_Duck: ; loc_10D62:          
+Sonic_Animate_Duck: ; loc_10D62:
 	dc.b    $5, $7F, $80, $FE, $1
-Sonic_Animate_Spindash: ; loc_10D67:        
+Sonic_Animate_Spindash: ; loc_10D67:
 	dc.b    $00, $71, $72, $71, $73, $71, $74, $71, $75, $71, $76, $71, $FF
-Sonic_Animate_WallRecoil1: ; loc_10D74:        
+Sonic_Animate_WallRecoil1: ; loc_10D74:
 	dc.b    $3F, $82, $FF
 Sonic_Animate_WallRecoil2: ; loc_10D77:
 	dc.b    $7, $8, $8, $9, $FD, $5
-Sonic_Animate_0x0C: ; loc_10D7D:        
+Sonic_Animate_0x0C: ; loc_10D7D:
 	dc.b    $7, $9, $FD, $5
-Sonic_Animate_Stop: ; loc_10D81:         
+Sonic_Animate_Stop: ; loc_10D81:
 	dc.b    $3, $81, $82, $83, $84, $85, $86, $87, $88, $FE, $2
-Sonic_Animate_Float1: ; loc_10D8C:         
+Sonic_Animate_Float1: ; loc_10D8C:
 	dc.b    $7, $94, $96, $FF
-Sonic_Animate_Float2: ; loc_10D90:        
+Sonic_Animate_Float2: ; loc_10D90:
 	dc.b    $7, $91, $92, $93, $94, $95, $FF
-Sonic_Animate_0x10: ; loc_10D97:        
+Sonic_Animate_0x10: ; loc_10D97:
 	dc.b    $2F, $7E, $FD, $00
-Sonic_Animate_S1LzHang: ; loc_10D9B:        
+Sonic_Animate_S1LzHang: ; loc_10D9B:
 	dc.b    $5, $8F, $90, $FF
-Sonic_Animate_Unused_0x12: ; loc_10D9F:        
+Sonic_Animate_Unused_0x12: ; loc_10D9F:
 	dc.b    $F, $43, $43, $43, $FE, $1
-Sonic_Animate_Unused_0x13: ; loc_10DA5:        
+Sonic_Animate_Unused_0x13: ; loc_10DA5:
 	dc.b    $F, $43, $44, $FE, $1
-Sonic_Animate_Unused_0x14: ; loc_10DAA:        
+Sonic_Animate_Unused_0x14: ; loc_10DAA:
 	dc.b    $3F, $49, $FF
-Sonic_Animate_Bubble: ; loc_10DAD:         
+Sonic_Animate_Bubble: ; loc_10DAD:
 	dc.b    $B, $97, $97, $12, $13, $FD, $00
-Sonic_Animate_Death1: ; loc_10DB4:         
+Sonic_Animate_Death1: ; loc_10DB4:
 	dc.b    $20, $9A, $FF
-Sonic_Animate_Drown: ; loc_10DB7:        
+Sonic_Animate_Drown: ; loc_10DB7:
 	dc.b    $20, $99, $FF
-Sonic_Animate_Death2: ; loc_10DBA:         
+Sonic_Animate_Death2: ; loc_10DBA:
 	dc.b    $20, $98, $FF
-Sonic_Animate_Unused_0x19: ; loc_10DBD: 
+Sonic_Animate_Unused_0x19: ; loc_10DBD:
 	dc.b    $3, $4E, $4F, $50, $51, $52, $00, $FE, $1
-Sonic_Animate_Hurt: ; loc_10DC6:        
+Sonic_Animate_Hurt: ; loc_10DC6:
 	dc.b    $40, $8D, $FF
-Sonic_Animate_S1LzSlide: ; loc_10DC9:          
+Sonic_Animate_S1LzSlide: ; loc_10DC9:
 	dc.b    $9, $8D, $8E, $FF
-Sonic_Animate_0x1C: ; loc_10DCD:        
+Sonic_Animate_0x1C: ; loc_10DCD:
 	dc.b    $77, $00, $FD, $00
-Sonic_Animate_Float3: ; loc_10DD1:        
+Sonic_Animate_Float3: ; loc_10DD1:
 	dc.b    $3, $91, $92, $93, $94, $95, $FF
-Sonic_Animate_0x1E: ; loc_10DD8:        
+Sonic_Animate_0x1E: ; loc_10DD8:
 	dc.b    $3, $3C, $FD, $00
 
 ; ---------------------------------------------------------------------------
@@ -26377,7 +26395,7 @@ SPLC_ReadEntry:
 		dbf	d5,SPLC_ReadEntry	; repeat for number of entries
 
 locret_13C96:
-		rts	
+		rts
 ; End of function LoadSonicDynPLC
 
 ; ---------------------------------------------------------------------------
@@ -26812,20 +26830,6 @@ Obj38_Stars:				; XREF: Obj38_Index
 		move.w	($FFFFF7A8).w,d0
 		move.b	$1C(a0),d1
 		subq.b	#1,d1
-		bra.s	Obj38_StarTrail
-; ===========================================================================
-		lsl.b	#4,d1
-		addq.b	#4,d1
-		sub.b	d1,d0
-		move.b	$30(a0),d1
-		sub.b	d1,d0
-		addq.b	#4,d1
-		andi.b	#$F,d1
-		move.b	d1,$30(a0)
-		bra.s	Obj38_StarTrail2a
-; ===========================================================================
-
-Obj38_StarTrail:			; XREF: Obj38_Stars
 		lsl.b	#3,d1
 		move.b	d1,d2
 		add.b	d1,d1
@@ -27066,7 +27070,16 @@ locret_146BE:
 ; ===========================================================================
 
 loc_146C0:
-		cmpi.w	#$E,d1
+		move.b	$10(a0),d0
+		bpl.s	.next1
+		neg.b	d0
+	.next1:
+		addq.b	#4,d0
+		cmpi.b	#$E,d0
+		bcs.s	.next2
+		move.b	#$E,d0
+	.next2:
+		cmp.b	d0,d1
 		bgt.s	loc_146CC
 
 loc_146C6:
@@ -27147,6 +27160,16 @@ Sonic_Angle:				; XREF: Sonic_AnglePos; et al
 loc_1475E:
 		btst	#0,d2
 		bne.s	loc_1476A
+		tst.b	$38(a0)
+		bne.s	.onwheel
+		move.b	d2,d0
+		sub.b	$26(a0),d0
+		bpl.s	.next
+		neg.b	d0
+	.next:
+		cmpi.b	#$20,d0
+		bcc.s	loc_1476A
+	.onwheel:
 		move.b	d2,$26(a0)
 		rts
 ; ===========================================================================
@@ -27211,7 +27234,16 @@ locret_147F0:
 ; ===========================================================================
 
 loc_147F2:
-		cmpi.w	#$E,d1
+		move.b	$12(a0),d0
+		bpl.s	.next1
+		neg.b	d0
+	.next1:
+		addq.b	#4,d0
+		cmpi.b	#$E,d0
+		bcs.s	.next2
+		move.b	#$E,d0
+	.next2:
+		cmp.b	d0,d1
 		bgt.s	loc_147FE
 
 loc_147F8:
@@ -27281,7 +27313,16 @@ locret_14892:
 ; ===========================================================================
 
 loc_14894:
-		cmpi.w	#$E,d1
+		move.b	$10(a0),d0
+		bpl.s	.next1
+		neg.b	d0
+	.next1:
+		addq.b	#4,d0
+		cmpi.b	#$E,d0
+		bcs.s	.next2
+		move.b	#$E,d0
+	.next2:
+		cmp.b	d0,d1
 		bgt.s	loc_148A0
 
 loc_1489A:
@@ -27351,7 +27392,16 @@ locret_14934:
 ; ===========================================================================
 
 loc_14936:
-		cmpi.w	#$E,d1
+		move.b	$12(a0),d0
+		bpl.s	.next1
+		neg.b	d0
+	.next1:
+		addq.b	#4,d0
+		cmpi.b	#$E,d0
+		bcs.s	.next2
+		move.b	#$E,d0
+	.next2:
+		cmp.b	d0,d1
 		bgt.s	loc_14942
 
 loc_1493C:
@@ -35957,7 +36007,7 @@ Hurt_ChkSpikes:
 		cmpi.b	#$16,(a2) 	; was damage caused by LZ harpoon?
 		bne.s	Hurt_Sound	; if not, branch
 
-	.setspikesound:
+.setspikesound:
 		moveq	#sfx_SpikeHit,d0; load spikes damage sound
 
 Hurt_Sound:
@@ -36082,7 +36132,6 @@ SS_ShowLayout:				; XREF: SpecialStage
 		move.w	d5,-(sp)
 		lea	($FFFF8000).w,a1
 		move.b	($FFFFF780).w,d0
-		andi.b	#$FC,d0
 		jsr	(CalcSine).l
 		move.w	d0,d4
 		move.w	d1,d5
@@ -36536,10 +36585,10 @@ SS_StartLoc:	incbin	misc\sloc_ss.bin
 SS_Load:				; XREF: SpecialStage
 		moveq	#0,d0
 		move.b	($FFFFFE16).w,d0 ; load	number of last special stage entered
-		addq.b	#1,($FFFFFE16).w
-		cmpi.b	#6,($FFFFFE16).w
+		cmpi.b	#6,d0
 		bcs.s	SS_ChkEmldNum
-		move.b	#0,($FFFFFE16).w ; reset if higher than	6
+		move.b	#0,d0 ; reset if higher than 6
+		move.b	d0,($FFFFFE16).w
 
 SS_ChkEmldNum:
 		cmpi.b	#6,($FFFFFE57).w ; do you have all emeralds?
@@ -36880,15 +36929,15 @@ Obj09_Jump:				; XREF: Obj09_OnWall
 		sfx	sfx_Jump	; play jumping sound
 
 Obj09_NoJump:
-		rts	
+		rts
 ; ===========================================================================
 ; ---------------------------------------------------------------------------
 ; Subroutine to limit Sonic's upward vertical speed
-; ---------------------------------------------------------------------------	
+; ---------------------------------------------------------------------------
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 
-	
+
 Obj09_JumpHeight:			; XREF: Obj09_InAir
 		move.b	($FFFFF602).w,d0	; is the jump button up?
 		andi.b	#$70,d0
@@ -36896,10 +36945,9 @@ Obj09_JumpHeight:			; XREF: Obj09_InAir
 		btst	#7,$22(a0)		; did Sonic jump or is he just falling or hit by a bumper?
 		beq.s	locret_1BBB4		; if not, branch to return
 		move.b	($FFFFF780).w,d0	; get SS angle
-		andi.b	#$FC,d0
 		neg.b	d0
 		subi.b	#$40,d0
-		jsr	(CalcSine).l			
+		jsr	(CalcSine).l
 		move.w	$12(a0),d2		; get Y speed
 		muls.w	d2,d0			; multiply Y speed by sin
 		asr.l	#8,d0			; find the new Y speed
@@ -36910,7 +36958,6 @@ Obj09_JumpHeight:			; XREF: Obj09_InAir
 		cmpi.w	#$400,d1		; compare the combined speed with the jump release speed
 		ble.s	locret_1BBB4		; if it's less, branch to return
 		move.b	($FFFFF780).w,d0
-		andi.b	#$FC,d0
 		neg.b	d0
 		subi.b	#$40,d0
 		jsr	(CalcSine).l
@@ -36924,8 +36971,8 @@ Obj09_JumpHeight:			; XREF: Obj09_InAir
 
 locret_1BBB4:
 		rts
-		
-		
+
+
 ; ---------------------------------------------------------------------------
 ; Subroutine to	fix the	camera on Sonic's position (special stage)
 ; ---------------------------------------------------------------------------
@@ -36997,7 +37044,6 @@ Obj09_Fall:				; XREF: Obj09_OnWall; Obj09_InAir
 		move.l	$C(a0),d2
 		move.l	8(a0),d3
 		move.b	($FFFFF780).w,d0
-		andi.b	#$FC,d0
 		jsr	(CalcSine).l
 		move.w	$10(a0),d4
 		ext.l	d4
@@ -37192,6 +37238,7 @@ Obj09_GetEmer:
 		lea	($FFFFFE58).w,a2
 		move.b	d4,(a2,d0.w)
 		addq.b	#1,($FFFFFE57).w ; add 1 to number of emeralds
+		addq.b	#1,($FFFFFE16).w	; inc SS index
 
 Obj09_NoEmer:
 		moveq	#0,d4
@@ -37950,7 +37997,7 @@ loc_1C518:
 
 Obj21:					; XREF: Obj_Index
 		rts
-		
+
 ; ---------------------------------------------------------------------------
 ; HUD Object code - SCORE, TIME, RINGS
 ; ---------------------------------------------------------------------------
@@ -37990,7 +38037,7 @@ loc_40836:
 
 return_40858:
     rts
-; End of function h		
+; End of function h
 
 ; ===========================================================================
 ; ---------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 # Sonic Magnum
 A Sonic 1 hack by **Team Triwing**, based off AMPS in Sonic 1
 This hack only had a several weeks of development time (May 2021) before being in development hell from my very small team being dormant very quickly. :hurtrealbad:
-(Original game by Sonic Team)
 
 Credits
 ======
@@ -40,3 +39,5 @@ Beta Testing
 * Selbi - Sonic 1: Text Code Generator
 * Xenowhirl - SonMapEd
 * Hivebrain - HivePal
+
+(Sonic 1 is by Sonic Team)

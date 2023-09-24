@@ -17,7 +17,16 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Build
-      run: .\buildrelease.cmd
+      run: |
+        .\buildrelease.cmd
+        mkdir build
+        move SonicMagnum.gen build
+
+    - name: Generate release files
+      uses: actions/upload-artifact@v3.1.3
+      with:
+        name: nightly
+        path: build
